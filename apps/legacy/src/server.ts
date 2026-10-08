@@ -1,3 +1,5 @@
+import { createHostedDiscovery } from '../../../packages/agent-client/src/hosted-discovery.js';
+import type { DocumentFetcher } from '../../../packages/agent-client/src/website-discovery.js';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import { existsSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
@@ -14,6 +16,7 @@ import { loadLegacyConfig, repoRoot, type LegacyConfig } from './config.js';
 import { GARAGE_TOOLS } from '../../../packages/agent-client/src/garage-tools.js';
 
 export interface LegacyOptions {
+  discoveryFetchDocument?: DocumentFetcher;
   now?: () => Date;
   paymentProvider?: PaymentProvider;
   paymentStatus?: () => ReturnType<typeof paymentProviderStatus>;
@@ -67,6 +70,20 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.set('X-Content-Type-Options', 'nosniff').set('Referrer-Policy', 'same-origin').set('X-Frame-Options', 'SAMEORIGIN');
     next();
   });
+  const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now: () => now().getTime() });
+  const discoveryJson = express.json({ limit: '32kb' });
+  app.post('/discovery/websites', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    discoveryJson(req, res, error => {
+      if (error) { res.status(400).json({ error: 'Invalid discovery request' }); return; }
+      next();
+    });
+  }, async (req, res) => {
+    const result = await scanWebsites(req.body);
+    if (result.retryAfter) res.set('Retry-After', String(result.retryAfter));
+    res.status(result.status).json(result.body);
+  });
+
   app.use('/api', express.json({ limit: '512kb' }), auth.middleware, auth.protect);
   app.use('/masumi', express.json({ limit: '64kb' }), auth.middleware, auth.protect);
   const human = auth.require('human_customer');

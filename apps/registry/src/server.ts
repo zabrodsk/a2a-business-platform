@@ -1,3 +1,5 @@
+import { createHostedDiscovery } from '../../../packages/agent-client/src/hosted-discovery.js';
+import type { DocumentFetcher } from '../../../packages/agent-client/src/website-discovery.js';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -16,6 +18,7 @@ interface Row {
   challenge: string; revision: number; verified_at: number | null; last_checked_at: number | null; health_error: string | null;
 }
 export interface RegistryOptions {
+  discoveryFetchDocument?: DocumentFetcher;
   fetchJson?: (url: string) => Promise<unknown>;
   now?: () => number;
   startHealthTimer?: boolean;
@@ -45,6 +48,20 @@ export function createRegistry(config: RegistryConfig, options: RegistryOptions 
   const fetchJson = options.fetchJson ?? fetchPublicJson;
   const app = express();
   app.disable('x-powered-by');
+  const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now });
+  const discoveryJson = express.json({ limit: '32kb' });
+  app.post('/discovery/websites', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    discoveryJson(req, res, error => {
+      if (error) { res.status(400).json({ error: 'Invalid discovery request' }); return; }
+      next();
+    });
+  }, async (req, res) => {
+    const result = await scanWebsites(req.body);
+    if (result.retryAfter) res.set('Retry-After', String(result.retryAfter));
+    res.status(result.status).json(result.body);
+  });
+
   app.use(express.json({ limit: '32kb' }));
   app.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   const get = (id: string) => db.prepare('SELECT * FROM businesses WHERE id = ?').get(id) as Row | undefined;

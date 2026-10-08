@@ -11,8 +11,8 @@ A customer should be able to tell their agent, **“I need my tires swapped,”*
 ## The agent-to-agent flow
 
 1. **Onboard a business.** Its agent reads the public website and authorized internal sources, proposes a cited operating rulebook, and obtains owner activation.
-2. **Register and become discoverable.** The business agent submits its public profile and Agent Card URL. Website-control verification and card checks activate its directory listing.
-3. **Find a suitable business agent.** The customer's agent searches by service, location, and advertised actions, then fetches the business's current Agent Card.
+2. **Become discoverable.** Publish the business's Agent Card on its website. The business agent can also register a public profile; website-control verification and card checks activate its directory listing.
+3. **Find a suitable business agent.** The customer's agent finds official websites through ordinary web search, or searches the registry, then checks the current Agent Cards against the requested service and location.
 4. **Negotiate an offer.** The agents exchange A2A messages. The business agent uses live pricing and appointment tools and requests owner approval for permitted exceptions.
 5. **Authorize and execute.** The customer's agent accepts a specific offer within a human-approved mandate. The backend checks permissions and capacity before initiating checkout.
 6. **Report the saved result.** Agents use persisted order, payment, and reservation states. A quoted offer, held appointment, verified funding, confirmed booking, and completed service are separate events.
@@ -24,10 +24,10 @@ Discovery can start with ordinary web search: GrokBot finds candidate businesses
 Ask GrokBot to read the [website-discovery skill](skills/a2a-website-discovery/SKILL.md), search for a service and area, and scan the official websites it finds. No Google Maps API key or registry credential is required. The bundled helper checks public Agent Cards and explicit website links and returns bounded evidence; it does not perform the initial web search or certify geographic/service relevance.
 
 ```bash
-node discover-sites.mjs --sites-file candidates.json --service tyre_change --area "Prague 6" --limit 10 --output report.json
+node discover-sites.mjs --sites-file candidates.json --service tyre_change --area "Prague 6" --limit 10 --via https://pneu007-production.up.railway.app --output report.json
 ```
 
-Download the helper at `/cli/discover-sites.mjs` and the skill at `/skills/a2a-website-discovery/SKILL.md` from the demo or registry origin. See the [workflow and report guide](docs/web-discovery.html). A missing card in a bounded scan is reported as “no card found,” and a discovered card's booking claims remain unverified until exercised.
+Download the helper at `/cli/discover-sites.mjs` and the skill at `/skills/a2a-website-discovery/SKILL.md` from the demo or registry origin. Hosted mode lets GrokBot scan through its network proxy while Railway retains DNS/address protections; omit `--via` for direct scans on ordinary networks. See the [workflow and report guide](docs/web-discovery.html). A missing card in a bounded scan is reported as “no card found,” and a discovered card's booking claims remain unverified until exercised.
 
 ## Components
 
@@ -48,7 +48,7 @@ The customer-facing transport uses A2A. The business bot uses a private inbox an
 All hackathon work lives in **[zabrodsk/a2a-business-platform](https://github.com/zabrodsk/a2a-business-platform)**. The earlier standalone registry repository is archived and points here.
 
 ```text
-Customer agent → Registry search → Business Agent Card
+Customer agent → Web search / optional registry → Business Agent Card
 Customer agent ↔ A2A endpoint ↔ Business agent
                                   ↓
                            Business tools

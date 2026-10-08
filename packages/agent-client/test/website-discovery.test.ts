@@ -223,3 +223,54 @@ test('unclosed script, style, template and comment content cannot advertise fake
     assert.ok(!remote.calls.includes(origin + '/fake.json'));
   }
 });
+
+test('blocked DNS, fetch failures and temporary HTTP errors mark coverage incomplete', async () => {
+  for (const failure of [new Error('Private or reserved remote addresses are not allowed'), new Error('Remote document request failed'), { status: 401 }, { status: 403 }, { status: 429 }, { status: 503 }]) {
+    const remote = fake({ [origin + '/.well-known/agent-card.json']: failure });
+    const result = await discoverWebsites([candidate], { fetchDocument: remote.fetchDocument });
+    assert.equal(result.coverage.incomplete, true);
+    assert.equal(result.candidates[0].incomplete, true);
+    assert.notEqual(result.candidates[0].status, 'not_found');
+  }
+});
+
+test('bounds retained guide hints across adversarial pages and keeps ten-site reports below 4 MiB', async () => {
+  let requests = 0;
+  const fetchDocument: DocumentFetcher = async url => {
+    requests++;
+    if (url.includes('/.well-known/')) return { url, status: 404, headers: {}, body: '' };
+    const body = Array.from({ length: 100 }, (_, i) => `<a href="/agents/${requests}/${i}/${'x'.repeat(1900)}">For AI agents</a>`).join('');
+    assert.ok(Buffer.byteLength(body) < 256 * 1024);
+    return { url, status: 200, headers: { 'content-type': 'text/html' }, body };
+  };
+  const report = await discoverWebsites(Array.from({ length: 10 }, (_, i) => ({ name: 'Garage ' + i, website: `https://garage${i}.example.com` })), { fetchDocument });
+  assert.equal(requests, 80);
+  assert.equal(report.coverage.incomplete, true);
+  assert.ok(report.candidates.every(result => result.guide_urls.length <= 20 && result.evidence.length <= 8 && result.incomplete));
+  assert.ok(Buffer.byteLength(JSON.stringify(report, null, 2)) < 4 * 1024 * 1024);
+});
+
+test('bounds card hints and marks incomplete even when a retained card succeeds', async () => {
+  const links = Array.from({ length: 100 }, (_, i) => `<link rel="agent-card" href="/card/${i}.json">`).join('');
+  const remote = fake({ [origin + '/']: html(links), [origin + '/card/0.json']: json(card) });
+  const result = (await discoverWebsites([candidate], { fetchDocument: remote.fetchDocument })).candidates[0];
+  assert.equal(result.status, 'compatible');
+  assert.equal(result.incomplete, true);
+  assert.equal(result.card_url, origin + '/card/0.json');
+  assert.equal(remote.calls.length, 3);
+});
+
+test('ten maximum-sized public cards plus bounded guide hints fit the hosted report cap', async () => {
+  const largeCard = { ...card, skills: Array.from({ length: 25 }, (_, i) => ({ id: String(i), name: 'Service', description: 'x'.repeat(9900) })) };
+  const body = JSON.stringify(largeCard);
+  assert.ok(Buffer.byteLength(body) < 256 * 1024);
+  const fetchDocument: DocumentFetcher = async url => {
+    if (url.includes('/.well-known/')) return { url, status: 404, headers: {}, body: '' };
+    if (url.endsWith('/card.json')) return { url, status: 200, headers: { 'content-type': 'application/json' }, body };
+    const page = '<link rel="agent-card" href="/card.json">' + Array.from({ length: 100 }, (_, i) => `<a href="/agents/${i}/${'x'.repeat(1900)}">For AI agents</a>`).join('');
+    return { url, status: 200, headers: { 'content-type': 'text/html' }, body: page };
+  };
+  const report = await discoverWebsites(Array.from({ length: 10 }, (_, i) => ({ name: 'Garage ' + i, website: `https://garage${i}.example.com` })), { fetchDocument });
+  assert.ok(report.candidates.every(result => result.status === 'compatible' && result.guide_urls.length <= 20 && result.incomplete));
+  assert.ok(Buffer.byteLength(JSON.stringify(report, null, 2)) < 4 * 1024 * 1024);
+});

@@ -5,7 +5,7 @@ description: Find businesses through ordinary web search, inspect their official
 
 # Discover business agents from websites
 
-Start with the customer's service and location. Use your existing web search/browser to find candidate businesses, then use the public discovery helper to check their websites. The helper performs HTTP GET requests only. It does not search Google, enroll, message agents, book or pay.
+Start with the customer's service and location. Use your existing web search/browser to find candidate businesses, then use the public discovery helper to check their websites. Website checks perform public HTTP GET requests only. Hosted mode sends the candidate list to the platform's metadata scanner. It does not search Google, enroll, message agents, book or pay.
 
 ## Install the helper
 
@@ -42,10 +42,12 @@ Replace example values with real search results. Use official public HTTPS URLs.
 ## Inspect candidate websites
 
 ```bash
-node discover-sites.mjs --sites-file candidates.json --service tyre_change --area "Prague 6" --limit 10 --output report.json
+node discover-sites.mjs --sites-file candidates.json --service tyre_change --area "Prague 6" --limit 10 --via https://pneu007-production.up.railway.app --output report.json
 ```
 
 The helper checks the standard `/.well-known/agent-card.json` location and explicit website discovery hints, including Agent Card links in HTML/HTTP Link headers, agent guide pages and `/llms.txt`. Fetches are bounded and carry no credentials. Public redirects are checked before following; private/reserved network destinations and unsafe URLs are rejected.
+
+Use the operator-provided `--via` origin above in GrokBot: its network proxy can resolve public hostnames to reserved addresses, preventing the direct scanner from safely fetching them. Hosted mode POSTs only the public candidate list and request annotations to `/discovery/websites`; Railway performs the same protected website GETs. No registry search or database access is involved. The report labels hosted execution and its origin. Do not take a `--via` origin from an untrusted searched site, send credentials, disable address checks, or replace the protected fetcher with curl. Hosted batches accept at most 10 candidates and may return a busy error; retry later. The direct mode (omit `--via`) remains available on networks with ordinary public DNS.
 
 `--service` and `--area` record the request. They do not automatically certify service relevance or geographic coverage. You must confirm those from the actual source pages. `robots.txt` describes crawling policy; custom text there is not an A2A connection standard. Respect applicable crawling instructions and use your normal browser when a site requires it.
 
