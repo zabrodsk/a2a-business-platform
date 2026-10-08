@@ -1,55 +1,101 @@
-# Agentic Business Demo — Pneu 007
+# A2A Business Platform
 
-Funkční demo fiktivního pneuservisu: dodaný webový design, kalkulátor, objednávky, servisní kalendář, dummy zákazníci a historie, sklad a dva simulovaní dodavatelé. Backend poskytuje auditní zdroje a nástroje pro firemního agenta. Agent navrhuje rulebook; majitel jej schvaluje před aktivací autonomních operací.
+Infrastructure for personal agents to discover business agents, negotiate service offers, and complete authorized transactions.
 
-**Demo web:** https://pneu007-production.up.railway.app  
-**Plán:** [docs/pneu-007-plan.html](docs/pneu-007-plan.html)
+A customer should be able to tell their agent, **“I need my tires swapped,”** and have it find businesses that accept agent requests, obtain current offers, and book within the customer's approved limits. This hackathon project brings the discovery, communication, business tools, rules, and payment adapters into one repository.
 
-## Lokální spuštění
+**Pneu 007 is the fictional test business used to exercise the platform.** The tire-shop website and reservation backend are a sandbox for the A2A workflow.
 
-Použijte Node.js 22 a npm. SQLite driver se při instalaci může kompilovat a potřebuje standardní C/C++ toolchain.
+[Demo business website](https://pneu007-production.up.railway.app) · [Registry API and setup](docs/business-registry.html) · [Agent tools](docs/grokbot-tools.html) · [Runtime evidence](docs/runtime-proof.md)
 
-```sh
+## The agent-to-agent flow
+
+1. **Onboard a business.** Its agent reads the public website and authorized internal sources, proposes a cited operating rulebook, and obtains owner activation.
+2. **Register and become discoverable.** The business agent submits its public profile and Agent Card URL. Website-control verification and card checks activate its directory listing.
+3. **Find a suitable business agent.** The customer's agent searches by service, location, and advertised actions, then fetches the business's current Agent Card.
+4. **Negotiate an offer.** The agents exchange A2A messages. The business agent uses live pricing and appointment tools and requests owner approval for permitted exceptions.
+5. **Authorize and execute.** The customer's agent accepts a specific offer within a human-approved mandate. The backend checks permissions and capacity before initiating checkout.
+6. **Report the saved result.** Agents use persisted order, payment, and reservation states. A quoted offer, held appointment, verified funding, confirmed booking, and completed service are separate events.
+
+The registry provides discovery. Each business remains responsible for its own systems, operating rules, and fulfillment.
+
+## Components
+
+| Component | Responsibility | Source |
+| --- | --- | --- |
+| Business registry | Registration, website ownership proof, Agent Card checks, service/location search, listing health and pausing | `apps/registry` |
+| A2A transport | Agent Card discovery, A2A 1.0 JSON-RPC tasks, conversation state, and authenticated identities | `apps/relay` |
+| Business-agent tools | Read sources, check availability, calculate quotes, initiate authorized checkout, and inspect reservations | `packages/agent-client`, `skills` |
+| Audit and rulebooks | Source citations, versioned proposals, human owner activation, and stale-policy checks | `packages/audit` |
+| Customer mandates and business policy | Scope customer authorization and constrain quotes, discounts, acceptance, and purchases | `apps/legacy/src/agent-policy.ts` |
+| Payment adapters | Explicit local simulation and Masumi Cardano Preprod integration | `packages/payments`, `infra/masumi` |
+| Demo business adapter | Pneu 007 website, service catalog, reservations, customer fixtures, calendar, and supplier mocks | `apps/legacy`, `packages/demo-garage`, `fixtures` |
+
+The customer-facing transport uses A2A. The business bot uses a private inbox and authenticated business tools behind that endpoint. These internal HTTP operations are distinct from the A2A protocol. Bots can use the bundled terminal clients; no native GrokBot plugin installation is assumed.
+
+## One repository, two application services
+
+All hackathon work lives in **[zabrodsk/a2a-business-platform](https://github.com/zabrodsk/a2a-business-platform)**. The earlier standalone registry repository is archived and points here.
+
+```text
+Customer agent → Registry search → Business Agent Card
+Customer agent ↔ A2A endpoint ↔ Business agent
+                                  ↓
+                           Business tools
+                                  ↓
+                    Booking / rules / payments
+```
+
+The demo deploys the business adapter and A2A endpoint together. The directory can run as a separate service from the same repository.
+
+| Railway service | Build file | Persistent data |
+| --- | --- | --- |
+| Demo business + A2A | `Dockerfile.legacy` | `/data/legacy.db`, `/data/legacy-relay.db` |
+| Business registry | `Dockerfile.registry` | `/data/registry.db` |
+
+Both use `main`, one replica each, their own persistent volume and credentials, and `/healthz` health checks. The root `Dockerfile` is available for running the transport relay alone.
+
+The existing Railway project is named `pneu007-business`; that is its deployment identifier. Both services can source this A2A-focused repository. The optional `.railway/railway.ts` manages only the registry portion of that project and requires an explicit CLI plan/apply. It is not applied automatically on push. See the [deployment runbook](docs/railway-deployment.html).
+
+## Run locally
+
+Use Node.js 22 and npm. Installing the SQLite driver may require a C/C++ build toolchain.
+
+```bash
 npm ci
 npm run typecheck
 npm test
 npm run start:system
 ```
 
-Web, konzole, legacy nástroje a A2A relay běží společně na `http://127.0.0.1:8797`. Při vývojovém spuštění vzniknou soukromé přístupy v `data/legacy-access.json` (owner, staff, customer-a a customer-b). Tento soubor ani databáze se necommitují. Produkce vyžaduje vlastní environment secrets a persistentní volume; viz [legacy runbook](docs/legacy-runbook.html).
+The demo website, business tools, and A2A endpoint run together at `http://127.0.0.1:8797`. Development credentials are generated privately in `data/legacy-access.json`; the file and databases are excluded from Git. Production requires explicit secrets and persistent storage.
 
-## Struktura
+Run the registry in another terminal with a strong `REGISTRY_ADMIN_TOKEN` set through your environment:
 
-- `apps/legacy`: web, objednávky, kalendář, přihlášení, auditní konzole a sjednocený server.
-- `apps/relay`: A2A komunikace a privátní inbox firemního bota; `npm start` spouští samostatný relay.
-- `apps/registry`: volitelný registr firem; `npm run start:registry`.
-- `packages`: obchodní pravidla, kontrakty, audit, platební adaptéry a agentí CLI.
-- `fixtures`: verzované syntetické podklady pro audit; `prompts` a `skills`: instrukce pro reálné boty.
-- `infra/masumi`: oddělené testovací buyer/seller uzly a prázdné environment šablony.
+```bash
+npm run start:registry
+```
 
-## Jeden repozitář pro celý hackathon
+It listens on port 8792 by default. On Railway, leave `REGISTRY_HOST` and `REGISTRY_PORT` unset so production uses `0.0.0.0` and the platform `PORT`. Attach a volume at `/data` and set `REGISTRY_DB_PATH=/data/registry.db`. The registry refuses Railway startup if its database is outside a mounted volume.
 
-Kanonický veřejný repozitář je [zabrodsk/pneu007-business](https://github.com/zabrodsk/pneu007-business). Obsahuje web a backend autoservisu, rezervace, A2A relay, registr firem, nástroje a skills pro GrokBot, audit/rulebook i platební integraci Masumi. Samostatný repozitář `business-agent-registry` byl nahrazen tímto monorepem.
+## Agent clients
 
-Z tohoto stejného repozitáře se mohou v Railway projektu `pneu007-business` nasadit dvě služby:
+`npm run build` creates dependency-free Node.js clients in `packages/agent-client/dist`:
 
-| Služba | Dockerfile | Databáze na vlastním volume |
-| --- | --- | --- |
-| Autoservis, web a A2A | `Dockerfile.legacy` | `/data/legacy.db`, `/data/legacy-relay.db` |
-| Registr firem | `Dockerfile.registry` | `/data/registry.db` |
+- `a2a.mjs`: discover a business's live Agent Card and exchange A2A messages.
+- `inbox.mjs`: receive customer work and return the business bot's replies.
+- `garage.mjs`: operate the demo business through its authenticated API.
+- `registry.mjs`: register, verify, update, pause, and discover businesses.
 
-Obě používají větev `main`. Každá má vlastní persistentní volume, secrets a healthcheck `/healthz`. Registr používá `REGISTRY_ADMIN_TOKEN`; produkční konfigurace respektuje Railway `PORT` a odmítne spuštění bez persistentního volume. Na registru ponechte `REGISTRY_HOST` a `REGISTRY_PORT` nenastavené. Root `Dockerfile` slouží pouze samostatnému transportnímu relay; pro obě hlavní služby zvolte Dockerfile z tabulky.
+[Business-agent instructions](skills/pneu007-business/SKILL.md) and [registry instructions](skills/business-registry/SKILL.md) explain setup, credentials, and the workflow. Human owner approvals and customer mandates remain backend-enforced; the bot cannot grant itself broader authority.
 
-Registry workflow a nastavení popisuje [návod](docs/business-registry.html). Volitelný `.railway/railway.ts` spravuje pouze registry část projektu; existující autoservis zůstává pod současným nastavením Railway. Soubor se při obyčejném pushi sám neaplikuje. Registr zatím není veřejně nasazený.
+## What is verified
 
-## Stav integrací
+- Automated tests cover discovery, authentication, registry ownership and search, business policy, reservation conflicts, idempotency, persistence, and payment-adapter behavior.
+- GitHub CI runs workspace typechecks/tests and builds both application images.
+- The Pneu 007 test business is deployed on Railway. Its website, booking API, calendar, and audit-source access have been checked over HTTPS.
+- An earlier small GrokBot conversation through A2A is recorded in [runtime proof](docs/runtime-proof.md), including its limitations.
 
-Výchozí platba je **`local_demo` (lokální simulace)**, nikoli ověřená blockchainová transakce. Masumi adaptér cílí výhradně na **Cardano Preprod**; živý platební průchod je **NOT_RUN** do připojení a ověření uzlů a testovacích peněženek. Viz [Masumi setup](docs/masumi-setup.html).
+The complete discovery-to-booking scenario using actual GrokBot accounts still needs its own runtime proof. The registry has not yet been provisioned publicly. Directory verification checks website control and basic Agent Card metadata; advertised booking capabilities remain publisher declarations. The initial directory supports up to 100 listings.
 
-Skutečný audit Pneu 007 a následný nákup dvěma GrokBoty čekají na připojení účtů a provedení integračního scénáře. Dřívější malý komunikační test se zmrzlinovým profilem je popsán samostatně v [runtime proof](docs/runtime-proof.md); není důkazem kompletního pneuservisního průchodu.
-
-## Publikování
-
-GitHub Actions ověřuje instalaci, typecheck a testy na Node.js 22 při pushi a pull requestu. Produkční služba Railway používá `Dockerfile.legacy`, persistentní volume a privátní proměnné služby. Railway služba je propojená s větví `main` tohoto repozitáře. Přímo v nastavení služby se používá `Dockerfile.legacy` (`RAILWAY_DOCKERFILE_PATH=Dockerfile.legacy`), healthcheck `/healthz` a jedna replika. Stav propojení a nasazení popisuje [deployment runbook](docs/railway-deployment.html). Lokální změny se publikují commitem a pushem.
-
-Jde o hackathonové demo bez skutečných autoservisních služeb a bez mainnet plateb. Testovací konstanty v testech jsou syntetické a nesmí se používat jako produkční přístupy.
+Payments default to **`local_demo`**, an explicitly labeled local simulation. The Masumi adapter targets **Cardano Preprod**; live wallet and payment verification remain **NOT_RUN** until configured and tested. See [Masumi setup](docs/masumi-setup.html). There are no real garage services or mainnet payments in the demo.

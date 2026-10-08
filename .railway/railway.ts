@@ -6,7 +6,7 @@ export const partial = 'business-agent-registry';
 export default defineRailway(() => {
   const data = volume('registry-data', { region: 'europe-west4', sizeMB: 1024 });
   const registry = service('business-agent-registry', {
-    source: github('zabrodsk/pneu007-business', { branch: 'main' }),
+    source: github('zabrodsk/a2a-business-platform', { branch: 'main' }),
     build: { builder: 'DOCKERFILE', dockerfilePath: 'Dockerfile.registry' },
     start: 'node --import tsx apps/registry/src/server.ts',
     healthcheck: '/healthz',
