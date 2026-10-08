@@ -682,3 +682,61 @@ test('customer mandate approval page uses customer-scoped reads and human sessio
   assert.equal((await customerA.call(`/api/admin/mandates/${mandateId}/approve`, {})).status, 200);
   assert.deepEqual(f.store.listOrders(), ordersBefore); assert.deepEqual(f.store.listPaymentIntents(), paymentsBefore);
 });
+
+test('Stripe Link checkout is human-approved, owner-bound and fulfilled only by verified provider evidence', async t => {
+  const stripeEnv = { STRIPE_SECRET_KEY: 'rk_test_routeFixture', STRIPE_ACCOUNT_ID: 'acct_routeFixture', STRIPE_WEBHOOK_SECRET: 'whsec_routeFixture' };
+  let session: Record<string, unknown> | undefined;
+  let creates = 0;
+  const stripeFetch: typeof fetch = async (url, options) => {
+    assert.equal(new URL(String(url)).origin, 'https://api.stripe.com');
+    if (String(url).endsWith('/account')) return Response.json({ object: 'account', id: stripeEnv.STRIPE_ACCOUNT_ID });
+    if (options?.method === 'POST') {
+      creates++;
+      const body = new URLSearchParams(String(options.body));
+      const metadata = Object.fromEntries([...body].filter(([key]) => key.startsWith('metadata[')).map(([key, value]) => [key.slice(9, -1), value]));
+      session = { object: 'checkout.session', id: 'cs_test_routeFixture', mode: 'payment', livemode: false,
+        status: 'open', payment_status: 'unpaid', amount_total: Number(body.get('line_items[0][price_data][unit_amount]')),
+        currency: 'czk', client_reference_id: body.get('client_reference_id'), metadata,
+        expires_at: Number(body.get('expires_at')), created: Math.floor(clock().getTime() / 1000),
+        url: 'https://checkout.stripe.com/c/pay/cs_test_routeFixture', payment_intent: null };
+    }
+    return Response.json(session);
+  };
+  const f = await fixture(t, stripeEnv, { stripeFetch });
+  const a = await f.login('customer-a'), b = await f.login('customer-b');
+  const order = await createHumanOrder(a.call);
+  const route = `/api/orders/${order.id}/link-checkout`;
+  assert.equal((await f.publicCall(route, { payment_mode: 'deposit', confirm: true })).status, 401);
+  assert.equal((await b.call(route, { payment_mode: 'deposit', confirm: true })).status, 403);
+  assert.equal((await f.agentA(route, { payment_mode: 'deposit', confirm: true })).status, 403);
+  assert.equal((await a.call(route, { payment_mode: 'deposit', confirm: false })).status, 400);
+  assert.equal((await a.call(route, { payment_mode: 'deposit', confirm: true, amount_minor: 1 })).status, 400);
+  assert.equal(creates, 0);
+  const config = await (await f.publicCall('/api/payments/config')).json();
+  assert.equal(config.stripe_link.ready, true);
+  assert.ok(!JSON.stringify(config).includes(stripeEnv.STRIPE_SECRET_KEY));
+  const started = await a.call(route, { payment_mode: 'deposit', confirm: true });
+  assert.equal(started.status, 200, await started.clone().text());
+  assert.equal((await started.json()).stripe_checkout.state, 'open');
+  assert.equal((await a.call(route, { payment_mode: 'deposit', confirm: true })).status, 200);
+  assert.equal(creates, 1);
+  assert.equal((await a.call(`/api/orders/${order.id}/checkout`, { payment_mode: 'deposit', confirm: true, max_network_fee: '2000000' })).status, 409);
+  assert.equal((await b.call(`/api/orders/${order.id}/link-payment`)).status, 403);
+  assert.equal(f.store.calendar().filter(value => value.order_id === order.id).length, 0);
+  Object.assign(session!, { status: 'complete', payment_status: 'paid', payment_intent: 'pi_routeFixture', url: null });
+  const raw = JSON.stringify({ id: 'evt_routeFixture', type: 'checkout.session.completed', livemode: false, data: { object: session } });
+  const timestamp = Math.floor(clock().getTime() / 1000);
+  const { createHmac } = await import('node:crypto');
+  const signature = `t=${timestamp},v1=${createHmac('sha256', stripeEnv.STRIPE_WEBHOOK_SECRET).update(`${timestamp}.${raw}`).digest('hex')}`;
+  const deliver = (body: string) => fetch(f.base + '/api/stripe/webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'stripe-signature': signature }, body });
+  assert.equal((await deliver(raw + ' ')).status, 400);
+  assert.equal((await deliver(raw)).status, 200);
+  assert.equal((await deliver(raw)).status, 200);
+  const final = await (await a.call(`/api/orders/${order.id}`)).json();
+  assert.equal(final.stripe_checkout.state, 'paid');
+  assert.equal(final.booking.status, 'confirmed');
+  assert.equal(final.payment, null);
+  assert.equal(final.order.balance_minor, 197200);
+  assert.equal(f.store.listPaymentIntents().length, 0);
+  assert.deepEqual(f.store.db.prepare('SELECT COUNT(*) n FROM payments WHERE order_id=?').get(order.id), { n: 1 });
+});
