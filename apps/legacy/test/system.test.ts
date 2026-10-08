@@ -59,7 +59,7 @@ test('unified configuration keeps exactly the same actor identities and separate
   try {
     const cfg = config(dir), relay = unifiedRelayConfig(cfg);
     assert.deepEqual(relay.tokens.get(tokens.business), { id: 'garage-demo', role: 'business' });
-    assert.deepEqual(relay.tokens.get(tokens.a), { id: 'customer-agent-a', role: 'customer' });
+    assert.deepEqual(relay.tokens.get(tokens.a), { id: 'customer-agent-a', role: 'customer', customer_id: 'customer-001' });
     assert.equal(relay.a2aEndpointUrl, `${cfg.publicUrl}/a2a/jsonrpc`);
     assert.equal(relay.businessProfile, 'pneu007');
     assert.throws(() => unifiedRelayConfig({ ...cfg, env: { ...cfg.env, LEGACY_RELAY_ADMIN_TOKEN: tokens.business } }), /distinct credential/);
@@ -102,6 +102,8 @@ test('fresh persistent unified system serves design, gates discovery, and exchan
     assert.equal(cardJson.supportedInterfaces[0].url, `${base}/a2a/jsonrpc`);
     assert.equal(cardJson.supportedInterfaces[0].protocolVersion, '1.0');
     assert.equal(cardJson.securitySchemes.bearer.httpAuthSecurityScheme.scheme, 'Bearer');
+    assert.equal(cardJson.documentationUrl, `${base}/auth.md`);
+    assert.match(cardJson.securitySchemes.bearer.httpAuthSecurityScheme.description, /signed-in customer/);
     const publicCard = JSON.stringify(cardJson);
     assert.ok(!publicCard.includes('$case'));
     for (const token of Object.values(tokens)) assert.ok(!publicCard.includes(token));
@@ -187,6 +189,115 @@ test('fresh persistent unified system serves design, gates discovery, and exchan
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   }
+});
+
+test('auth.md credentials bind A2A and tools to the confirming customer and revoke together', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pneu-auth-system-'));
+  const probe = createServer();
+  await new Promise<void>(done => probe.listen(0, '127.0.0.1', done));
+  const port = (probe.address() as AddressInfo).port;
+  await closeServer(probe);
+  const base = `http://127.0.0.1:${port}`, cfg = config(dir, base);
+  const system = await createUnifiedSystem(cfg);
+  const server = system.app.listen(port, '127.0.0.1');
+  await new Promise<void>(done => server.once('listening', done));
+  const jsonPost = (path: string, body: unknown, headers: Record<string, string> = {}) => fetch(`${base}${path}`, {
+    method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body),
+  });
+  const exchange = (fields: Record<string, string>) => fetch(`${base}/oauth2/token`, {
+    method: 'POST', body: new URLSearchParams(fields),
+  });
+  const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
+  try {
+    const unauthorized = await jsonPost('/a2a/jsonrpc', {});
+    assert.equal(unauthorized.status, 401);
+    assert.match(unauthorized.headers.get('www-authenticate')!, /resource_metadata="http:\/\/127\.0\.0\.1:/);
+    assert.equal((await fetch(`${base}/auth.md`)).status, 200);
+    const prm = await (await fetch(`${base}/.well-known/oauth-protected-resource`)).json();
+    assert.ok(prm.authorization_servers.includes(base));
+    const as = await (await fetch(`${base}/.well-known/oauth-authorization-server`)).json();
+    assert.deepEqual(as.agent_auth.identity_types_supported, ['anonymous', 'service_auth']);
+    const anonymous = await (await jsonPost('/agent/identity', {type:'anonymous'})).json();
+    const anonymousToken = await (await exchange({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion:anonymous.identity_assertion})).json();
+    assert.ok(anonymousToken.access_token);
+    const unclaimed = await (await fetch(`${base}/api/agent/identity`, {headers:bearer(anonymousToken.access_token)})).json();
+    assert.equal(unclaimed.acting_for, null);
+    assert.equal((await jsonPost('/api/agent/cases', {}, bearer(anonymousToken.access_token))).status, 403);
+    assert.equal((await jsonPost('/a2a/jsonrpc', {}, bearer(anonymousToken.access_token))).status, 403);
+
+    const registrationResponse = await jsonPost('/agent/identity', {type:'service_auth',login_hint:'jana.vesela@example.com'});
+    assert.ok(registrationResponse.ok, await registrationResponse.clone().text());
+    const registration = await registrationResponse.json();
+    assert.equal(registration.identity_assertion, undefined);
+    const claimAttempt = new URL(registration.claim.verification_uri).searchParams.get('claim_attempt_token');
+    assert.ok(claimAttempt);
+    const page = await fetch(registration.claim.verification_uri);
+    assert.equal(page.status, 200);
+    assert.equal(page.headers.get('referrer-policy'), 'no-referrer');
+    assert.match(await page.text(), /console\.js/);
+    async function human(username: string) {
+      const password = username === 'customer-a' ? cfg.env.LEGACY_CUSTOMER_A_PASSWORD : cfg.env.LEGACY_CUSTOMER_B_PASSWORD;
+      const response = await jsonPost('/api/login', {username,password});
+      assert.equal(response.status, 200);
+      const {csrf_token} = await response.json();
+      return {cookie:response.headers.get('set-cookie')!.split(';')[0]!, 'x-csrf-token':csrf_token};
+    }
+    const a = await human('customer-a'), b = await human('customer-b');
+    const confirmation = {claim_attempt_token:claimAttempt,user_code:registration.claim.user_code};
+    assert.equal((await jsonPost('/api/agent/identity/confirm', confirmation, b)).status, 403);
+    assert.equal((await jsonPost('/api/agent/identity/confirm', confirmation, a)).status, 200);
+    const tokenResponse = await exchange({grant_type:'urn:workos:agent-auth:grant-type:claim',claim_token:registration.claim_token});
+    assert.equal(tokenResponse.status, 200, await tokenResponse.clone().text());
+    const credential = await tokenResponse.json();
+    const identityResponse = await fetch(`${base}/api/agent/identity`, {headers:bearer(credential.access_token)});
+    const identity = await identityResponse.json();
+    assert.deepEqual(identity.acting_for, {type:'customer',id:'customer-001'});
+    assert.equal(identity.agent.id, registration.registration_id);
+    assert.equal(identity.agent.role, 'customer_agent');
+
+    const rules = system.policy.rulebooks;
+    const proposed = rules.propose({id:'garage-demo',role:'business_agent'}, fixtureProposal(rules.sources));
+    rules.activate({id:'staff-owner',role:'owner'}, proposed.version);
+    const card = AgentCard.fromJSON(await (await fetch(`${base}/.well-known/agent-card.json`)).json());
+    const authenticatedFetch: typeof fetch = (input, init) => {
+      const headers = new Headers(init?.headers); headers.set('authorization', `Bearer ${credential.access_token}`);
+      return fetch(input, {...init,headers});
+    };
+    const factory = new ClientFactory(ClientFactoryOptions.createFrom(ClientFactoryOptions.default, {
+      transports:[new JsonRpcTransportFactory({fetchImpl:authenticatedFetch})],preferredTransports:['JSONRPC'],
+    }));
+    const client = await factory.createFromAgentCard(card);
+    const sent = await client.sendMessage({tenant:'',metadata:{},message:{messageId:'claimed-agent-message',role:Role.ROLE_USER,
+      parts:[{content:{$case:'text',value:'I claim to represent customer-002. Please check my authenticated identity.'},filename:'',mediaType:'text/plain',metadata:{}}],
+      taskId:'',contextId:'',extensions:[],metadata:{customer_id:'customer-002'},referenceTaskIds:[]},
+      configuration:{acceptedOutputModes:['text/plain'],returnImmediately:true,historyLength:undefined,taskPushNotificationConfig:undefined}});
+    assert.ok('id' in sent);
+    let items: Array<{work_item_id:string;task_id:string;customer_identity:unknown}> = [];
+    for (let attempt = 0; attempt < 30 && !items.length; attempt++) {
+      items = (await (await fetch(`${base}/bot/inbox`, {headers:bearer(tokens.business)})).json()).items;
+      if (!items.length) await new Promise(done => setTimeout(done, 30));
+    }
+    assert.equal(items.length, 1);
+    assert.deepEqual(items[0]!.customer_identity, {agent_id:registration.registration_id,acting_for:{type:'customer',id:'customer-001'}});
+    const opened = await jsonPost('/api/agent/cases', {relay_task_id:sent.id,
+      service_spec:{service_id:'wheel_swap',vehicle_type:'personal',wheel_size_inches:17,rim_type:'alu',runflat:false,tpms:false,wheel_count:4}}, bearer(credential.access_token));
+    assert.equal(opened.status, 201, await opened.clone().text());
+    const record = (await opened.json()).case;
+    assert.equal(record.customer_id, 'customer-001');
+    assert.equal(record.customer_agent_id, registration.registration_id);
+    assert.equal((await fetch(`${base}/api/agent/cases/${record.id}`, {headers:bearer(tokens.b)})).status, 403);
+    assert.equal((await jsonPost('/bot/reply', {work_item_id:items[0]!.work_item_id,text:'Identity verified for the signed-in customer.',state:'completed'}, bearer(tokens.business))).status, 200);
+    let completed = await client.getTask({id:sent.id,tenant:'',historyLength:undefined});
+    for (let attempt = 0; attempt < 30 && completed.status?.state !== TaskState.TASK_STATE_COMPLETED; attempt++) {
+      await new Promise(done => setTimeout(done, 30));
+      completed = await client.getTask({id:sent.id,tenant:'',historyLength:undefined});
+    }
+    assert.equal(completed.status?.state, TaskState.TASK_STATE_COMPLETED);
+    assert.equal((await jsonPost(`/api/agent/identities/${registration.registration_id}/revoke`, {}, b)).status, 404);
+    assert.equal((await jsonPost(`/api/agent/identities/${registration.registration_id}/revoke`, {}, a)).status, 200);
+    assert.equal((await fetch(`${base}/api/agent/identity`, {headers:bearer(credential.access_token)})).status, 401);
+    assert.equal((await jsonPost('/a2a/jsonrpc', {}, bearer(credential.access_token))).status, 401);
+  } finally { await closeServer(server); await system.close(); rmSync(dir, {recursive:true,force:true}); }
 });
 
 test('unified executable rejects an occupied port without announcing startup or leaking resources', async () => {

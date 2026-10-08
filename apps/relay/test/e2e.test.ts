@@ -324,7 +324,7 @@ test('enrollment: one-time code issues a working token without exposing it', asy
   const bizUrl2 = await mk('business', 'garage-demo');
   const ok = await cli(INBOX, ['enroll', bizUrl2], env);
   assert.equal(ok.code, 0, ok.err);
-  assert.match(ok.out, /Enrolled as garage-demo \(business\)/);
+  assert.match(ok.out, /Business inbox enrolled\. Credentials saved privately\./);
   const saved = JSON.parse((await import('node:fs')).readFileSync(cfgFile, 'utf8'));
   assert.ok(!ok.out.includes(saved.token), 'token must not be printed');
   assert.equal((await import('node:fs')).statSync(cfgFile).mode & 0o777, 0o600);

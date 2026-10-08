@@ -1,6 +1,8 @@
 // inbox — the Business agent's side of the relay. Private API, NOT A2A.
 // Config: RELAY_URL and RELAY_TOKEN env vars, or ~/.a2a/inbox.json {"url": "...", "token": "..."}.
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -9,6 +11,7 @@ const HELP = `inbox — pending customer conversations for the business agent
 
 Usage:
   inbox enroll <redeem-url>           One-time setup: redeem an enrollment code, save the token locally
+  inbox use-garage                    Import saved business tools credentials without a network request
   inbox read                          Claim and show all pending work items
   inbox wait [--timeout SEC]          Block until work arrives (default 50 s, max 55), then show it
   inbox watch [--minutes N]           Repeat 'wait' for N minutes (default 20); prints items as they come
@@ -22,40 +25,89 @@ Usage:
 
 Each work item is one customer message waiting for your answer. Answer every item exactly once.
 --state input-required (default) hands the turn back to the customer; completed/rejected ends the task.
-Config: RELAY_URL + RELAY_TOKEN, or ~/.a2a/inbox.json. The token is never printed.`;
+Config: RELAY_URL + RELAY_TOKEN, or INBOX_CONFIG (default ~/.a2a/inbox.json).
+use-garage reads GARAGE_CONFIG (default ~/.a2a/garage.json). Use a separate INBOX_CONFIG for each business.
+The token is never printed.`;
 
 class CliError extends Error {}
 
 const configFile = () => process.env.INBOX_CONFIG ?? join(homedir(), '.a2a', 'inbox.json');
 
+type InboxConfig = { url: string; token: string };
+function validatedConfig(value: unknown, httpsOnly = false): InboxConfig {
+  try {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
+    const { url, token } = value as Partial<InboxConfig>;
+    if (typeof url !== 'string' || typeof token !== 'string' || token.length < 24 || token.length > 4096 || !/^[A-Za-z0-9._~+/-]+=*$/.test(token)) throw new Error();
+    const parsed = new URL(url);
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
+    if (!/^https?:\/\/[^/?#]+\/?$/.test(url) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== '/'
+      || (parsed.protocol !== 'https:' && (httpsOnly || parsed.protocol !== 'http:' || !local))) throw new Error();
+    return { url: parsed.origin, token };
+  } catch { throw new CliError('Invalid private inbox configuration; use a valid business HTTPS origin and credential.'); }
+}
+function readPrivateConfig(file: string): unknown {
+  try { return JSON.parse(readFileSync(file, 'utf8')); }
+  catch { throw new CliError('Cannot read private configuration; check the file and enroll again.'); }
+}
+function saveConfig(file: string, value: InboxConfig) {
+  mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+  const temporary = `${file}.${randomBytes(8).toString('hex')}.tmp`;
+  try {
+    writeFileSync(temporary, JSON.stringify(value) + '\n', { mode: 0o600, flag: 'wx' });
+    chmodSync(temporary, 0o600);
+    renameSync(temporary, file);
+  } catch { throw new CliError('Cannot save private inbox configuration.'); }
+  finally { rmSync(temporary, { force: true }); }
+}
 function config() {
-  let url = process.env.RELAY_URL;
-  let token = process.env.RELAY_TOKEN;
   const file = configFile();
-  if ((!url || !token) && existsSync(file)) {
-    const c = JSON.parse(readFileSync(file, 'utf8'));
-    url ||= c.url;
-    token ||= c.token;
+  const saved = (!process.env.RELAY_URL || !process.env.RELAY_TOKEN) && existsSync(file)
+    ? validatedConfig(readPrivateConfig(file)) : undefined;
+  const url = process.env.RELAY_URL || saved?.url;
+  const token = process.env.RELAY_TOKEN || saved?.token;
+  if (!url || !token) throw new CliError('Set RELAY_URL and RELAY_TOKEN, or run inbox use-garage with INBOX_CONFIG.');
+  const resolved = validatedConfig({ url, token });
+  if (!process.env.RELAY_TOKEN && saved && resolved.url !== saved.url) {
+    throw new CliError('Saved credential belongs to another origin; select another INBOX_CONFIG.');
   }
-  if (!url || !token) throw new CliError(`Set RELAY_URL and RELAY_TOKEN, or create ${file}`);
-  return { url: url.replace(/\/$/, ''), token };
+  return resolved;
 }
 
 async function call(path: string, init: RequestInit = {}) {
   const { url, token } = config();
-  const res = await fetch(`${url}${path}`, {
-    ...init,
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...(init.headers ?? {}) },
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new CliError(`${res.status}: ${body.error ?? res.statusText}`);
-  return body;
+  const secrets = [token];
+  if (typeof init.body === 'string') {
+    try { const key = JSON.parse(init.body).key; if (typeof key === 'string' && key) secrets.push(key); } catch { /* no key */ }
+  }
+  try {
+    const res = await fetch(`${url}${path}`, {
+      ...init, redirect: 'error', signal: AbortSignal.timeout(path.startsWith('/bot/wait?') ? 65_000 : 30_000),
+      headers: { 'content-type': 'application/json', ...(init.headers ?? {}), authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      if (res.status === 400 && path === '/bot/doorbell') {
+        const denied = await res.json().catch(() => ({}));
+        if (typeof denied.error === 'string' && /not allowed/.test(denied.error)) {
+          throw new CliError('Webhook host not allowed; use the configured HTTPS allowlist.');
+        }
+      }
+      throw new CliError(`Inbox request failed (HTTP ${res.status}).`);
+    }
+    let text = await res.text();
+    for (const secret of secrets) text = text.split(secret).join('[REDACTED]');
+    return JSON.parse(text);
+  } catch (error) {
+    if (error instanceof CliError) throw error;
+    throw new CliError('Inbox request failed or timed out; check the configured origin and retry.');
+  }
 }
 
 interface Item {
   work_item_id: string;
   task_id: string;
   customer: string;
+  customer_identity?: { agent_id: string; acting_for: { type: string; id: string } | null };
   turn: number;
   max_turns: number;
   history: Array<{ from: string; text: string; data?: unknown }>;
@@ -67,6 +119,9 @@ function printItems(items: Item[], json: boolean) {
   for (const it of items) {
     console.log(`=== work item ${it.work_item_id}`);
     console.log(`task ${it.task_id} · customer ${it.customer} · your reply is turn ${it.turn}/${it.max_turns}`);
+    if (it.customer_identity) {
+      console.log(`Authenticated agent: ${it.customer_identity.agent_id} · acting for: ${it.customer_identity.acting_for?.id ?? 'no linked customer'}`);
+    }
     for (const m of it.history) {
       console.log(`[${m.from}] ${m.text}`);
       if (m.data !== undefined) console.log(`[${m.from} data] ${JSON.stringify(m.data)}`);
@@ -75,9 +130,9 @@ function printItems(items: Item[], json: boolean) {
   }
 }
 
-async function main() {
+export async function inboxMain(rawArgs = process.argv.slice(2)) {
   const { values, positionals } = parseArgs({
-    allowPositionals: true,
+    args: rawArgs, allowPositionals: true,
     options: {
       state: { type: 'string' },
       key: { type: 'string' },
@@ -94,26 +149,46 @@ async function main() {
   if (!cmd || values.help) return void console.log(HELP);
 
   switch (cmd) {
+    case 'use-garage': {
+      if (args.length || Object.entries(values).some(([name, value]) => !['json', 'help', 'test'].includes(name) || value)) {
+        throw new CliError('usage: inbox use-garage (set GARAGE_CONFIG and INBOX_CONFIG through the environment)');
+      }
+      const source = readPrivateConfig(process.env.GARAGE_CONFIG ?? join(homedir(), '.a2a', 'garage.json'));
+      if (!source || typeof source !== 'object' || Array.isArray(source) || (source as { role?: unknown }).role !== 'business_agent') {
+        throw new CliError('Garage configuration must belong to a business agent.');
+      }
+      const imported = validatedConfig(source, true);
+      const file = configFile();
+      if (existsSync(file) && validatedConfig(readPrivateConfig(file)).url !== imported.url) {
+        throw new CliError('Existing inbox belongs to another origin; select another INBOX_CONFIG.');
+      }
+      saveConfig(file, imported);
+      console.log('Business inbox configured from garage credentials. Credentials saved privately.');
+      return;
+    }
     case 'enroll': {
       const [redeemUrl] = args;
       if (!redeemUrl) throw new CliError('usage: inbox enroll <redeem-url>');
-      const res = await fetch(redeemUrl, { method: 'POST' });
+      const res = await fetch(redeemUrl, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30_000) });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new CliError(`${res.status}: ${body.error ?? res.statusText}`);
-      if (body.role !== 'business') throw new CliError(`This code is for role ${body.role}, not business.`);
+      if (!res.ok) throw new CliError(`Enrollment failed (HTTP ${res.status}).`);
+      if (body.role !== 'business') throw new CliError('Enrollment is not for a business agent.');
       const file = configFile();
-      mkdirSync(dirname(file), { recursive: true });
-      writeFileSync(file, JSON.stringify({ url: body.url, token: body.token }, null, 2), { mode: 0o600 });
-      chmodSync(file, 0o600);
-      console.log(`Enrolled as ${body.id} (${body.role}) at ${body.url}. Token saved to ${file} (not shown).`);
+      saveConfig(file, validatedConfig(body));
+      console.log('Business inbox enrolled. Credentials saved privately.');
       return;
     }
     case 'read':
       return printItems((await call('/bot/inbox')).items, json);
-    case 'wait':
-      return printItems((await call(`/bot/wait?timeout=${Number(values.timeout ?? 50)}`)).items, json);
+    case 'wait': {
+      const timeout = Number(values.timeout ?? 50);
+      if (!Number.isFinite(timeout) || timeout < 1 || timeout > 55) throw new CliError('timeout must be between 1 and 55 seconds.');
+      return printItems((await call(`/bot/wait?timeout=${timeout}`)).items, json);
+    }
     case 'watch': {
-      const until = Date.now() + Number(values.minutes ?? 20) * 60_000;
+      const minutes = Number(values.minutes ?? 20);
+      if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 120) throw new CliError('minutes must be greater than zero and at most 120.');
+      const until = Date.now() + minutes * 60_000;
       while (Date.now() < until) {
         const { items } = await call('/bot/wait?timeout=50');
         if (items.length) {
@@ -154,7 +229,7 @@ async function main() {
         console.log(
           r.test_ring.status === 200
             ? 'Test ring: HTTP 200, so a routine run should have started.'
-            : `Test ring failed: ${r.test_ring.status ?? ''} ${r.test_ring.error ?? ''}`.trim(),
+            : `Test ring failed${r.test_ring.status ? ` (HTTP ${r.test_ring.status})` : ''}.`,
         );
       }
       return;
@@ -178,7 +253,7 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(`error: ${err instanceof CliError ? err.message : (err?.message ?? err)}`);
-  process.exit(1);
+if (process.argv[1] === fileURLToPath(import.meta.url)) inboxMain().catch((err) => {
+  console.error(`error: ${err instanceof CliError ? err.message : 'Inbox command failed; check configuration and try again.'}`);
+  process.exitCode = 1;
 });

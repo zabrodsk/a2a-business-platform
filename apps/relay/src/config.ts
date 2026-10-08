@@ -2,7 +2,9 @@
 
 export interface Identity {
   id: string;
-  role: 'customer' | 'business' | 'admin';
+  role: 'customer' | 'business' | 'admin' | 'unclaimed';
+  /** Server-verified local account binding, never taken from an A2A message. */
+  customer_id?: string;
 }
 
 export interface Config {
@@ -25,6 +27,9 @@ export interface Config {
   businessProfile: string;
   /** Set at runtime by the relay: resolves tokens issued via enrollment codes (by SHA-256 hash). */
   lookupIssuedToken?: (tokenHash: string) => Identity | undefined;
+  /** Credentials managed by the business adapter, shared by tools and A2A. */
+  lookupAgentToken?: (token: string) => Identity | undefined;
+  authResourceMetadataUrl?: string;
 }
 
 function parseTokens(env: NodeJS.ProcessEnv): Map<string, Identity> {

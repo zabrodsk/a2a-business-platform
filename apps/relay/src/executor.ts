@@ -45,6 +45,14 @@ export class RelayExecutor implements AgentExecutor {
   execute = async (rc: RequestContext, bus: ExecutionEventBus): Promise<void> => {
     const { taskId, contextId, userMessage } = rc;
     const owner = rc.context.user?.userName ?? 'unknown';
+    const identity = rc.context.user instanceof RelayUser ? rc.context.user.identity : undefined;
+    const summary = {
+      ...summarizeMessage(userMessage),
+      authenticated_sender: {
+        agent_id: owner,
+        acting_for: identity?.customer_id ? { type: 'customer', id: identity.customer_id } : null,
+      },
+    };
     const now = () => new Date().toISOString();
 
     const task: Task = rc.task ?? {
@@ -60,7 +68,7 @@ export class RelayExecutor implements AgentExecutor {
       task_id: taskId,
       actor: owner,
       kind: rc.task ? 'customer_message' : 'task_created',
-      detail: summarizeMessage(userMessage),
+      detail: summary,
     });
 
     const status = (state: TaskState, message?: Message) =>
@@ -80,7 +88,7 @@ export class RelayExecutor implements AgentExecutor {
       context_id: contextId,
       owner,
       customer_message_id: userMessage.messageId,
-      message_json: JSON.stringify(summarizeMessage(userMessage)),
+      message_json: JSON.stringify(summary),
     });
     this.doorbell.ring('new_message');
 

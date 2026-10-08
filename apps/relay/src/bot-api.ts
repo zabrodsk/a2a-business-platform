@@ -21,12 +21,14 @@ export function botRouter(cfg: Config, db: RelayDb, doorbell: Doorbell, executor
   const view = async (item: WorkItem) => {
     const task = await executor.loadForOwner(item.owner, item.task_id);
     const history = task ? conversation(task).map(summarizeMessage) : [];
-    if (!history.some((m) => m.message_id === item.customer_message_id)) history.push(JSON.parse(item.message_json));
+    const { authenticated_sender, ...message } = JSON.parse(item.message_json);
+    if (!history.some((m) => m.message_id === item.customer_message_id)) history.push(message);
     return {
       work_item_id: item.id,
       task_id: item.task_id,
       context_id: item.context_id,
       customer: item.owner,
+      customer_identity: authenticated_sender ?? { agent_id: item.owner, acting_for: null },
       turn: db.countRepliesForTask(item.task_id) + 1,
       max_turns: cfg.maxAgentTurns,
       history,

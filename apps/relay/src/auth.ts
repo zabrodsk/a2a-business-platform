@@ -23,7 +23,7 @@ export function identify(cfg: Config, header: string | undefined): Identity | un
     if (expected.length === given.length && timingSafeEqual(expected, given)) return identity;
   }
   // Tokens issued through enrollment codes are stored only as SHA-256 hashes.
-  return cfg.lookupIssuedToken?.(hashToken(m[1].trim()));
+  return cfg.lookupAgentToken?.(m[1].trim()) ?? cfg.lookupIssuedToken?.(hashToken(m[1].trim()));
 }
 
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
@@ -38,7 +38,8 @@ export function requireRole(cfg: Config, ...roles: Identity['role'][]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const identity = identify(cfg, req.header('authorization'));
     if (!identity) {
-      res.status(401).set('WWW-Authenticate', 'Bearer').json({ error: 'missing or invalid bearer token' });
+      const challenge = cfg.authResourceMetadataUrl ? `Bearer resource_metadata="${cfg.authResourceMetadataUrl}"` : 'Bearer';
+      res.status(401).set('WWW-Authenticate', challenge).json({ error: 'missing or invalid bearer token' });
       return;
     }
     if (!roles.includes(identity.role)) {

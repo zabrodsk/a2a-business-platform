@@ -3,6 +3,7 @@ import { build } from 'esbuild';
 
 for (const [entry, out] of [
   ['src/a2a-cli.ts', 'dist/a2a.mjs'],
+  ['src/customer-cli.ts', 'dist/customer.mjs'],
   ['src/inbox-cli.ts', 'dist/inbox.mjs'],
   ['src/garage-cli.ts', 'dist/garage.mjs'],
   ['src/registry-cli.ts', 'dist/registry.mjs'],

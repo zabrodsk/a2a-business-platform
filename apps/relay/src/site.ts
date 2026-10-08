@@ -35,7 +35,7 @@ ${p.site.title} has an AI agent that answers questions and takes orders on behal
 - Protocol: A2A (Agent2Agent) v1.0, JSON-RPC binding
 - Agent Card: ${l.card}
 - Endpoint: ${l.endpoint} (always take it from the Agent Card)
-- Authentication: HTTP Bearer token, issued by ${p.site.title} (demo: one-time enrollment code from the operator)
+- Authentication: HTTP Bearer token, issued by ${p.site.title}${cfg.authResourceMetadataUrl ? `; registration instructions: ${cfg.publicUrl}/auth.md` : ' (demo: one-time enrollment code from the operator)'}
 - Skill: ${p.skill.name}: ${p.skill.description}
 - A generic open-source A2A client is available at ${l.client} (\`node a2a.mjs discover ${cfg.publicUrl}\`)
 

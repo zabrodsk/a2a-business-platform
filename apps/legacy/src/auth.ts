@@ -7,6 +7,7 @@ export interface HumanUser { username: string; password: string; actor: Actor }
 export interface AuthOptions {
   users: HumanUser[];
   agentTokens: Map<string, Actor>;
+  lookupAgentToken?: (token: string) => Actor | undefined;
   secureCookies?: boolean;
   publicOrigin?: string;
   now?: () => Date;
@@ -47,7 +48,7 @@ export class LegacyAuth {
       const token = /^Bearer\s+(.+)$/i.exec(header)?.[1]?.trim();
       if (!token) return undefined;
       for (const [configured, actor] of this.options.agentTokens) if (same(token, configured)) return actor;
-      return undefined;
+      return this.options.lookupAgentToken?.(token);
     }
     const cookie = req.header('cookie')?.split(';').map(part => part.trim()).find(part => part.startsWith('pneu007_session='))?.slice('pneu007_session='.length);
     if (!cookie || cookie.length > 200) return undefined;
@@ -58,8 +59,12 @@ export class LegacyAuth {
   }
   middleware = (req: Request, _res: Response, next: NextFunction) => { req.legacyActor = this.identify(req); next(); };
   require(...roles: ActorRole[]) {
-    return (req: Request, _res: Response, next: NextFunction) => {
-      if (!req.legacyActor) return next(new BusinessError('UNAUTHENTICATED', 'Přihlaste se nebo použijte vlastní agentí token.', 401));
+    return (req: Request, res: Response, next: NextFunction) => {
+      if (!req.legacyActor) {
+        const resourceMetadata = `${this.options.publicOrigin ?? ''}/.well-known/oauth-protected-resource`;
+        res.set('WWW-Authenticate', `Bearer resource_metadata="${resourceMetadata}"`);
+        return next(new BusinessError('UNAUTHENTICATED', 'Přihlaste se nebo použijte vlastní agentí token.', 401));
+      }
       if (!roles.includes(req.legacyActor.role)) return next(new BusinessError('FORBIDDEN', 'Tato identita nemá oprávnění k operaci.', 403));
       next();
     };

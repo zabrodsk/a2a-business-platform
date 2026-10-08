@@ -8,8 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { BusinessError, type Actor, type PaymentJob, type PaymentProvider, type PurchaseAuthorization } from '../../../packages/contracts/index.js';
 import { LegacyStore, calculatePrice, BOOKING_CONFIG, type Order, type PaymentIntent } from '../../../packages/demo-garage/index.js';
 import { SourceRegistry, RulebookManager } from '../../../packages/audit/index.js';
-import { createPaymentProvider, paymentProviderStatus, selectPaymentSku } from '../../../packages/payments/index.js';
+import { createPaymentProvider, paymentProviderStatus, selectPaymentSku, DEMO_SELLER } from '../../../packages/payments/index.js';
 import { LegacyAuth } from './auth.js';
+import { AgentAuth } from './agent-auth.js';
 import { AgentPolicy } from './agent-policy.js';
 import { PaymentWorkflow } from './payment-workflow.js';
 import { loadLegacyConfig, repoRoot, type LegacyConfig } from './config.js';
@@ -49,7 +50,8 @@ const publicDirectory = join(repoRoot, 'apps/legacy/public');
 export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   const now = options.now ?? (() => new Date());
   const store = new LegacyStore(cfg.dbPath, { now });
-  const auth = new LegacyAuth(store.db, { ...cfg.auth, now });
+  const agentAuth = new AgentAuth(store.db, { publicUrl: cfg.publicUrl, now });
+  const auth = new LegacyAuth(store.db, { ...cfg.auth, now, lookupAgentToken: token => agentAuth.identify(token) });
   const registry = options.registry ?? new SourceRegistry(repoRoot);
   const rulebooks = new RulebookManager(store.db, registry);
   const businessIdentity = [...cfg.auth.agentTokens.values()].find(value => value.role === 'business_agent');
@@ -87,6 +89,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
 
   app.use('/api', express.json({ limit: '512kb' }), auth.middleware, auth.protect);
   app.use('/masumi', express.json({ limit: '64kb' }), auth.middleware, auth.protect);
+  app.use(agentAuth.router(auth));
   const human = auth.require('human_customer');
   const operators = auth.require('owner', 'staff');
   const owner = auth.require('owner');
@@ -209,7 +212,8 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/api/availability', (req, res) => res.json({ slots: store.availability({ from: query(req, 'from'), to: query(req, 'to'), service_id: query(req, 'service_id') }), timezone: 'Europe/Prague' }));
   app.get('/api/payments/config', (_req, res) => {
     const status = providerStatus();
-    res.json({ ...status, available_skus: 'skus' in status ? status.skus : [] });
+    res.json({ ...status, available_skus: 'skus' in status ? status.skus : [], asset: 'lovelace',
+      seller_id: provider.name === 'masumi' ? cfg.env.MASUMI_SELLER_VKEY : DEMO_SELLER });
   });
   app.post('/api/inquiries', (req, res) => {
     const input = req.body ?? {};
@@ -299,7 +303,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   }) }));
   app.post('/api/admin/reset', owner, (_req, res) => {
     store.resetLocal(() => {
-      for (const table of ['masumi_jobs', 'agent_approvals', 'agent_mandates', 'agent_cases', 'human_checkout_authorizations', 'order_contact_snapshots', 'legacy_receipts', 'payment_workflow_errors', 'audit_rulebook_versions', 'audit_source_snapshots']) {
+      for (const table of ['agent_auth_access_tokens', 'agent_auth_claim_attempts', 'agent_auth_registrations', 'agent_auth_assertion_uses', 'masumi_jobs', 'agent_approvals', 'agent_mandates', 'agent_cases', 'human_checkout_authorizations', 'order_contact_snapshots', 'legacy_receipts', 'payment_workflow_errors', 'audit_rulebook_versions', 'audit_source_snapshots']) {
         if (store.db.prepare('SELECT name FROM sqlite_master WHERE type=? AND name=?').get('table', table)) store.db.prepare(`DELETE FROM ${table}`).run();
       }
     });
@@ -497,6 +501,8 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     if (!existsSync(path)) return void res.status(404).json({ error: 'CLI_NOT_BUILT' });
     res.type('text/javascript').sendFile(path);
   });
+  app.get('/cli/customer.mjs', (_req, res) => res.type('text/javascript').sendFile(join(repoRoot, 'packages/agent-client/dist/customer.mjs')));
+  app.get('/skills/a2a-customer-booking/SKILL.md', (_req, res) => res.type('text/markdown').sendFile(join(repoRoot, 'skills/a2a-customer-booking/SKILL.md')));
   app.get('/cli/discover-sites.mjs', (_req, res) => {
     const path = join(repoRoot, 'packages/agent-client/dist/discover-sites.mjs');
     if (!existsSync(path)) return void res.status(404).json({ error: 'CLI_NOT_BUILT' });
@@ -510,17 +516,23 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   });
   app.use('/api', (_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Neznámá operace API.' } }));
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    if (error instanceof BusinessError) return void res.status(error.status).json({ error: { code: error.code, message: error.message } });
+    if (error instanceof BusinessError) {
+      if (error.status === 401) res.set('WWW-Authenticate', `Bearer resource_metadata="${cfg.publicUrl}/.well-known/oauth-protected-resource"`);
+      return void res.status(error.status).json({ error: { code: error.code, message: error.message } });
+    }
     const syntax = error instanceof SyntaxError;
     res.status(syntax ? 400 : 500).json({ error: { code: syntax ? 'INVALID_JSON' : 'INTERNAL_ERROR', message: syntax ? 'Neplatný JSON požadavku.' : 'Operaci se nepodařilo dokončit.' } });
   });
   const pages: Record<string, string> = { '/': 'index.html', '/kalkulator': 'kalkulator.html', '/kontakt': 'kontakt.html', '/podminky': 'podminky.html',
-    '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'console.html', '/handoru': 'console.html' };
-  for (const [route, file] of Object.entries(pages)) app.get(route, (_req, res) => res.sendFile(join(publicDirectory, file)));
+    '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'console.html', '/handoru': 'console.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
+  for (const [route, file] of Object.entries(pages)) app.get(route, (_req, res) => {
+    if (route.startsWith('/agent/')) res.set('Cache-Control', 'no-store').set('Referrer-Policy', 'no-referrer');
+    res.sendFile(join(publicDirectory, file));
+  });
   app.get('/objednavka/:id', (_req, res) => res.sendFile(join(publicDirectory, 'objednavka.html')));
   app.use(express.static(publicDirectory, { index: false, dotfiles: 'deny' }));
   processor.start(cfg.reconciliationMs);
-  return { app, store, policy, rulebooks, registry, processor, auth,
+  return { app, store, policy, rulebooks, registry, processor, auth, agentAuth,
     close: async () => { await processor.close(); store.close(); } };
 }
 

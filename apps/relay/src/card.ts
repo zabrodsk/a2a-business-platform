@@ -31,7 +31,7 @@ export function buildAgentCard(cfg: Config): AgentCard {
     ],
     provider: { organization: p.organization, url: cfg.publicUrl },
     version: '0.1.0',
-    documentationUrl: undefined,
+    documentationUrl: cfg.authResourceMetadataUrl ? `${cfg.publicUrl}/auth.md` : undefined,
     capabilities: { streaming: false, pushNotifications: true, extensions: [], extendedAgentCard: false },
     securitySchemes: {
       bearer: {
@@ -40,7 +40,9 @@ export function buildAgentCard(cfg: Config): AgentCard {
           value: {
             scheme: 'Bearer',
             bearerFormat: 'opaque',
-            description: 'Pre-issued demo token per customer identity (sandbox).',
+            description: cfg.authResourceMetadataUrl
+              ? `Register and link a customer agent at ${cfg.publicUrl}/auth.md. A signed-in customer must confirm access; booking and payment require separate customer authorization.`
+              : 'Pre-issued demo token per customer identity (sandbox).',
           },
         },
       },

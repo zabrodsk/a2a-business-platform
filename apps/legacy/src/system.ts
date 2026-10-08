@@ -20,7 +20,8 @@ export function unifiedRelayConfig(cfg: LegacyConfig): Config {
   const tokens = new Map<string, Identity>();
   for (const [token, actor] of cfg.auth.agentTokens) {
     if (actor.role === 'business_agent' || actor.role === 'customer_agent') {
-      tokens.set(token, { id: actor.id, role: actor.role === 'business_agent' ? 'business' : 'customer' });
+      tokens.set(token, { id: actor.id, role: actor.role === 'business_agent' ? 'business' : 'customer',
+        ...(actor.customer_id ? { customer_id: actor.customer_id } : {}) });
     }
   }
   if ([...tokens.values()].filter(actor => actor.role === 'business').length !== 1) {
@@ -45,6 +46,7 @@ export function unifiedRelayConfig(cfg: LegacyConfig): Config {
   if (Boolean(webhookUrl) !== Boolean(webhookKey)) throw new Error('Business webhook URL and key must be configured together');
   return {
     port: cfg.port, publicUrl: cfg.publicUrl, a2aPath: '/a2a/jsonrpc',
+    authResourceMetadataUrl: `${cfg.publicUrl}/.well-known/oauth-protected-resource`,
     a2aEndpointUrl: `${cfg.publicUrl}/a2a/jsonrpc`, dbPath, tokens,
     businessProfile: 'pneu007',
     businessWebhook: webhookUrl && webhookKey ? { url: webhookUrl, key: webhookKey } : undefined,
@@ -87,6 +89,12 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     await relay.close();
     throw error;
   }
+  relayConfig.lookupAgentToken = token => {
+    const actor = legacy.agentAuth.identify(token);
+    if (!actor) return undefined;
+    return { id: actor.id, role: actor.role === 'customer_agent' ? 'customer' : 'unclaimed',
+      ...(actor.customer_id ? { customer_id: actor.customer_id } : {}) };
+  };
 
   // Authenticate before the policy gate, so unpublished operation does not reveal private policy.
   legacy.app.use(relayConfig.a2aPath, requireRole(relayConfig, 'customer'), (_req, res, next) => {

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Agent identity and auth.md</title>
+<style>body{max-width:920px;margin:48px auto;padding:0 24px;color:#172f28;background:#f5f5f0;font:16px/1.65 system-ui,sans-serif}h1,h2{line-height:1.25}table{border-collapse:collapse;width:100%}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd6ce;padding:12px}code{overflow-wrap:anywhere}a{color:inherit}.note{padding:16px;background:#fff;border-left:4px solid #957b42}</style></head>
+<body><h1>Agent identity and auth.md</h1>
+<p>The demo business implements a local customer-linking flow described by <code>/auth.md</code>, using its existing customer login. No external WorkOS account or subscription is required. Each registration receives a stable agent identity. It gains customer access only after that customer signs in and confirms a short-lived code. The business records the acting agent separately from the customer it represents.</p>
+<p class="note">Implemented locally; this document is not deployment or live GrokBot proof. The registry service and standalone relay keep their existing enrollment mechanisms. Provider-verified ID-JAG assertions and provider Security Event Tokens are not supported or advertised.</p>
+<h2>Discovery and registration</h2>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>GET /auth.md</code></td><td>Runtime instructions for registering, claiming, exchanging and revoking credentials.</td></tr>
+<tr><td><code>GET /.well-known/oauth-protected-resource</code></td><td>Resource metadata pointing to the authorization server. Protected API and A2A 401 responses include this discovery URL.</td></tr>
+<tr><td><code>GET /.well-known/oauth-authorization-server</code></td><td>Supported grants, scopes and agent registration endpoints.</td></tr>
+<tr><td><code>POST /agent/identity</code></td><td>JSON <code>{"type":"anonymous"}</code> creates an unclaimed agent and returns a signed identity assertion. JSON <code>{"type":"service_auth","login_hint":"customer@example.com"}</code> starts customer confirmation and returns no assertion before confirmation.</td></tr>
+<tr><td><code>POST /agent/identity/claim</code></td><td>An anonymous agent starts customer linking with its <code>claim_token</code> and the customer's email. Email supplied by the agent is a hint, not identity proof.</td></tr>
+<tr><td><code>POST /oauth2/token</code></td><td>Form-encoded JWT-bearer exchange or claim polling. Returns an opaque Bearer access token and a replacement signed assertion. Retain the replacement: assertions are single-use.</td></tr>
+<tr><td><code>POST /oauth2/revoke</code></td><td>Form-encoded <code>token</code> revokes one access token. To end the delegation and prevent further exchanges, the customer revokes the registration in the portal.</td></tr>
+</tbody></table>
+<h2>Customer linking</h2>
+<ol><li>The agent shows its registration ID, the six-digit <code>user_code</code> and the service's <code>verification_uri</code> to the customer.</li>
+<li>The customer opens that link, signs in with the existing customer login, checks the agent identity and enters the code.</li>
+<li>The server matches the signed-in customer's account email, binds the agent to that customer and invalidates all pre-claim credentials.</li>
+<li>The agent polls the token endpoint with <code>grant_type=urn:workos:agent-auth:grant-type:claim</code> and its <code>claim_token</code>, respecting the advertised interval.</li>
+<li>The resulting Bearer credential works for both A2A and customer tools. Store credentials privately; use the existing A2A client's <code>login</code> stdin input and the garage client's private credential configuration. Never paste access tokens, assertions, passwords or session cookies into a conversation.</li></ol>
+<p>Only the matching signed-in human customer can confirm. Agent tokens, business agents and owner agents cannot perform this step. The link cannot be moved to another customer. At <code>/agent/access</code>, the customer can inspect and revoke their registrations.</p>
+<h2>Identity and authority</h2>
+<p><code>GET /api/agent/identity</code> returns <code>agent: {id, role}</code> and <code>acting_for: {type: "customer", id}</code>, or <code>null</code> before linking. This proves a local account association, not the identity of a real-world person or a particular agent provider. Existing configured business and owner agents retain their identities; they do not acquire a customer binding.</p>
+<p>Unclaimed credentials have only <code>agent.identity</code> scope. Linked credentials additionally have <code>a2a</code> and <code>customer.tools</code>, enforced by the existing authenticated roles and customer ownership checks. Agents cannot request wider scopes. Business inbox items include a server-written <code>customer_identity</code> snapshot with both the agent ID and customer ID. Text and metadata in messages cannot override it.</p>
+<p>Customer linking grants access to the negotiation workflow. It does not approve a mandate, expand a spending limit, activate a business rulebook, approve a discount exception or initiate an otherwise unauthorized purchase. Existing human and business policy checks remain authoritative.</p>
+<h2>Credential lifecycle</h2>
+<p>Access tokens expire within one hour; replacement assertions last up to 24 hours and must be exchanged before expiry. Unclaimed registrations expire after 24 hours and claimed registrations after 30 days. Claim codes expire within ten minutes, allow five wrong submissions and require polling no faster than every five seconds. Tokens, claim handles and codes are stored as hashes. Assertions use a persisted Ed25519 signing key, audience and expiry validation, registration version checks and replay protection. The business database and its SQLite sidecar files are restricted to owner read/write permissions.</p>
+<p>Revoking a registration disables its access tokens and future assertion exchanges in both A2A and business tools. It does not cancel a booking or undo an already authorized transaction; those use the existing cancellation and payment workflow. Restarting the application preserves registrations, keys, expiry and revocation.</p>
+<h2>Verification</h2>
+<p>Automated tests exercise discovery, anonymous restrictions, customer-only confirmation, code and session checks, account isolation, signed-assertion validation, replay, expiry, revocation and persistence. The unified system test registers and links an agent, exchanges an A2A message, opens a business case for the linked customer, verifies that forged message identity does not change the binding, and revokes access on both API surfaces.</p>
+<p>Run <code>npm run typecheck</code> and <code>npm test</code>. Testing actual GrokBot accounts and deploying these changes are separate operational steps.</p>
+</body></html>

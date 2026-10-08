@@ -275,6 +275,7 @@ test('configured Masumi without a proven isolated fee ceiling refuses purchase b
   const status = JSON.parse(encoded);
   assert.equal(status.configured, true); assert.equal(status.purchase_ready, false);
   assert.equal(status.simulation, false); assert.equal(status.live_verification, 'NOT_RUN');
+  assert.equal(status.seller_id, 'a'.repeat(64)); assert.equal(status.asset, 'lovelace');
   assert.ok(!encoded.includes('test-seller-secret')); assert.ok(!encoded.includes('test-buyer-secret'));
   const session = await f.login('customer-a'), order = await createHumanOrder(session.call);
   const purchase = await session.call(`/api/orders/${order.id}/checkout`, { confirm: true, payment_mode: 'deposit', max_network_fee: '2000000' });
@@ -354,14 +355,22 @@ test('owner reset after local settlement clears audit and checkout extensions an
   assert.equal((f.store.db.prepare('SELECT count(*) AS n FROM order_contact_snapshots').get() as { n: number }).n, 1);
   await call(`/api/orders/${order.id}/payment`);
   assert.equal(f.store.listPaymentIntents()[0]!.state, 'seller_paid');
+  const registration = await (await f.publicCall('/agent/identity', {type:'service_auth',login_hint:'jana.vesela@example.com'})).json();
+  const claimAttempt = new URL(registration.claim.verification_uri).searchParams.get('claim_attempt_token');
+  assert.equal((await call('/api/agent/identity/confirm', {claim_attempt_token:claimAttempt,user_code:registration.claim.user_code})).status, 200);
+  const credentials = await (await fetch(`${f.base}/oauth2/token`, {method:'POST',body:new URLSearchParams({
+    grant_type:'urn:workos:agent-auth:grant-type:claim',claim_token:registration.claim_token,
+  })})).json();
+  assert.ok(f.agentAuth.identify(credentials.access_token));
   const reset = await owner.call('/api/admin/reset', {});
   assert.equal(reset.status, 200, await reset.clone().text());
   assert.equal((await reset.json()).ok, true);
   assert.equal(f.store.listOrders().length, baselineOrders);
   assert.deepEqual(f.store.listPaymentIntents(), []); assert.deepEqual(f.rulebooks.list(), []);
-  for (const table of ['agent_cases', 'agent_mandates', 'agent_approvals', 'human_checkout_authorizations', 'order_contact_snapshots', 'legacy_receipts', 'payment_workflow_errors', 'audit_source_snapshots']) {
+  for (const table of ['agent_auth_registrations', 'agent_auth_claim_attempts', 'agent_auth_access_tokens', 'agent_cases', 'agent_mandates', 'agent_approvals', 'human_checkout_authorizations', 'order_contact_snapshots', 'legacy_receipts', 'payment_workflow_errors', 'audit_source_snapshots']) {
     assert.equal((f.store.db.prepare(`SELECT count(*) AS n FROM ${table}`).get() as { n: number }).n, 0, table);
   }
+  assert.equal(f.agentAuth.identify(credentials.access_token), undefined, 'Reset must invalidate prior agent credentials');
   const state = await (await owner.call('/api/admin/rulebooks')).json();
   assert.equal(state.active, null);
 });
@@ -647,4 +656,29 @@ test('MIP003 concurrent identical starts prepare and persist one seller job with
   assert.equal(f.store.listPaymentIntents().length, 1);
   assert.equal((f.store.db.prepare('SELECT count(*) AS n FROM masumi_jobs').get() as { n: number }).n, 1);
   assert.equal(f.store.getOrder(f.orderId).status, 'awaiting_payment');
+});
+
+test('customer mandate approval page uses customer-scoped reads and human session CSRF writes', async t => {
+  const f = await fixture(t), customerA = await f.login('customer-a'), customerB = await f.login('customer-b');
+  const ordersBefore = f.store.listOrders(), paymentsBefore = f.store.listPaymentIntents();
+  const page = await f.publicCall('/agent/mandates?mandate_id=unknown');
+  assert.equal(page.status, 200); assert.match(await page.text(), /src="\/console.js"/);
+  const opened = await f.agentA('/api/agent/cases', { service_spec: service });
+  const caseId = (await opened.json()).case.id;
+  const proposed = await f.agentA('/api/agent/mandates', {
+    case_id: caseId, mode: 'book', service_spec: service, max_total_minor: 250000, max_deposit_minor: 50000,
+    payment_mode: 'deposit', latest_service_end: '2026-10-17T22:00:00Z', expires_at: '2026-10-08T10:00:00Z',
+    allow_extras: false, currency: 'CZK', network: 'local', asset: 'lovelace', max_asset_quantity: '25000000',
+    max_network_fee: '2000000', mapping_version: 'demo-map-v1', seller_id: 'pneu007-demo',
+  });
+  assert.equal(proposed.status, 201, await proposed.clone().text());
+  const mandateId = (await proposed.json()).mandate.id;
+  assert.equal((await customerA.call('/api/admin/mandates')).status, 200);
+  assert.equal((await (await customerA.call('/api/admin/mandates')).json()).mandates[0].id, mandateId);
+  assert.deepEqual((await (await customerB.call('/api/admin/mandates')).json()).mandates, []);
+  assert.equal((await customerB.call(`/api/admin/mandates/${mandateId}/approve`, {})).status, 403);
+  assert.equal((await f.client({cookie:customerA.cookie})(`/api/admin/mandates/${mandateId}/approve`, {})).status, 403);
+  assert.equal((await f.agentA(`/api/admin/mandates/${mandateId}/approve`, {})).status, 403);
+  assert.equal((await customerA.call(`/api/admin/mandates/${mandateId}/approve`, {})).status, 200);
+  assert.deepEqual(f.store.listOrders(), ordersBefore); assert.deepEqual(f.store.listPaymentIntents(), paymentsBefore);
 });

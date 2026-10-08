@@ -1,6 +1,11 @@
 import { api, list, escapeHTML as esc, date } from './api.js';
 const main = document.querySelector('main');
 const handoru = location.pathname.startsWith('/handoru');
+const agentClaim = location.pathname === '/agent/claim';
+const agentAccess = location.pathname === '/agent/access';
+const agentMandates = location.pathname === '/agent/mandates';
+const mandateId = new URLSearchParams(location.search).get('mandate_id');
+const claimAttempt = new URLSearchParams(location.search).get('claim_attempt_token');
 let actor, selected = handoru ? 'sources' : 'overview';
 const adminTabs = { overview: 'Přehled', orders: 'Objednávky', calendar: 'Kalendář', customers: 'Zákazníci', inventory: 'Sklad', partners: 'Dodavatelé' };
 const handoruTabs = { sources: 'Zdroje a audit', rulebooks: 'Rulebook', approvals: 'Schválení', mandates: 'Mandáty', events: 'Události', profile: 'Veřejný profil' };
@@ -34,9 +39,95 @@ function rows(records, kind) {
 }
 async function session() {
   const data = await api('/api/session'); actor = data.actor;
-  document.getElementById('session').innerHTML = actor ? `<span>${esc(actor.id)} · ${esc(actor.role)}</span> ${action('Odhlásit', 'logout', '')}` : action('Přihlásit se','login','');
+  document.getElementById('session').innerHTML = actor ? `<span>${esc(actor.id)} · ${esc(actor.role)}</span> ${actor.role === 'human_customer' ? '<a href="/agent/access">Přístupy agentů</a> ' : ''}${action('Odhlásit', 'logout', '')}` : action('Přihlásit se','login','');
+}
+async function renderAgentAccess() {
+  main.innerHTML = `<p class="eyebrow">Pneu 007 · přístupy agentů</p><h1>${agentClaim ? 'Propojit vašeho agenta' : 'Vaši propojení agenti'}</h1><section id="content" aria-live="polite"><p role="status">Načítání…</p></section>`;
+  const content = document.getElementById('content');
+  if (!actor) {
+    content.innerHTML = '<article class="card"><h2>Přihlaste se jako zákazník</h2><p>Po přihlášení můžete propojit svého agenta nebo odebrat jeho přístup.</p><button data-action="login">Přihlásit se</button></article>';
+    return;
+  }
+  if (actor.role !== 'human_customer') {
+    content.innerHTML = '<article class="card"><p class="error" role="alert">Propojení může potvrdit pouze přihlášený zákazník.</p><button data-action="logout">Odhlásit se</button></article>';
+    return;
+  }
+  try {
+    if (agentClaim) {
+      if (!claimAttempt) throw new Error('Chybí odkaz pro propojení. Požádejte svého agenta o nový.');
+      const request = await api(`/api/agent/identity/claim-request?claim_attempt_token=${encodeURIComponent(claimAttempt)}`);
+      content.innerHTML = `<article class="card"><h2>Potvrdit přístup agenta</h2><p>Agent <strong class="agent-id">${esc(request.registration_id)}</strong> žádá o přístup k vašim poptávkám a nabídkám. Rezervace a platba nadále vyžadují vámi schválený mandát.</p><p>Pokračujte pouze, pokud jste tohoto agenta sami požádali o propojení. Ověřte, že vám ukázal stejnou identitu.</p><p>Platnost kódu do ${date(request.expires_at)}.</p><form id="agent-claim-form"><label>Šestimístný kód od vašeho agenta<input name="user_code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required></label><p class="error" role="alert" id="claim-error"></p><div class="actions"><button type="submit">Propojit agenta</button><a class="button secondary" href="/agent/access">Zrušit</a></div></form></article>`;
+      return;
+    }
+    const data = await api('/api/agent/identities');
+    const identities = list(data, 'identities');
+    const statuses = {claimed:'Propojený',unclaimed:'Čeká na propojení',revoked:'Přístup odebrán',expired:'Platnost vypršela'};
+    content.innerHTML = '<p>Zde můžete odebrat přístup agentům, které jste propojili se svým účtem.</p>' + (identities.length ? identities.map(identity => `<article class="card"><h2 class="agent-id">${esc(identity.agent_id)}</h2><p>Stav: ${esc(statuses[identity.status] ?? identity.status)} · platnost do ${date(identity.expires_at)}</p>${identity.status === 'claimed' ? action('Odebrat přístup', 'revoke-agent', identity.registration_id) : ''}</article>`).join('') : '<article class="card"><p>Zatím nemáte propojeného žádného agenta.</p></article>');
+  } catch (error) {
+    content.innerHTML = `<article class="card"><p class="error" role="alert">${esc(error.message)}</p><p>Pokud odkaz vypršel, požádejte agenta o nový kód. Propojení potvrďte účtem, pro který bylo vyžádáno.</p></article>`;
+  }
+}
+function moneyLimit(value) {
+  return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(value / 100);
+}
+function assetLimit(value) {
+  if (typeof value !== 'string' || !/^[0-9]+$/.test(value)) return 'Neuvedeno';
+  const units = BigInt(value), fraction = (units % 1000000n).toString().padStart(6, '0').replace(/0+$/, '');
+  return `${units / 1000000n}${fraction ? `,${fraction}` : ''} test ADA (${value} lovelace)`;
+}
+async function renderCustomerMandate() {
+  main.innerHTML = '<p class="eyebrow">Pneu 007 · souhlas zákazníka</p><h1>Oprávnění vašeho agenta</h1><section id="content" aria-live="polite"><p role="status">Načítání…</p></section>';
+  const content = document.getElementById('content');
+  if (!actor) {
+    content.innerHTML = '<article class="card"><h2>Přihlaste se jako zákazník</h2><p>Pro kontrolu a schválení oprávnění použijte účet, který jste propojili se svým agentem. Samotné propojení agenta není souhlasem s rezervací ani platbou.</p><button data-action="login">Přihlásit se</button></article>';
+    return;
+  }
+  if (actor.role !== 'human_customer') {
+    content.innerHTML = '<article class="card"><p class="error" role="alert">Toto oprávnění může schválit pouze zákazník ze svého účtu.</p><button data-action="logout">Odhlásit se</button></article>';
+    return;
+  }
+  if (!mandateId) {
+    content.innerHTML = '<article class="card"><p class="error" role="alert">Chybí odkaz na konkrétní oprávnění. Požádejte svého agenta o schvalovací odkaz.</p></article>';
+    return;
+  }
+  try {
+    const data = await api('/api/admin/mandates');
+    const mandate = list(data, 'mandates').find(value => value.id === mandateId);
+    if (!mandate) {
+      content.innerHTML = '<article class="card"><p class="error" role="alert">Oprávnění nebylo nalezeno pro váš účet. Zkontrolujte účet a požádejte svého agenta o správný odkaz.</p></article>';
+      return;
+    }
+    const spec = mandate.service_spec;
+    const service = {tyre_change:'Přezutí pneumatik',wheel_swap:'Výměna kompletních kol'}[spec.service_id] ?? spec.service_id;
+    const vehicle = {personal:'osobní vůz',suv:'SUV',van:'dodávka'}[spec.vehicle_type] ?? spec.vehicle_type;
+    const expiry = Date.parse(mandate.expires_at);
+    const expired = !Number.isFinite(expiry) || expiry <= Date.now();
+    const approved = mandate.status === 'approved';
+    const recommend = mandate.mode === 'recommend';
+    const status = expired ? 'Platnost vypršela' : approved ? 'Schváleno' : 'Čeká na váš souhlas';
+    content.innerHTML = `<article class="card mandate-summary"><h2>${esc(service)}</h2><p><span class="status">${status}</span></p><p>Samotné propojení agenta není souhlasem s rezervací ani platbou. Zde schvalujete konkrétní rozsah jeho oprávnění.</p><dl class="mandate-details">
+      <dt>Služba a vozidlo</dt><dd>${esc(spec.wheel_count)} kola · ${esc(vehicle)} · ${esc(spec.wheel_size_inches)}″ · ${spec.rim_type === 'alu' ? 'hliníkové disky' : 'ocelové disky'} · runflat ${spec.runflat ? 'ano' : 'ne'} · TPMS ${spec.tpms ? 'ano' : 'ne'}</dd>
+      <dt>Co smí agent udělat</dt><dd>${recommend ? 'Pouze doporučit nabídku. Nesmí vytvořit rezervaci ani provést platbu.' : 'Přijmout nabídku, rezervovat službu a zahájit testovací platbu v níže uvedených mezích.'}</dd>
+      <dt>Celkový cenový limit služby</dt><dd>${esc(moneyLimit(mandate.max_total_minor))}</dd>
+      <dt>Limit zálohy</dt><dd>${esc(moneyLimit(mandate.max_deposit_minor))}</dd>
+      <dt>Způsob platby</dt><dd>${mandate.payment_mode === 'deposit' ? 'Pouze záloha' : 'Celá částka'}</dd>
+      <dt>Termín</dt><dd>Dokončení nejpozději ${date(mandate.latest_service_end)} (Praha). Toto oprávnění neurčuje přesný čas rezervace; agent jej dohodne v této lhůtě.</dd>
+      <dt>Platnost oprávnění</dt><dd>Do ${date(mandate.expires_at)} (Praha)</dd>
+      <dt>Testovací síť</dt><dd>${mandate.network === 'Preprod' ? 'Cardano Preprod · testovací prostředky' : 'Místní simulace · bez on-chain platby'}</dd>
+      <dt>Limit testovací platby</dt><dd>${esc(assetLimit(mandate.max_asset_quantity))}</dd>
+      <dt>Limit síťového poplatku</dt><dd>${esc(assetLimit(mandate.max_network_fee))} navíc k platbě</dd>
+      <dt>Příjemce</dt><dd>${esc(mandate.seller_id)}</dd>
+      <dt>Cenový převod</dt><dd>${esc(mandate.mapping_version)} · korunová cena a testovací ADA jsou oddělené limity.</dd>
+      <dt>Další služby</dt><dd>Žádné služby navíc nejsou povoleny.</dd>
+      <dt>Váš agent</dt><dd class="agent-id">${esc(mandate.proposed_by)}</dd>
+    </dl>${expired ? '<p class="error" role="alert">Platnost tohoto oprávnění vypršela. Požádejte agenta o nový návrh; tento již nelze použít.</p>' : approved ? '<p class="notice">Váš souhlas je uložen. Vraťte se ke svému agentovi, který může pokračovat v povolených mezích. Schválení samo o sobě nepotvrzuje rezervaci ani dokončenou platbu.</p>' : `<p class="notice">${recommend ? 'Souhlas povoluje pouze doporučení nabídky.' : 'Souhlas dovoluje agentovi pokračovat s rezervací a testovací platbou bez dalšího schvalování, pokud nepřekročí uvedené limity.'} Tímto tlačítkem se ještě neprovádí platba.</p><p class="error" role="alert" id="mandate-error"></p><div class="actions">${action(recommend ? 'Schválit pouze doporučení' : 'Schválit rezervaci a testovací platbu v těchto mezích', 'customer-mandate', mandate.id)}</div>`}</article>`;
+  } catch (error) {
+    content.innerHTML = `<article class="card"><p class="error" role="alert">${esc(error.message)}</p><button data-action="reload">Zkusit znovu</button></article>`;
+  }
 }
 async function render() {
+  if (agentMandates) return renderCustomerMandate();
+  if (agentClaim || agentAccess) return renderAgentAccess();
   const tabs = handoru ? handoruTabs : adminTabs;
   main.innerHTML = `<p class="eyebrow">${handoru ? 'Handoru' : 'Pneu 007 · provoz'}</p><h1>${handoru ? 'Audit a provoz agenta' : 'Administrace'}</h1><nav class="tabs" aria-label="Pracovní pohledy">${Object.entries(tabs).map(([key,label]) => `<button data-tab="${key}" aria-current="${selected === key}">${label}</button>`).join('')}</nav><section id="content" aria-live="polite"><p role="status">Načítání…</p></section>`;
   const content = document.getElementById('content');
@@ -62,6 +153,16 @@ document.addEventListener('click', async event => {
   button.disabled = true;
   try {
     if (name === 'logout') { await api('/api/logout', { method:'POST', body:{} }); await session(); await render(); return; }
+    if (name === 'customer-mandate') {
+      if (!agentMandates || actor?.role !== 'human_customer' || id !== mandateId) return;
+      await api(`/api/admin/mandates/${encodeURIComponent(id)}/approve`, {method:'POST',body:{}});
+      await render(); return;
+    }
+    if (name === 'revoke-agent') {
+      if (!confirm('Odebrat tomuto agentovi přístup k vašemu účtu?')) return;
+      await api(`/api/agent/identities/${encodeURIComponent(id)}/revoke`, {method:'POST',body:{}});
+      feedback('Přístup agenta byl odebrán.'); await render(); return;
+    }
     if (name === 'order-detail') {const data=await api(`/api/orders/${encodeURIComponent(id)}`);const dialog=document.createElement('dialog');dialog.innerHTML=`<h2>Objednávka ${esc(id)}</h2>${contactSummary(data.contact)}${json(data)}<button>Zavřít</button>`;document.body.append(dialog);dialog.showModal();dialog.querySelector('button').onclick=()=>{dialog.close();dialog.remove();};return;}
     if (['resume-payment','authorize-refund','refund-request'].includes(name)) {
       const confirmations = {
@@ -82,7 +183,19 @@ document.addEventListener('click', async event => {
     if (name === 'approve' || name === 'reject') await api(`/api/admin/approvals/${encodeURIComponent(id)}/decide`,{method:'POST',body:{decision:name === 'approve' ? 'approved' : 'rejected'}});
     if (name === 'mandate') await api(`/api/admin/mandates/${encodeURIComponent(id)}/approve`,{method:'POST',body:{}});
     feedback('Rozhodnutí bylo uloženo.'); await render();
-  } catch (error) { feedback(error.message); } finally { button.disabled = false; }
+  } catch (error) { const inline = name === 'customer-mandate' && document.getElementById('mandate-error'); if (inline) inline.textContent = error.message; else feedback(error.message); } finally { button.disabled = false; }
 });
 document.getElementById('login-form').addEventListener('submit',async event=>{event.preventDefault();const form=event.target;const button=form.querySelector('[type=submit]');button.disabled=true;try{await api('/api/login',{method:'POST',body:Object.fromEntries(new FormData(form))});form.reset();document.getElementById('login-dialog').close();await session();await render();}catch(error){document.getElementById('login-error').textContent=error.message;}finally{button.disabled=false;}});
+document.addEventListener('submit', async event => {
+  if (event.target.id !== 'agent-claim-form') return;
+  event.preventDefault();
+  const form = event.target, button = form.querySelector('[type=submit]');
+  button.disabled = true;
+  try {
+    await api('/api/agent/identity/confirm', {method:'POST',body:{claim_attempt_token:claimAttempt,user_code:new FormData(form).get('user_code')}});
+    history.replaceState(null, '', '/agent/claim');
+    document.getElementById('content').innerHTML = '<article class="card"><h2>Agent byl propojen</h2><p>Váš agent nyní může pokračovat. Rezervace a platba se řídí vaším schváleným mandátem.</p><a class="button" href="/agent/access">Spravovat přístupy agentů</a></article>';
+  } catch (error) { document.getElementById('claim-error').textContent = error.message; }
+  finally { button.disabled = false; }
+});
 await session().catch(()=>{}); await render();

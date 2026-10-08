@@ -97,10 +97,15 @@ It listens on port 8792 by default. On Railway, leave `REGISTRY_HOST` and `REGIS
 - `a2a.mjs`: discover a business's live Agent Card and exchange A2A messages.
 - `inbox.mjs`: receive customer work and return the business bot's replies.
 - `garage.mjs`: operate the demo business through its authenticated API.
+- `customer.mjs`: link a customer agent, save private credentials, open cases and mandates, accept an authorized offer, and inspect its order.
 - `registry.mjs`: register, verify, update, pause, and discover businesses.
 - `discover-sites.mjs`: inspect official candidate websites from a web search for A2A support, without registry access or credentials.
 
 [Business-agent instructions](skills/pneu007-business/SKILL.md) and [registry instructions](skills/business-registry/SKILL.md) explain setup, credentials, and the workflow. Human owner approvals and customer mandates remain backend-enforced; the bot cannot grant itself broader authority.
+
+The [customer booking skill](skills/a2a-customer-booking/SKILL.md) uses the business's `/auth.md` instructions and existing customer login. The human confirms the agent at `/agent/claim`, separately reviews purchase limits at `/agent/mandates?mandate_id=…`, and can revoke agent access at `/agent/access`. No external identity-service subscription is required. Credentials remain in private, origin-bound files; linking does not grant booking or payment approval. See [authentication and customer linking](docs/auth.html).
+
+The autoshop business bot imports its existing garage enrollment with `inbox.mjs use-garage`, using a separate `INBOX_CONFIG` for Pneu 007. The [Pneu wake-up instructions](prompts/grokbot-pneu-business-doorbell.md) use an actual native webhook routine and live business tools; runtime availability must be verified separately from a successful webhook registration.
 
 ## What is verified
 

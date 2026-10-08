@@ -18,7 +18,7 @@ export interface PriceResult {
   total_minor: number;
   currency: 'CZK';
 }
-export type ActorRole = 'owner' | 'staff' | 'human_customer' | 'business_agent' | 'customer_agent' | 'owner_agent';
+export type ActorRole = 'owner' | 'staff' | 'human_customer' | 'business_agent' | 'customer_agent' | 'owner_agent' | 'unclaimed_agent';
 export interface Actor { id: string; role: ActorRole; customer_id?: string }
 export type PaymentMode = 'deposit' | 'full';
 export type PaymentProviderName = 'local_demo' | 'masumi';
