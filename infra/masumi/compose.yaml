@@ -5,6 +5,10 @@ x-node: &node
   build:
     context: https://github.com/masumi-network/masumi-payment-service.git#5fccf58b0f30873085b59ee540c67b4ae8433cd0
     dockerfile: Dockerfile
+    target: backend-builder
+  command: ["node", "--import", "tsx", "/usr/src/app/masumi-runtime/bootstrap.mjs"]
+  volumes:
+    - ./runtime:/usr/src/app/masumi-runtime:ro
   restart: "no"
 
 services:
@@ -40,7 +44,9 @@ services:
     <<: *node
     env_file: seller.env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://masumi:${SELLER_DB_PASSWORD:?Set SELLER_DB_PASSWORD}@seller-db:5432/masumi?schema=public
+      BLOCKFROST_API_KEY_PREPROD: ${BLOCKFROST_API_KEY_PREPROD:-}
     ports:
       - "127.0.0.1:3001:3001"
     depends_on:
@@ -51,7 +57,9 @@ services:
     <<: *node
     env_file: buyer.env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://masumi:${BUYER_DB_PASSWORD:?Set BUYER_DB_PASSWORD}@buyer-db:5432/masumi?schema=public
+      BLOCKFROST_API_KEY_PREPROD: ${BLOCKFROST_API_KEY_PREPROD:-}
     ports:
       - "127.0.0.1:3002:3001"
     depends_on:

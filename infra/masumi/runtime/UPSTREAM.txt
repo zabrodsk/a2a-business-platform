@@ -1,0 +1,9 @@
+Masumi Payment Service V1 API: 5fccf58b0f30873085b59ee540c67b4ae8433cd0
+Official cost-model synchronization fix: d569a338ca54d5be7441564770d75ebf89b71f12
+Source: https://github.com/masumi-network/masumi-payment-service/tree/d569a338ca54d5be7441564770d75ebf89b71f12/src/utils/mesh-cost-model-sync
+Vendored index.ts and build-lock.ts retain the upstream implementation.
+Adaptation: logger import resolves the pinned node's existing @/utils/logger.
+The bootstrap is restricted to Preprod and wraps all compiled V1 MeshTxBuilder
+constructions so complete() synchronizes ordered chain models and current
+protocol parameters under the upstream global build lock.
+MIT license retained in LICENSE.upstream. No dependencies added.

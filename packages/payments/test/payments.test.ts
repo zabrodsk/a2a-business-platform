@@ -171,6 +171,58 @@ test('Masumi calls exact pinned endpoints with token header, fixed pricing and m
   assert.equal(create.body?.payByTime, '2026-10-08T08:20:00.000Z');
   assert.equal(buy.body?.payByTime, String(time.getTime() + 20 * 60000));
   assert.equal(buy.body?.identifierFromPurchaser, request().identifier_from_purchaser);
+  for (const [field, minutes] of [['payByTime', 20], ['submitResultTime', 60], ['unlockTime', 90], ['externalDisputeUnlockTime', 120]] as const) {
+    assert.equal(create.body?.[field], new Date(time.getTime() + minutes * 60000).toISOString());
+    assert.equal(buy.body?.[field], String(time.getTime() + minutes * 60000));
+  }
+});
+
+test('Preprod smoke profile creates shorter ISO deadlines and forwards the seller milliseconds unchanged', async () => {
+  const s = server(request(), { deadlineProfile: 'preprod_smoke' });
+  const deadlines = { payByTime: 5, submitResultTime: 16, unlockTime: 32, externalDisputeUnlockTime: 48 };
+  for (const [field, minutes] of Object.entries(deadlines)) {
+    s.initial.payment[field] = String(time.getTime() + minutes * 60000);
+    s.initial.purchase[field] = s.initial.payment[field];
+  }
+  await s.provider.start(request());
+  const create = s.calls.find(call => call.url.endsWith('/payment/') && call.init?.method === 'POST')!;
+  const buy = s.calls.find(call => call.url.endsWith('/purchase/'))!;
+  for (const [field, minutes] of Object.entries(deadlines)) {
+    assert.equal(create.body?.[field], new Date(time.getTime() + minutes * 60000).toISOString());
+    assert.equal(buy.body?.[field], String(time.getTime() + minutes * 60000));
+  }
+  const job = await s.provider.prepareJob(request());
+  for (const [field, minutes] of Object.entries(deadlines)) {
+    assert.equal(job[field as keyof typeof deadlines], time.getTime() / 1000 + minutes * 60);
+  }
+  assert.equal(create.body?.agentIdentifier, agent);
+  assert.equal(buy.body?.agentIdentifier, agent);
+});
+
+test('smoke profile does not rewrite original seller deadlines when preparing a buyer purchase', async () => {
+  const s = server(request(), { deadlineProfile: 'preprod_smoke' });
+  await s.provider.start(request());
+  const buy = s.calls.find(call => call.url.endsWith('/purchase/'))!;
+  for (const field of ['payByTime', 'submitResultTime', 'unlockTime', 'externalDisputeUnlockTime']) {
+    assert.equal(buy.body?.[field], s.initial.payment[field]);
+  }
+});
+
+test('server timing profile configuration defaults to standard, exposes the selected profile and rejects unknown values', () => {
+  const env = { PAYMENT_PROVIDER: 'masumi', MASUMI_PAYMENT_SERVICE_URL: 'https://seller.example/api/v1',
+    MASUMI_PAYMENT_API_KEY: 'seller-token', MASUMI_BUYER_API_KEY: 'buyer-token', MASUMI_SELLER_VKEY: seller,
+    MASUMI_SKUS: JSON.stringify({ 'deposit-500': agent }) };
+  assert.equal(readMasumiConfig(env)?.deadlineProfile, 'standard');
+  assert.equal(paymentProviderStatus(env).timing_profile, 'standard');
+  const smoke = { ...env, MASUMI_TIMING_PROFILE: 'preprod_smoke' };
+  assert.equal(readMasumiConfig(smoke)?.deadlineProfile, 'preprod_smoke');
+  assert.equal(paymentProviderStatus(smoke).timing_profile, 'preprod_smoke');
+  for (const profile of ['fast', 'PREPROD_SMOKE', '']) {
+    assert.throws(() => readMasumiConfig({ ...env, MASUMI_TIMING_PROFILE: profile }), { code: 'MASUMI_INVALID_CONFIG' });
+    assert.throws(() => readMasumiConfig({ MASUMI_TIMING_PROFILE: profile }), { code: 'MASUMI_INVALID_CONFIG' });
+    assert.equal(paymentProviderStatus({ ...env, MASUMI_TIMING_PROFILE: profile }).reason, 'MASUMI_INVALID_CONFIG');
+  }
+  assert.throws(() => readMasumiConfig({ ...smoke, MASUMI_NETWORK: 'Mainnet' }), { code: 'MASUMI_INVALID_CONFIG' });
 });
 
 test('repeat starts recover the same intent and never initiate a second buyer payment', async () => {

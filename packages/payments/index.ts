@@ -1,5 +1,5 @@
 import { BusinessError, type PaymentProvider } from '../contracts/index.js';
-import { object, PAYMENT_SKUS } from './src/common.js';
+import { integer, object, PAYMENT_SKUS } from './src/common.js';
 import { LocalDemoProvider, type LocalDemoOptions } from './src/local.js';
 import { MasumiProvider, MASUMI_VERSION, validateMasumiUrl, type MasumiConfig, type MasumiOptions } from './src/masumi.js';
 
@@ -10,10 +10,22 @@ export { MasumiProvider, MASUMI_VERSION, type MasumiConfig, type MasumiOptions }
 export const MASUMI_REQUIRED_ENV = ['MASUMI_PAYMENT_SERVICE_URL', 'MASUMI_PAYMENT_API_KEY', 'MASUMI_BUYER_API_KEY',
   'MASUMI_SELLER_VKEY', 'MASUMI_SKUS'] as const;
 
+function checkoutNetworkFee(env: NodeJS.ProcessEnv): string {
+  const value = env.MASUMI_CHECKOUT_NETWORK_FEE ?? '2000000';
+  try { integer(value, 'checkout network fee'); }
+  catch { throw new BusinessError('MASUMI_INVALID_CONFIG', 'Masumi checkout network fee must be an integer string', 503); }
+  return value;
+}
+
 export function readMasumiConfig(env: NodeJS.ProcessEnv = process.env): MasumiConfig | undefined {
   if (env.MASUMI_NETWORK && env.MASUMI_NETWORK !== 'Preprod') {
     throw new BusinessError('MASUMI_INVALID_CONFIG', 'Only Cardano Preprod is permitted', 503);
   }
+  const deadlineProfile = env.MASUMI_TIMING_PROFILE ?? 'standard';
+  if (deadlineProfile !== 'standard' && deadlineProfile !== 'preprod_smoke') {
+    throw new BusinessError('MASUMI_INVALID_CONFIG', 'Unknown Masumi timing profile', 503);
+  }
+  checkoutNetworkFee(env);
   if (!env.MASUMI_PAYMENT_SERVICE_URL || !env.MASUMI_PAYMENT_API_KEY || !env.MASUMI_BUYER_API_KEY
     || !env.MASUMI_SELLER_VKEY || !env.MASUMI_SKUS) return undefined;
   let parsed: Record<string, unknown>;
@@ -35,14 +47,14 @@ export function readMasumiConfig(env: NodeJS.ProcessEnv = process.env): MasumiCo
   catch { throw new BusinessError('MASUMI_INVALID_CONFIG', 'Masumi server URLs are invalid', 503); }
   return { sellerUrl, buyerUrl, sellerToken: env.MASUMI_PAYMENT_API_KEY, buyerToken: env.MASUMI_BUYER_API_KEY,
     sellerVkey: env.MASUMI_SELLER_VKEY, skus, timeoutMs, buyerWalletAddress: env.MASUMI_BUYER_WALLET_ADDRESS,
-    dedicatedBuyerWallet: env.MASUMI_DEDICATED_BUYER_WALLET === 'true', allowLocalHttp,
+    dedicatedBuyerWallet: env.MASUMI_DEDICATED_BUYER_WALLET === 'true', allowLocalHttp, deadlineProfile,
     buyerLifecycleIsolated: env.MASUMI_BUYER_LIFECYCLE_ISOLATED === 'true',
     preprodPurchasesEnabled: env.MASUMI_ENABLE_PREPROD_PURCHASES === 'true' };
 }
 
 export function paymentProviderStatus(env: NodeJS.ProcessEnv = process.env) {
   const provider = env.PAYMENT_PROVIDER ?? 'local_demo';
-  if (provider === 'local_demo') return { provider, network: 'local', simulation: true, configured: true,
+  if (provider === 'local_demo') return { provider, network: 'local', simulation: true, configured: true, checkout_network_fee: '2000000',
     live_verification: 'NOT_RUN', notice: 'Local simulation; not Masumi on-chain payment', mapping_version: 'demo-map-v1', skus: PAYMENT_SKUS };
   if (provider !== 'masumi') throw new BusinessError('PAYMENT_INVALID_PROVIDER', 'Select local_demo or masumi explicitly', 503);
   try {
@@ -57,6 +69,8 @@ export function paymentProviderStatus(env: NodeJS.ProcessEnv = process.env) {
     ];
     const proofConfigured = Boolean(config?.dedicatedBuyerWallet && config?.buyerWalletAddress && config?.buyerLifecycleIsolated);
     return { provider, network: 'Preprod', simulation: false, configured: Boolean(config),
+      timing_profile: config?.deadlineProfile ?? env.MASUMI_TIMING_PROFILE ?? 'standard',
+      checkout_network_fee: checkoutNetworkFee(env),
       missing_configuration: missingConfiguration, missing_purchase_configuration: missingPurchaseConfiguration,
       purchase_ready: Boolean(config && proofConfigured && config.preprodPurchasesEnabled),
       purchase_configuration_complete: Boolean(config && proofConfigured), api_version: MASUMI_VERSION,

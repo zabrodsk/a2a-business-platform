@@ -10,6 +10,7 @@ export interface MasumiConfig {
   buyerLifecycleIsolated?: boolean;
   allowLocalHttp?: boolean;
   preprodPurchasesEnabled?: boolean;
+  deadlineProfile?: 'standard' | 'preprod_smoke';
 }
 export interface MasumiOptions { fetch?: typeof fetch; now?: () => Date }
 
@@ -65,6 +66,9 @@ export class MasumiProvider implements PaymentProvider {
     this.fetcher = options.fetch ?? fetch;
     this.now = options.now ?? (() => new Date());
     if (config) {
+      if (config.deadlineProfile !== undefined && config.deadlineProfile !== 'standard' && config.deadlineProfile !== 'preprod_smoke') {
+        throw new BusinessError('MASUMI_INVALID_CONFIG', 'Unknown Masumi timing profile', 503);
+      }
       this.config = { ...config, sellerUrl: validateMasumiUrl(config.sellerUrl, config.allowLocalHttp),
         buyerUrl: validateMasumiUrl(config.buyerUrl, config.allowLocalHttp) };
     }
@@ -321,11 +325,12 @@ export class MasumiProvider implements PaymentProvider {
       const existing = await this.findPayment(request);
       if (existing) return existing;
       const created = this.now().getTime();
+      const [pay, result, unlock, external] = config.deadlineProfile === 'preprod_smoke' ? [5, 16, 32, 48] : [20, 60, 90, 120];
       const payment = await this.api('seller', '/payment/', {
         network: 'Preprod', paymentType: 'Web3CardanoV1', agentIdentifier: config.skus[request.sku],
         inputHash: request.input_hash, identifierFromPurchaser: request.identifier_from_purchaser,
-        payByTime: new Date(created + 20 * 60_000).toISOString(), submitResultTime: new Date(created + 60 * 60_000).toISOString(),
-        unlockTime: new Date(created + 90 * 60_000).toISOString(), externalDisputeUnlockTime: new Date(created + 120 * 60_000).toISOString(),
+        payByTime: new Date(created + pay * 60_000).toISOString(), submitResultTime: new Date(created + result * 60_000).toISOString(),
+        unlockTime: new Date(created + unlock * 60_000).toISOString(), externalDisputeUnlockTime: new Date(created + external * 60_000).toISOString(),
         metadata: JSON.stringify({ intent_id: request.intent_id, order_id: request.order_id, sku: request.sku }),
       });
       this.verify(payment, request, 'seller');
