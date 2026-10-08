@@ -225,6 +225,15 @@ details.tech .tb{padding:4px 14px 14px;font:13px/1.6 var(--mono);color:var(--ink
 .segs button{min-height:40px;padding:6px 16px;border:0;border-radius:999px;background:none;font:600 14px var(--sans);color:var(--ink2);cursor:pointer}
 .segs button.on{background:var(--g900);color:#fff}
 .qlab{font:600 11px/1.2 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.quick-quote{background:#fff;border-radius:24px;box-shadow:0 30px 80px rgba(6,22,17,.22);padding:28px;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px;align-items:center}
+.quick-quote-fields{min-width:0;display:flex;flex-wrap:nowrap;align-items:flex-start;justify-content:space-between;gap:14px}
+.quick-quote-fields>div{flex-shrink:0}
+.quick-quote .segs{flex-wrap:nowrap}
+.quick-quote .segs button{padding:6px 10px;white-space:nowrap;font-size:13px;min-height:40px}
+.quick-quote #q-dia{width:88px!important}
+.quick-quote-summary{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding-left:24px;border-left:1px solid #D8DAD4}
+@media(max-width:1099px){.quick-quote{grid-template-columns:1fr}.quick-quote-fields{flex-wrap:wrap;justify-content:flex-start;gap:18px 28px}.quick-quote-summary{flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:20px 0 0;border-left:0;border-top:1px solid #D8DAD4}}
+@media(max-width:700px){.quick-quote{padding:20px}.quick-quote-fields{gap:18px 16px}.quick-quote .segs button{padding:6px 12px}.quick-quote-summary{align-items:flex-start}}
 .navx{position:absolute;left:0;right:0;top:0;z-index:5}
 
 /* ultra premium layer */
@@ -804,8 +813,8 @@ a{color:#1E4A3D}a:hover{color:#071C17}
 </section>
 
 <section aria-label="Rychlá kalkulace" class="wrap" style="position: relative; z-index: 3; margin-top: -96px">
-  <div style="background: #fff; border-radius: 24px; box-shadow: 0 30px 80px rgba(6,22,17,.22); padding: 28px; display: flex; flex-wrap: wrap; gap: 24px 32px; align-items: center">
-    <div style="flex: 999 1 640px; min-width: 0; display: flex; flex-wrap: wrap; gap: 18px 28px">
+  <div class="quick-quote">
+    <div class="quick-quote-fields">
       <div style="display: flex; flex-direction: column; gap: 8px">
         <span class="qlab" id="q-srv">Služba</span>
         <div class="segs" role="group" aria-labelledby="q-srv">
@@ -831,7 +840,7 @@ a{color:#1E4A3D}a:hover{color:#071C17}
         </sc-raw-select>
       </div>
     </div>
-    <div style="flex: 1 1 300px; display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-left: 28px; border-left: 1px solid #D8DAD4; flex-wrap: wrap">
+    <div class="quick-quote-summary">
       <div style="display: flex; flex-direction: column; gap: 2px">
         <span class="qlab">Cena za 4 kola</span>
         <span aria-live="polite" class="num" style="font: 800 40px/1.05 Manrope, sans-serif; letter-spacing: -.02em">{{price}}</span>
