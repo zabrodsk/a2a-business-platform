@@ -516,14 +516,14 @@ class MipSellerFixture implements PaymentProvider {
   }
   async requestRefund(_request: PaymentRequest, previous: PaymentObservation) { return { ...previous, state: 'refund_requested' as const }; }
 }
-async function mipFixture(t: TestContext) {
+async function mipFixture(t: TestContext, purchaseReady = true) {
   const provider = new MipSellerFixture();
   const f = await fixture(t, { PAYMENT_PROVIDER: 'masumi', MASUMI_SELLER_VKEY: 'a'.repeat(64) }, {
     paymentProvider: provider,
     paymentStatus: () => {
       const status = paymentProviderStatus({ PAYMENT_PROVIDER: 'masumi' });
       if (status.purchase_ready === undefined) throw new Error('Expected explicit Masumi readiness contract');
-      return { ...status, configured: true, purchase_ready: true };
+      return { ...status, configured: true, purchase_ready: purchaseReady };
     },
   });
   await activate(f);
@@ -547,6 +547,9 @@ async function mipFixture(t: TestContext) {
 
 test('MIP003 seller job prepares once without dispatching buyer funding and reports completion only after verified funds', async t => {
   const f = await mipFixture(t);
+  const profile = await (await f.publicCall('/api/agent/profile')).json();
+  assert.equal(profile.payment_api.base_url, 'http://localhost:8790/masumi');
+  assert.equal(profile.payment_api.standard, 'MIP-003');
   const availability = await (await f.publicCall('/masumi/availability')).json();
   assert.equal(availability.status, 'available'); assert.equal(availability.simulation, false);
   const schema = await (await f.publicCall('/masumi/input_schema')).json();
@@ -576,6 +579,16 @@ test('MIP003 seller job prepares once without dispatching buyer funding and repo
   assert.equal(receipt.order_id, f.orderId); assert.equal(receipt.fulfilment, 'confirmed_fictional_reservation');
   assert.equal(f.store.getOrder(f.orderId).status, 'confirmed');
   assert.equal(f.provider.starts, 0);
+});
+
+test('MIP003 discovery remains unavailable when buyer purchasing configuration prevents job creation', async t => {
+  const f = await mipFixture(t, false);
+  const availability = await (await f.publicCall('/masumi/availability')).json();
+  assert.equal(availability.status, 'unavailable');
+  const response = await f.agentA('/masumi/start_job', f.startInput);
+  assert.equal(response.status, 503);
+  assert.equal(f.provider.prepared.length, 0);
+  assert.equal(f.store.listPaymentIntents().length, 0);
 });
 
 test('MIP003 rejects a changed purchaser nonce or unknown job input without preparing a second seller request', async t => {

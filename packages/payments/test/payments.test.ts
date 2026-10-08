@@ -114,6 +114,12 @@ test('unconfigured Masumi fails explicitly and never falls back to a local payme
   assert.equal(paymentProviderStatus({ PAYMENT_PROVIDER: 'masumi' }).configured, false);
 });
 
+test('odd-length purchaser identifiers are rejected before contacting the pinned payment node', async () => {
+  const s = server();
+  await assert.rejects(s.provider.prepareJob({ ...request(), identifier_from_purchaser: '0123456789abcde' }), { code: 'PAYMENT_INVALID_IDENTIFIER' });
+  assert.equal(s.calls.length, 0);
+});
+
 test('no config status exposes tokens or credentials and mainnet fails closed', () => {
   const env = { PAYMENT_PROVIDER: 'masumi', MASUMI_NETWORK: 'Mainnet', MASUMI_PAYMENT_API_KEY: 'very-secret' };
   assert.throws(() => createPaymentProvider(env), { code: 'MASUMI_INVALID_CONFIG' });

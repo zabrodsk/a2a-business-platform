@@ -343,7 +343,8 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     let active = false;
     try { rulebooks.getActive(); active = true; } catch (error) { if (!(error instanceof BusinessError)) throw error; }
     const status = providerStatus();
-    res.json({ status: provider.name === 'masumi' && status.configured && active ? 'available' : 'unavailable', type: 'masumi-agent',
+    const available = provider.name === 'masumi' && provider.prepareJob && businessIdentity && status.configured && status.purchase_ready && active;
+    res.json({ status: available ? 'available' : 'unavailable', type: 'masumi-agent',
       message: 'Purchase of a confirmed fictional reservation; does not imply physical tyre service delivery.', simulation: provider.name === 'local_demo' });
   });
   app.get('/masumi/input_schema', (_req, res) => res.json({ input_data: [

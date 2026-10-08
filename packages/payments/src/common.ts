@@ -38,7 +38,7 @@ export function validateRequest(request: PaymentRequest, provider: 'local_demo' 
     throw new BusinessError('PAYMENT_FEE_LIMIT', 'Network fee budget exceeds authorization');
   }
   if (!/^[a-f0-9]{64}$/.test(request.input_hash) || !/^(?:[a-f0-9]{2}){7,13}$/.test(request.identifier_from_purchaser)) {
-    throw new BusinessError('PAYMENT_INVALID_IDENTIFIER', 'SHA-256 input hash and 14–26 character hex nonce required');
+    throw new BusinessError('PAYMENT_INVALID_IDENTIFIER', 'SHA-256 input hash and even-length 14–26 character hex nonce required');
   }
 }
 
