@@ -17,7 +17,17 @@ A customer should be able to tell their agent, **“I need my tires swapped,”*
 5. **Authorize and execute.** The customer's agent accepts a specific offer within a human-approved mandate. The backend checks permissions and capacity before initiating checkout.
 6. **Report the saved result.** Agents use persisted order, payment, and reservation states. A quoted offer, held appointment, verified funding, confirmed booking, and completed service are separate events.
 
-The registry provides discovery. Each business remains responsible for its own systems, operating rules, and fulfillment.
+Discovery can start with ordinary web search: GrokBot finds candidate businesses, confirms their official websites, and checks those sites for Agent Cards. The registry is an additional discovery source. Each business remains responsible for its own systems, operating rules, and fulfillment.
+
+## Website-first discovery
+
+Ask GrokBot to read the [website-discovery skill](skills/a2a-website-discovery/SKILL.md), search for a service and area, and scan the official websites it finds. No Google Maps API key or registry credential is required. The bundled helper checks public Agent Cards and explicit website links and returns bounded evidence; it does not perform the initial web search or certify geographic/service relevance.
+
+```bash
+node discover-sites.mjs --sites-file candidates.json --service tyre_change --area "Prague 6" --limit 10 --output report.json
+```
+
+Download the helper at `/cli/discover-sites.mjs` and the skill at `/skills/a2a-website-discovery/SKILL.md` from the demo or registry origin. See the [workflow and report guide](docs/web-discovery.html). A missing card in a bounded scan is reported as “no card found,” and a discovered card's booking claims remain unverified until exercised.
 
 ## Components
 
@@ -86,6 +96,7 @@ It listens on port 8792 by default. On Railway, leave `REGISTRY_HOST` and `REGIS
 - `inbox.mjs`: receive customer work and return the business bot's replies.
 - `garage.mjs`: operate the demo business through its authenticated API.
 - `registry.mjs`: register, verify, update, pause, and discover businesses.
+- `discover-sites.mjs`: inspect official candidate websites from a web search for A2A support, without registry access or credentials.
 
 [Business-agent instructions](skills/pneu007-business/SKILL.md) and [registry instructions](skills/business-registry/SKILL.md) explain setup, credentials, and the workflow. Human owner approvals and customer mandates remain backend-enforced; the bot cannot grant itself broader authority.
 

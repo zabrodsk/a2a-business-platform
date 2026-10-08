@@ -479,6 +479,14 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     if (!existsSync(path)) return void res.status(404).json({ error: 'CLI_NOT_BUILT' });
     res.type('text/javascript').sendFile(path);
   });
+  app.get('/cli/discover-sites.mjs', (_req, res) => {
+    const path = join(repoRoot, 'packages/agent-client/dist/discover-sites.mjs');
+    if (!existsSync(path)) return void res.status(404).json({ error: 'CLI_NOT_BUILT' });
+    res.type('text/javascript').sendFile(path);
+  });
+  app.get('/skills/a2a-website-discovery/SKILL.md', (_req, res) => {
+    res.type('text/markdown').sendFile(join(repoRoot, 'skills/a2a-website-discovery/SKILL.md'));
+  });
   app.get('/skills/pneu007-business/SKILL.md', (_req, res) => {
     res.type('text/markdown').sendFile(join(repoRoot, 'skills/pneu007-business/SKILL.md'));
   });

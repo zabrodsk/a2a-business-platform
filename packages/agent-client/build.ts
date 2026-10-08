@@ -6,6 +6,7 @@ for (const [entry, out] of [
   ['src/inbox-cli.ts', 'dist/inbox.mjs'],
   ['src/garage-cli.ts', 'dist/garage.mjs'],
   ['src/registry-cli.ts', 'dist/registry.mjs'],
+  ['src/discover-sites-cli.ts', 'dist/discover-sites.mjs'],
 ] as const) {
   await build({
     entryPoints: [entry],

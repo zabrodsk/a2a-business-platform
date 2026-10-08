@@ -92,7 +92,7 @@ export function createRelay(cfg: Config) {
 
   // Single-file CLIs, so a bot can (re)install them with one curl after a VM reset.
   app.get('/cli/:name', (req, res) => {
-    const file = { 'a2a.mjs': 'a2a.mjs', 'inbox.mjs': 'inbox.mjs' }[req.params.name];
+    const file = { 'a2a.mjs': 'a2a.mjs', 'inbox.mjs': 'inbox.mjs', 'discover-sites.mjs': 'discover-sites.mjs' }[req.params.name];
     const path = file && join(CLI_DIST, file);
     if (!path || !existsSync(path)) return void res.status(404).send('not found');
     res.type('text/javascript').sendFile(path);

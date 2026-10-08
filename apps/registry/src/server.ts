@@ -76,6 +76,8 @@ export function createRegistry(config: RegistryConfig, options: RegistryOptions 
   app.get('/healthz', (_req, res) => res.json({ ok: true }));
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
   app.get('/cli/registry.mjs', (_req, res) => res.type('text/javascript').sendFile(resolve(root, 'packages/agent-client/dist/registry.mjs')));
+  app.get('/cli/discover-sites.mjs', (_req, res) => res.type('text/javascript').sendFile(resolve(root, 'packages/agent-client/dist/discover-sites.mjs')));
+  app.get('/skills/a2a-website-discovery/SKILL.md', (_req, res) => res.type('text/markdown').sendFile(resolve(root, 'skills/a2a-website-discovery/SKILL.md')));
   app.get('/skills/business-registry/SKILL.md', (_req, res) => res.type('text/plain').sendFile(resolve(root, 'skills/business-registry/SKILL.md')));
   app.post('/api/publishers', (req, res) => {
     if (!timingSafeEqual(Buffer.from(hash(bearer(req))), Buffer.from(hash(config.adminToken)))) throw new HttpError(401, 'Invalid administrator token');
