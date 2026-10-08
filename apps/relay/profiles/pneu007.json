@@ -1,0 +1,30 @@
+{
+  "name": "Pneu 007 service agent",
+  "organization": "Pneu 007 (fictional, hackathon demo)",
+  "description": "Agent of Pneu 007, a FICTIONAL tyre service built for a hackathon. Sandbox only: no real services, no real payments. Send a request in plain text; the agent replies when it is your turn (task state INPUT_REQUIRED) and finishes with COMPLETED or REJECTED.",
+  "skill": {
+    "id": "tyre-service-negotiation",
+    "name": "Tyre service quote and booking",
+    "description": "Negotiate a quote and booking for tyre change services at the fictional Pneu 007 workshop. Multi-turn: the agent may ask follow-up questions.",
+    "tags": [
+      "tyres",
+      "booking",
+      "quote",
+      "sandbox"
+    ],
+    "examples": [
+      "I need a tyre change for 4 tyres, passenger car, 18\" alloy rims. What does it cost?"
+    ]
+  },
+  "site": {
+    "title": "Pneu 007",
+    "tagline": "Tyre service with a licence to change. (A fictional workshop for a hackathon test.)",
+    "facts": [
+      "Tyre change and wheel swap for cars, SUVs and vans",
+      "Online price calculator and appointment booking (sandbox)"
+    ],
+    "phone": "+1 (202) 555-0170",
+    "phoneNote": "fictional number",
+    "notice": "Pneu 007 is fictional. No services are provided at any address; payments are sandbox only."
+  }
+}

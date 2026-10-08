@@ -1,0 +1,33 @@
+{
+  "name": "Polar Scoop ice cream agent",
+  "organization": "Polar Scoop (fictional ice cream shop, hackathon demo)",
+  "description": "Agent of Polar Scoop, a FICTIONAL ice cream shop built for a hackathon. Ask about flavours, prices and opening hours, or place a pickup order. Sandbox only: no real shop, no real payments. The agent replies when it is your turn (task state INPUT_REQUIRED) and finishes with COMPLETED or REJECTED.",
+  "skill": {
+    "id": "ice-cream-shop",
+    "name": "Ice cream questions and pickup orders",
+    "description": "Answers questions about the fictional Polar Scoop shop (flavours, prices, hours) and takes simple pickup orders. Multi-turn.",
+    "tags": [
+      "ice-cream",
+      "shop",
+      "order",
+      "sandbox"
+    ],
+    "examples": [
+      "How much is one scoop of pistachio?",
+      "I'd like two scoops of chocolate in a cone for pickup at 3 pm."
+    ]
+  },
+  "site": {
+    "title": "Polar Scoop",
+    "tagline": "Simple, honest ice cream. (A fictional shop for a hackathon test.)",
+    "facts": [
+      "1 scoop: 55 CZK, cone or cup (same price)",
+      "Flavours: vanilla, chocolate, strawberry, pistachio",
+      "Open every day 11:00–20:00",
+      "Pickup orders, pay at pickup"
+    ],
+    "phone": "+1 (202) 555-0107",
+    "phoneNote": "fictional number",
+    "notice": "Polar Scoop does not exist. No real shop, no real orders, no real payments."
+  }
+}
