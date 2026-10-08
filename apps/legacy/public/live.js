@@ -100,9 +100,15 @@ document.addEventListener('click',async event=>{
 async function initialize() {
   const nav=document.querySelector('header[data-dc-tpl]');if(!nav)return false;
   await refreshSession().catch(()=>{});
+  const profile=['/','/kontakt','/pro-agenty'].includes(location.pathname)?await api('/api/agent/profile').catch(()=>null):null;
+  if(profile?.location?.address){
+    const address=[...document.querySelectorAll('.ph')].find(element=>element.textContent.includes('[PLACEHOLDER: testovací adresa]'));
+    if(address){address.textContent=profile.location.address;address.classList.remove('ph');}
+    const eyebrow=document.querySelector('#hero-h')?.previousElementSibling;
+    if(eyebrow)eyebrow.textContent=`${eyebrow.textContent} · ${profile.location.address}`;
+  }
   if(location.pathname.startsWith('/objednavka'))await checkout();
   if(location.pathname==='/pro-agenty'){
-    const profile=await api('/api/agent/profile').catch(()=>null);
     const detail=document.querySelector('.tech .tb');
     if(profile&&detail){
       const card=profile.active&&profile.transport_configured?await api('/.well-known/agent-card.json').catch(()=>null):null;

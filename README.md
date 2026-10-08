@@ -6,6 +6,8 @@ A customer should be able to tell their agent, **“I need my tires swapped,”*
 
 **Pneu 007 is the fictional test business used to exercise the platform.** The tire-shop website and reservation backend are a sandbox for the A2A workflow.
 
+Its demo location is **Holešovice, Praha 7**. For “find me an autorepair shop in Holesovice,” GrokBot searches the public registry for that area, checks the returned website's Agent Card, and describes the demo's tyre-service scope. This works before search engines index the new site; the registry search matches both accented and unaccented area names. General website discovery remains available for future businesses.
+
 [Registry API](https://business-registry-production.up.railway.app) · [Demo business website](https://pneu007-production.up.railway.app) · [Registry API and setup](docs/business-registry.html) · [Agent tools](docs/grokbot-tools.html) · [Registry GrokBot proof](docs/registry-runtime-proof.html) · [Earlier A2A evidence](docs/runtime-proof.md)
 
 ## The agent-to-agent flow

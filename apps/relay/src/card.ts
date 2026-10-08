@@ -6,6 +6,7 @@ export interface BusinessProfile {
   name: string;
   organization: string;
   description: string;
+  location?: { latitude: number; longitude: number; address: string };
   skill: { id: string; name: string; description: string; tags: string[]; examples: string[] };
   /** Public website content (home page + llms.txt). */
   site: { title: string; tagline: string; facts: string[]; phone: string; phoneNote: string; notice: string };

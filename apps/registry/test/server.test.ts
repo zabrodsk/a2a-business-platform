@@ -206,3 +206,32 @@ test('total listing capacity includes pending records but preserves idempotent r
     assert.equal((await f.api('/api/me/businesses', 'GET', undefined, token)).data.businesses.length, MAX_BUSINESSES);
   } finally { await f.close(); }
 });
+
+test('free-text search folds Czech accents and case across name, description and address in both directions', async () => {
+  const f = await fixture();
+  try {
+    const token = await f.issue();
+    const listing = await f.register(token, { ...input, name: 'Dílna U Mostu', description: 'Přezutí pneumatik',
+      location: { ...input.location, address: 'Praha 7 – Holešovice' } });
+    const path = `/api/businesses/${listing.business_id}`;
+    assert.equal((await f.api(`${path}/verify`, 'POST', undefined, token)).status, 200);
+    for (const q of ['Holesovice', 'HOLEŠOVICE', 'Holešovice'.normalize('NFD'), 'dilna', 'PREZUTI']) {
+      const result = await f.api('/api/search?q=' + encodeURIComponent(q));
+      assert.equal(result.data.total, 1, q);
+      assert.equal(result.data.businesses[0].location.address, 'Praha 7 – Holešovice');
+    }
+    assert.equal((await f.api('/api/search?q=holesovice&service=wheel_swap')).data.total, 0);
+    assert.equal((await f.api('/api/search?q=holesovice&action=cancel')).data.total, 0);
+    assert.equal((await f.api('/api/search?q=holesovice&lat=49&lon=14&radius_km=1')).data.total, 0);
+    const nearby = await f.api('/api/search?q=holesovice&lat=50.08&lon=14.43&radius_km=1');
+    assert.equal(nearby.data.total, 1); assert.equal(nearby.data.businesses[0].distance_km, 0);
+
+    const updated = await f.api(path, 'PATCH', { name: 'Dilna U Mostu', description: 'Prezuti pneumatik',
+      location: { ...input.location, address: 'Praha 7 - Holesovice' } }, token);
+    assert.equal(updated.status, 200);
+    f.documents.set(updated.data.verification.url, updated.data.verification.body);
+    assert.equal((await f.api(`${path}/verify`, 'POST', undefined, token)).status, 200);
+    for (const q of ['Holešovice', 'DÍLNA', 'PŘEZUTÍ']) assert.equal((await f.api('/api/search?q=' + encodeURIComponent(q))).data.total, 1, q);
+    assert.equal((await f.api('/api/search?q=Vinohrady')).data.total, 0);
+  } finally { await f.close(); }
+});

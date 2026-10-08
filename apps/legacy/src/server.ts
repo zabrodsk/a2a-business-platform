@@ -14,6 +14,7 @@ import { AgentPolicy } from './agent-policy.js';
 import { PaymentWorkflow } from './payment-workflow.js';
 import { loadLegacyConfig, repoRoot, type LegacyConfig } from './config.js';
 import { GARAGE_TOOLS } from '../../../packages/agent-client/src/garage-tools.js';
+import { loadProfile } from '../../relay/src/card.js';
 
 export interface LegacyOptions {
   discoveryFetchDocument?: DocumentFetcher;
@@ -474,7 +475,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/api/agent/profile', (_req, res) => {
     let active = false;
     try { rulebooks.getActive(); active = true; } catch (error) { if (!(error instanceof BusinessError)) throw error; }
-    res.json({ name: 'Pneu 007', fictional: true, active, transport_configured: Boolean(options.agentCard), payment: providerStatus(),
+    res.json({ name: 'Pneu 007', fictional: true, location: loadProfile('pneu007').location, active, transport_configured: Boolean(options.agentCard), payment: providerStatus(),
       payment_api: { standard: 'MIP-003', hashing: 'MIP-004', base_url: `${cfg.publicUrl}/masumi`,
         availability: '/masumi/availability', input_schema: '/masumi/input_schema', start_job: '/masumi/start_job', status: '/masumi/status',
         authentication: 'Bearer token for the assigned agent identity; job creation requires a customer agent and an approved order.' },

@@ -24,6 +24,7 @@ export interface RegistryOptions {
   startHealthTimer?: boolean;
 }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+const foldSearchText = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 const timestamp = (value: number | null) => value === null ? null : new Date(value).toISOString();
 export function createRegistry(config: RegistryConfig, options: RegistryOptions = {}) {
   if (config.adminToken.length < 24) throw new Error('Registry administrator token must contain at least 24 characters');
@@ -209,11 +210,12 @@ export function createRegistry(config: RegistryConfig, options: RegistryOptions 
   });
   app.get('/api/search', (req, res) => {
     const search = validateSearch(req.query);
+    const queryText = search.q === undefined ? undefined : foldSearchText(search.q);
     const rows = db.prepare("SELECT * FROM businesses WHERE status='active' ORDER BY id").all() as Row[];
     const found = rows.filter(visible).map(row => {
       const listing = view(row);
       return { ...listing, ...(search.lat !== undefined && search.lon !== undefined ? { distance_km: distanceKm(search.lat, search.lon, listing.location) } : {}) };
-    }).filter(listing => (!search.service || listing.services.includes(search.service)) && (!search.action || listing.actions.includes(search.action)) && (!search.q || `${listing.name} ${listing.description} ${listing.location.address}`.toLowerCase().includes(search.q.toLowerCase())) && (search.radius === undefined || listing.distance_km! <= search.radius));
+    }).filter(listing => (!search.service || listing.services.includes(search.service)) && (!search.action || listing.actions.includes(search.action)) && (queryText === undefined || foldSearchText(`${listing.name} ${listing.description} ${listing.location.address}`).includes(queryText)) && (search.radius === undefined || listing.distance_km! <= search.radius));
     if (search.lat !== undefined) found.sort((a, b) => a.distance_km! - b.distance_km! || a.business_id.localeCompare(b.business_id));
     res.json({ businesses: found.slice(search.offset, search.offset + search.limit), total: found.length, limit: search.limit, offset: search.offset });
   });

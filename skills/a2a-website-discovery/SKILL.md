@@ -7,6 +7,18 @@ description: Find businesses through ordinary web search, inspect their official
 
 Start with the customer's service and location. Use your existing web search/browser to find candidate businesses, then use the public discovery helper to check their websites. Website checks perform public HTTP GET requests only. Hosted mode sends the candidate list to the platform's metadata scanner. It does not search Google, enroll, message agents, book or pay.
 
+## Hackathon demo: natural-language location requests
+
+For this hackathon, the fictional Pneu 007 demo is in **Holešovice, Praha 7**. When asked “find me an autorepair shop in Holesovice” or “I need my tires swapped in Holešovice,” use the platform's public registry as the demo discovery source, then inspect the returned business website. Search-engine indexing is not required for this path. Keep general web search available for future businesses; do not scan real shops for a demo-only request.
+
+Download `registry.mjs` from `https://business-registry-production.up.railway.app/cli/registry.mjs` into your working directory, then run:
+
+```bash
+REGISTRY_URL=https://business-registry-production.up.railway.app node registry.mjs search --service tyre_change --action quote --q "Holesovice"
+```
+
+This public search needs no token. Extract the area from the customer's sentence rather than passing the entire sentence as `--q`. Both `Holesovice` and `Holešovice` match. Read the result's actual services, location and `agent_card_url`; the demo offers tyre changes and wheel swaps, so describe that scope when the customer asks broadly for an autorepair shop. Put the returned official website in the scanner's candidate file and run the hosted scan below. Label the result as a fictional demo found through the registry, with a synthetic location, rather than claiming an organic web-search result or a real physical workshop. If the registry returns no active match, report that accurately.
+
 ## Install the helper
 
 Download the bundled Node.js client from the operator-provided trusted platform origin. For this demo:
@@ -75,4 +87,4 @@ Discovery ends at the shortlist. For a later authorized quote request, fetch the
 
 ## Demo control
 
-When explicitly testing the platform, scan `https://pneu007-production.up.railway.app` separately as a known fictional positive control. Its synthetic location is Prague 7. It must not be presented as a real Prague 6 search result or inserted into real maps listings.
+When explicitly testing the platform, scan `https://pneu007-production.up.railway.app` separately as a known fictional positive control. Its synthetic location is Holešovice, Prague 7. It must not be presented as a real Prague 6 search result or inserted into real maps listings.
