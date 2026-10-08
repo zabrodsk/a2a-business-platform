@@ -22,8 +22,8 @@ async function page(options: {actor?: {id:string;role:string}|null;pathname?:str
   const context = {
     location:{pathname:options.pathname ?? '/agent/mandates',search:options.search ?? '?mandate_id=mandate-test'},URLSearchParams,Intl,Date,BigInt,
     document:{querySelector:()=>element('main'),querySelectorAll:(selector:string)=> {
-      assert.equal(selector, 'footer a[href="/admin"], footer a[href="/handoru"]');
-      return ['/admin','/handoru'].map(href=>({remove:()=>removedFooterLinks.push(href)}));
+      assert.equal(selector, 'footer a[href="/admin"], footer a[href="/handle"], footer a[href="/handoru"]');
+      return ['/admin','/handle','/handoru'].map(href=>({remove:()=>removedFooterLinks.push(href)}));
     },getElementById:element,addEventListener:(name:string,listener:(event:unknown)=>Promise<void>)=>listeners.set(name,listener)},
     api: async (path:string, input?:{method?:string;body?:unknown}) => {
       requests.push({path,options:input});
@@ -94,7 +94,7 @@ test('customer pages use friendly account labels and remove only operator footer
     const p=await page({pathname});
     assert.match(p.sessionHtml(),/Zákaznický účet/);
     assert.doesNotMatch(p.sessionHtml(),/customer-a|human_customer/);
-    assert.deepEqual(p.removedFooterLinks,['/admin','/handoru']);
+    assert.deepEqual(p.removedFooterLinks,['/admin','/handle','/handoru']);
   }
   const owner=await page({pathname:'/admin',actor:{id:'owner-account',role:'owner'}});
   assert.match(owner.sessionHtml(),/owner-account · owner/);
