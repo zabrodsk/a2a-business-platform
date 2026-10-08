@@ -1,6 +1,6 @@
-ZADÁNÍ PRO CLAUDE DESIGN — PNEU 007 / HANDORU
+ZADÁNÍ PRO CLAUDE DESIGN — PNEU 007 / HANDLE
 
-Vytvoř propracovaný responzivní design a klikací prototyp pro fiktivní pneuservis Pneu 007: veřejný web, objednávkový proces, zaměstnaneckou administraci a samostatnou konzoli Handoru pro audit a provoz firemního agenta. Výstup bude podkladem pro vývojáře, kteří připojí skutečný backend, kalendář, agenty a Masumi platby.
+Vytvoř propracovaný responzivní design a klikací prototyp pro fiktivní pneuservis Pneu 007: veřejný web, objednávkový proces, zaměstnaneckou administraci a samostatnou konzoli Handle pro audit a provoz firemního agenta. Výstup bude podkladem pro vývojáře, kteří připojí skutečný backend, kalendář, agenty a Masumi platby.
 
 Toto zadání obsahuje potřebný kontext; nepotřebuješ přístup k původnímu Codex chatu ani ChatGPT Page. Rovnou vytvoř návrh. Běžné vizuální volby rozhodni samostatně, obchodní logiku a částky zachovej. Neznámé technické údaje označ jako placeholder.
 
@@ -8,7 +8,7 @@ Toto zadání obsahuje potřebný kontext; nepotřebuješ přístup k původním
 
 Pneu 007 má být uvěřitelný business s vlastním webem, objednávkami, kalendářem, historií, skladem a dvěma testovacími dodavateli. Člověk musí umět službu poptat, objednat a koupit i před vznikem agentího rulebooku.
 
-Handoru umožní skutečnému firemnímu GrokBotovi auditovat tento existující systém, zjistit procesy a pravomoci ze zdrojů a navrhnout rulebook. Majitel pravidla schválí a teprve potom agent autonomně obsluhuje podporované zakázky. Zákaznický GrokBot objeví firemní rozhraní na webu, vyjedná službu podle zákazníkova mandátu a koupí ji přes testovací platební workflow.
+Handle umožní skutečnému firemnímu GrokBotovi auditovat tento existující systém, zjistit procesy a pravomoci ze zdrojů a navrhnout rulebook. Majitel pravidla schválí a teprve potom agent autonomně obsluhuje podporované zakázky. Zákaznický GrokBot objeví firemní rozhraní na webu, vyjedná službu podle zákazníkova mandátu a koupí ji přes testovací platební workflow.
 
 Design musí srozumitelně ukázat řetězec:
 Fungující firma → audit zdrojů → návrh pravidel → lidské schválení → jednání agentů → platba → potvrzená rezervace.
@@ -25,7 +25,7 @@ Atmosféra prémiového britského automobilového servisu, inspirovaná Aston M
 • Velkorysé mezery, precizní zarovnání, výrazný vizuál kupé, jemné linky.
 • Formuláře mají přednost před dekorací. Omez efekty a samoúčelné animace.
 
-Administrace a Handoru mají stejnou barevnou příbuznost, ale kompaktní pracovní rozvržení. Statusy rozlišuj textem a ikonou, nejen barvou. Pneu 007 je značka servisu; Handoru je pracovní nástroj, nikoli hlavní značka veřejného webu.
+Administrace a Handle mají stejnou barevnou příbuznost, ale kompaktní pracovní rozvržení. Statusy rozlišuj textem a ikonou, nejen barvou. Pneu 007 je značka servisu; Handle je pracovní nástroj, nikoli hlavní značka veřejného webu.
 
 3. VEŘEJNÝ WEB — ČTYŘI OBSAHOVÉ STRÁNKY
 
@@ -128,7 +128,7 @@ Naplnění prototypu: přibližně 12 konzistentních zakázek s různými stavy
 
 Reporty oddělují cenu zakázek v Kč, dummy historii, testnet escrow, výplaty a poplatky. Každá metrika má období a definici; test-ADA není korunová tržba.
 
-7. KONZOLE HANDORU /handoru
+7. KONZOLE HANDLE /handle
 
 Čtyři hlavní pohledy, detaily mohou být v bočním panelu:
 
@@ -188,7 +188,7 @@ Zákazník vidí vlastní objednávku; zaměstnanec provoz; majitel interní aud
 
 10. POŽADOVANÝ VÝSTUP
 
-Jeden ucelený vizuální směr a klikací prototyp čtyř veřejných stránek, objednávkového toku, klíčových pohledů administrace a čtyř pohledů Handoru.
+Jeden ucelený vizuální směr a klikací prototyp čtyř veřejných stránek, objednávkového toku, klíčových pohledů administrace a čtyř pohledů Handle.
 Priorita: úvod, kalkulátor, objednávka/platba, kalendář, pravidlo vedle zdroje. Další provozní pohledy sdílejí kvalitní tabulkový/detailový vzor.
 
 Dodej:

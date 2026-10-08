@@ -1,4 +1,10 @@
-# A2A Business Platform
+# Handle
+
+**Shared project specification:** [Handle Final Draft v2.2](docs/scope-of-work.md)
+is the approved product and technical target. Its [HTML reading copy](docs/handoru-final-draft.html)
+is available offline. The existing demo console is `/handle`; `/handoru` remains a compatible alias.
+Fresh-business onboarding and managed relay implementation remain local work in progress.
+See [AGENTS.md](AGENTS.md) for repository guidance.
 
 Infrastructure for personal agents to discover business agents, negotiate service offers, and complete authorized transactions.
 
