@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Business registry</title><style>body{font:16px/1.6 system-ui;background:#f6f7f8;color:#20303a;margin:0}main{max-width:1000px;margin:auto;padding:32px 24px}code,pre{font-family:ui-monospace,monospace}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#e8edf0;padding:16px}table{border-collapse:collapse;width:100%}th,td{padding:10px;text-align:left;border-bottom:1px solid #ccd5db;vertical-align:top}</style></head><body><main>
+<h1>Business registry</h1><p>An independent directory service for business agents. Express and SQLite persist listings, publisher credentials, website verification and metadata health. Booking and customer records stay in each business's own backend. Neutral naming is intentional.</p>
+<h2>Registration to discovery</h2><ol><li>The operator issues a publisher credential for the authorized business bot.</li><li>The bot submits a public listing: website, Agent Card URL, services, declared actions and location.</li><li>The registry returns a pending listing and a unique verification challenge.</li><li>The bot publishes the exact JSON challenge on its authorized business website, then calls verify.</li><li>The registry fetches the challenge and card over public HTTPS. A passing listing becomes active and searchable.</li><li>A customer bot searches, retrieves the business's Agent Card, then authenticates to that business independently to request offers.</li></ol>
+<p>Verification proves website control and checks card metadata. It does not verify a legal business, test actual booking capability or certify full A2A conformance. Actions and service categories are publisher declarations. The initial version requires the website, card and advertised interfaces on the same HTTPS origin; it does not support outsourced cross-origin cards. Agent Card structure follows the <a href="https://a2a-protocol.org/v1.0.1/specification/">A2A specification</a>; the registry API is application-specific.</p>
+<h2>API</h2><table><tr><th>Endpoint</th><th>Access and purpose</th></tr>
+<tr><td>POST /api/publishers</td><td>Operator bearer token; JSON name; returns publisher_id and publisher token once. The DB stores a token hash.</td></tr>
+<tr><td>POST /api/businesses</td><td>Publisher token; creates pending listing, or returns the publisher's existing listing for that website.</td></tr>
+<tr><td>PATCH /api/businesses/:id</td><td>Publisher owns listing; validated partial edit, re-verification required.</td></tr>
+<tr><td>POST /api/businesses/:id/verify</td><td>Publisher owns listing; checks ownership and card, explicitly activates/resumes.</td></tr>
+<tr><td>POST /api/businesses/:id/check</td><td>Publisher owns listing; refreshes health without resuming paused listings.</td></tr>
+<tr><td>POST /api/businesses/:id/pause</td><td>Publisher owns listing; immediately removes from discovery.</td></tr>
+<tr><td>GET /api/me/businesses</td><td>Publisher; all own listing states and verification instructions.</td></tr>
+<tr><td>GET /api/search</td><td>Public; service/action filters and lat, lon, radius_km; limit/offset pagination.</td></tr>
+<tr><td>GET /api/businesses/:id</td><td>Public; only currently searchable listings.</td></tr>
+<tr><td>GET /cli/registry.mjs</td><td>Public bundled agent client.</td></tr>
+<tr><td>GET /skills/business-registry/SKILL.md</td><td>Public registration and discovery instructions.</td></tr></table>
+<h2>Run and deploy</h2><pre>npm ci
+npm run build
+npm run start:registry</pre>
+<p>Set REGISTRY_ADMIN_TOKEN to a strong random value (at least 24 characters) through the host's secret configuration. Other settings: REGISTRY_DB_PATH, REGISTRY_PORT (or PORT), REGISTRY_HOST. The default local port is 8792. For Railway use the repository root as build context and Dockerfile.registry, mount a persistent volume at /data, and set REGISTRY_DB_PATH=/data/registry.db and NODE_ENV=production. Configure health check /healthz. Configure volume backups separately; creating this application does not create a Railway service or volume.</p>
+<p>The registry is a single-instance SQLite service with a maximum of 100 listings in this first release, including pending and paused entries. Its background metadata checks process the 20 oldest active listings every five minutes; public results expire after one hour without a successful check. The capacity bound keeps this schedule within the freshness window. Pauses/edits cannot be undone by a stale in-flight check. A failed check hides the listing; owner views retain diagnostic status. Publishing a listing does not move or expose the business database.</p>
+<h2>Agent client</h2><p>Supply REGISTRY_URL and, for publishers, REGISTRY_TOKEN securely. Public searches do not send this token.</p><pre>node registry.mjs tools
+node registry.mjs register --data-file business.json
+node registry.mjs mine
+# Publish the returned verification JSON at its specified business website path.
+node registry.mjs verify BUSINESS_ID
+node registry.mjs search --service tyre_change --action book --lat 50.08 --lon 14.43 --radius-km 10
+node registry.mjs update BUSINESS_ID --data-file changes.json
+node registry.mjs pause BUSINESS_ID</pre>
+<p>After an edit, use the new returned challenge before verifying again. For a paused listing, verify is an intentional resume operation. Check never resumes it.</p>
+<h2>Limits of this first version</h2><p>Publisher enrollment is operator-controlled. Public self-service signup, legal-identity checks, publisher recovery/rotation UI, cross-origin hosted cards, and booking capability certification are separate work. The existing autoshop must be deployed on public HTTPS, publish its challenge, and have an active Agent Card before it can join. Neither a GrokBot account nor a public registry deployment is created by these local changes.</p>
+<p><a href="../skills/business-registry/SKILL.md">Agent skill</a></p></main></body></html>

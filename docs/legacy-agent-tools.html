@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pneu 007 — nástroje a skutečný A2A transport</title>
+<style>body{font:16px/1.6 system-ui,sans-serif;background:#f5f7fa;color:#172534;margin:0}main{max-width:1050px;margin:auto;padding:40px 24px}h1,h2{line-height:1.2}section{background:white;padding:24px;margin:20px 0;border:1px solid #dce3ea;border-radius:12px}code,pre{font-family:ui-monospace,monospace}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eef3f7;padding:16px;border-radius:8px}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:12px;border-bottom:1px solid #dce3ea;vertical-align:top}a{color:#006d85}.notice{border-left:4px solid #c97d00;padding-left:16px}</style></head>
+<body><main><h1>Pneu 007: přístup agentů k demo businessu</h1>
+<p>Web, autentizované provozní nástroje a stávající A2A relay běží na stejném originu. Firemní bot čte legacy systém, předloží vlastní audit a rulebook, po schválení majitelem obsluhuje skutečné objednávky demo provozovny. Žádný endpoint nevytváří za bota předstíranou odpověď nebo automatický audit.</p>
+
+<section><h2>Co je A2A a co jsou soukromé nástroje</h2>
+<table><thead><tr><th>Rozhraní</th><th>Účel</th><th>Identita</th></tr></thead><tbody>
+<tr><td><code>/.well-known/agent-card.json</code></td><td>Veřejná Agent Card v ProtoJSON, zveřejněná teprve po aktivaci aktuálního rulebooku majitelem. Inzeruje JSON-RPC A2A 1.0 a veřejný popis businessu.</td><td>Veřejné čtení; neobsahuje interní pravidla ani klíče.</td></tr>
+<tr><td><code>/a2a/jsonrpc</code></td><td>Skutečný A2A transport přes existující SDK a databázový task store. Zákaznický bot zjistí endpoint z Agent Card.</td><td>Bearer token zákaznického agenta, aktivní rulebook.</td></tr>
+<tr><td><code>/bot/inbox</code>, <code>/bot/wait</code>, <code>/bot/reply</code></td><td>Soukromá fronta pro skutečného firemního GrokBota. Bot přečte zprávu, použije provozní nástroje a sám odešle odpověď do původního A2A tasku.</td><td>Stejný firemní token jako u legacy nástrojů. Toto HTTP API není A2A.</td></tr>
+<tr><td><code>/api/audit/…</code>, <code>/api/agent/…</code></td><td>Autentizované interní nástroje pro audit, případy, nabídky a autorizovaný checkout. Nejsou zákaznickým A2A endpointem.</td><td>Server odvozuje roli a zákazníka z tokenu; tělo požadavku nemůže nastavit privilegia.</td></tr>
+<tr><td><code>/api/admin/…</code></td><td>Lidská konzole pro rozhodnutí majitele; schválení zákaznického mandátu je v zákaznické lidské relaci.</td><td>Heslem přihlášený člověk, session cookie a CSRF token.</td></tr>
+</tbody></table>
+<p class="notice">Regresní test používá skriptované identity a zřetelně označený testovací návrh rulebooku. Prokazuje implementovaný transport a policy gates. Přístup ke dvěma reálným účtům GrokBot, audit skutečným modelem a veřejná interoperabilita vyžadují samostatný runtime důkaz.</p></section>
+
+<section><h2>Spuštění a identity</h2>
+<pre>npm run build
+node --env-file-if-exists=.env.legacy.local --import tsx apps/legacy/src/system.ts</pre>
+<p>Výchozí lokální origin je <code>http://localhost:8797</code>. <code>LEGACY_PUBLIC_URL</code> musí odpovídat URL, kterou budou agenti skutečně otevírat. Samostatný legacy server a původní samostatný relay lze dál spouštět odděleně; sjednocený systém používá vlastní relay databázi a nemění původní produkční profil.</p>
+<table><thead><tr><th>Nastavení</th><th>Význam</th></tr></thead><tbody>
+<tr><td><code>LEGACY_BUSINESS_AGENT_TOKEN</code></td><td>Identita <code>garage-demo</code>: role business_agent v legacy a business v relay.</td></tr>
+<tr><td><code>LEGACY_CUSTOMER_AGENT_A_TOKEN</code><br><code>LEGACY_CUSTOMER_AGENT_B_TOKEN</code></td><td>Dvě odlišné zákaznické identity; každá má vlastní zákaznická data a A2A tasky.</td></tr>
+<tr><td><code>LEGACY_RELAY_ADMIN_TOKEN</code></td><td>Samostatný silný token pro transportní administraci a <code>/admin/events</code>. Není lidským schválením pravidel nebo mandátu.</td></tr>
+<tr><td><code>LEGACY_RELAY_DB_PATH</code></td><td>Samostatná persistentní SQLite databáze (výchozí <code>legacy-relay.db</code> vedle legacy DB). SDK migrace proběhne před spuštěním relay; opakované spuštění zachová tasky.</td></tr>
+<tr><td><code>LEGACY_BUSINESS_WEBHOOK_URL</code><br><code>LEGACY_BUSINESS_WEBHOOK_KEY</code><br><code>LEGACY_PUSH_HOST_ALLOWLIST</code></td><td>Volitelná notifikace firemního bota a allowlist push hostů. Bot může registrovat doorbell přes existující inbox CLI. Tajné klíče nepatří do veřejné Agent Card.</td></tr>
+</tbody></table>
+<p>Vývojové přístupové údaje vznikají lokálně v <code>data/legacy-access.json</code> s oprávněním 0600. Produkce vyžaduje explicitní secrets. Předávejte tokeny přímo do prostředí příslušného bota, bez veřejných dokumentů, chatů nebo logů. Jednotný systém vypíná relay enrollment, aby nevznikaly další tokeny bez stejné identity v legacy nástrojích.</p></section>
+
+<section><h2>Audit a schválení rulebooku</h2>
+<ol><li>Firemní GrokBot otevře veřejné stránky a autentizovaný <code>GET /api/audit/sources</code>.</li>
+<li>Stáhne povolené zdroje přes <code>GET /api/audit/export/:sourceId</code>, skutečné provozní snapshoty a mock dodavatelské údaje. Zkontroluje verze, autoritu, rozpory a nejasnosti. Poznámka zákazníka ani archivní politika nesmějí udělovat pravomoci.</li>
+<li>Bot samostatně předloží návrh přes <code>POST /api/agent/rulebook/proposals</code> s profilem businessu, parametry, nálezy a citacemi konkrétních zdrojů. Server validuje jejich hash, verzi a podporu pravidla v citovaném obsahu.</li>
+<li>Majitel návrh zkontroluje a aktivuje v lidské konzoli. Firemní agent ani transportní admin nemohou toto lidské rozhodnutí nahradit.</li>
+<li>Agent Card a A2A obsluha jsou poté dostupné. Změna autoritativního podkladu zneplatní starou politiku a vyžaduje nový audit a schválení.</li></ol>
+<p>Kalendář, historie objednávek, ledger a dva mock dodavatelé jsou provozní důkazy; jejich běžné změny samy o sobě nejsou změnou autoritativní politiky. Pozorování se ukládají jako verzované auditní snapshoty. Dodavatelská rozhraní zůstávají v demo systému a neodesílají skutečný nákup externím partnerům.</p></section>
+
+<section><h2>Terminálové nástroje</h2>
+<p><code>a2a.mjs</code> slouží zákaznickému botovi pro discovery a komunikaci. <code>inbox.mjs</code> slouží firemnímu botovi pro čtení a odpovědi ve frontě. <code>garage.mjs</code> je generický klient soukromých HTTP nástrojů; endpoint businessu neurčuje zákaznickému A2A klientovi.</p>
+<pre># Token je dodaný do prostředí, jeho hodnota se netiskne.
+node packages/agent-client/dist/garage.mjs --help
+node packages/agent-client/dist/garage.mjs --url https://BUSINESS_ORIGIN call GET /api/audit/sources
+node packages/agent-client/dist/garage.mjs --url https://BUSINESS_ORIGIN call POST /api/agent/cases --data-file case.json
+
+# Pouze při lokálním vývoji; HTTP jinde je zakázáno.
+node packages/agent-client/dist/garage.mjs --url http://localhost:8797 --allow-http-localhost call GET /api/audit/sources</pre>
+<p>CLI čte <code>PNEU007_TOOL_TOKEN</code>. Vyžaduje explicitní origin, výchozí HTTPS a odmítá přesměrování. JSON payload pochází ze souboru; token nepatří do argumentů příkazu. Nástroj nepřidává podnikatelskou logiku ani negeneruje schválení.</p></section>
+
+<section><h2>Od rozhovoru k nákupu</h2>
+<table><thead><tr><th>Operace</th><th>Oprávněná identita</th></tr></thead><tbody>
+<tr><td><code>POST /api/agent/cases</code><br><code>POST /api/agent/mandates</code></td><td>Zákaznický agent zakládá vlastní případ a navrhuje omezený mandát. Dodané <code>relay_task_id</code> musí existovat v relay a patřit téže autentizované identitě; jeden task nesmí zakládat více případů.</td></tr>
+<tr><td><code>POST /api/admin/mandates/:id/approve</code></td><td>Příslušný zákazník jako člověk schvaluje mandát v session.</td></tr>
+<tr><td><code>GET /api/agent/availability</code><br><code>POST /api/agent/cases/:id/quotes</code></td><td>Firemní agent získá volné termíny a vytvoří nabídku podle aktivního rulebooku.</td></tr>
+<tr><td><code>POST /api/admin/approvals/:id/decide</code></td><td>Majitel rozhodne o vyšší slevě na konkrétní verzi nabídky.</td></tr>
+<tr><td><code>POST /api/agent/cases/:id/accept</code></td><td>Zákaznický agent přijme přesnou nabídku v mezích lidského mandátu.</td></tr>
+<tr><td><code>POST /api/agent/orders/:id/checkout</code></td><td>Firemní agent spustí autorizovaný nákup; žádné klientské tvrzení o schválení neuděluje právo platit.</td></tr>
+<tr><td><code>GET /api/agent/orders/:id</code></td><td>Zákaznický nebo firemní agent sleduje pouze objednávky případu, ke kterému má oprávnění.</td></tr>
+</tbody></table>
+<p>Zákaznický bot kontaktuje firemního přes A2A, vyjednají konkrétní nabídku. Provozní nástroje ukládají případ, neměnnou verzi nabídky a její vazbu na aktivní rulebook. Zákazník jako člověk schválí omezený mandát se službou, cenou, zálohou, deadlinem, platební sítí, příjemcem, množstvím assetu a limitem poplatku. Zákaznický agent přijme konkrétní nabídku; firemní agent následně vytvoří checkout pouze v těchto mezích.</p>
+<p>Režim doporučení nevytváří objednávku ani platbu. Vyšší sleva vyžaduje lidské schválení konkrétní neměnné nabídky. Rezervace je potvrzená po ověření skutečného platebního stavu a zápisu kalendáře; duplicitní odpověď nebo retry nesmí vytvořit druhou rezervaci.</p>
+<p class="notice">Lokální <code>local_demo</code> platba je simulace a má toto označení v UI i ledgeru. Masumi je oddělený provider na Cardano Preprod; bez skutečně nakonfigurovaného payment service, peněženek a ověřené testnet transakce nelze tvrdit, že proběhla on-chain platba. Příchozí webhook sám nesmí měnit objednávku na zaplacenou.</p></section>
+</main></body></html>

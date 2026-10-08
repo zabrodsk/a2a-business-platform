@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrokBot autoshop tools</title>
+<style>body{font:16px/1.6 system-ui;margin:0;background:#f5f7f5;color:#172b23}main{max-width:960px;margin:auto;padding:32px 24px}table{border-collapse:collapse;width:100%;background:white}th,td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid #dde5df}pre{padding:16px;background:#e7eee8;white-space:pre-wrap;overflow-wrap:anywhere}code{font-family:ui-monospace,monospace}a{color:#14654a}</style></head>
+<body><main><h1>GrokBot tools for Pneu 007</h1>
+<p>The first integration is a bundled Node.js terminal client and a portable business skill. A native MCP/plugin can later wrap the same backend operations. This implementation does not install a plugin in a GrokBot account or deploy the autoshop.</p>
+<p>Business GrokBot → authenticated HTTPS API → Express booking service → SQLite on persistent storage. The bot gets a business credential; the database file and staff credentials stay with the backend.</p>
+<h2>Commands</h2><table><thead><tr><th>Command</th><th>Operation</th></tr></thead><tbody>
+<tr><td><code>tools</code></td><td>Local JSON tool catalog; no credentials or network request.</td></tr>
+<tr><td><code>profile</code>, <code>catalog</code>, <code>price --data-file service.json</code></td><td>Business status, services and shared price calculation.</td></tr>
+<tr><td><code>payments</code>, <code>masumi-availability</code>, <code>masumi-schema</code></td><td>Payment configuration, missing inputs, registered prices and Masumi seller service discovery.</td></tr>
+<tr><td><code>masumi-start --data-file job.json</code>, <code>masumi-status --job JOB_ID</code></td><td>The customer identity prepares a seller job for its accepted, authorized order; authorized agents inspect the job and exact receipt/hash result. Seller preparation does not initiate buyer payment.</td></tr>
+<tr><td><code>sources</code>, <code>source ID</code>, <code>rulebook</code>, <code>propose-rulebook --data-file proposal.json</code></td><td>Read website/private sources and current rules; submit the bot's cited proposal for human activation.</td></tr>
+<tr><td><code>cases</code>, <code>case ID</code></td><td>Inspect cases assigned to this agent.</td></tr>
+<tr><td><code>availability --service tyre_change --from DATE --to DATE</code></td><td>Read suitable free slots by start time in [from, to).</td></tr>
+<tr><td><code>quote CASE_ID --data-file quote.json</code></td><td>Create a persisted offer; exceptions generate owner approval requests.</td></tr>
+<tr><td><code>checkout ORDER_ID</code>, <code>order ORDER_ID</code></td><td>Start an authorized purchase and inspect saved quote/payment/booking state.</td></tr>
+<tr><td><code>reservations --from DATE --to DATE --status confirmed</code></td><td>Read bookings linked to this agent's assigned cases. Status also supports cancelled and service_completed.</td></tr>
+</tbody></table>
+<h2>Setup on GrokBot</h2>
+<p>Supply the deployed business HTTPS origin and business token through the runtime's credential mechanism. Set <code>PNEU007_BUSINESS_URL</code> and <code>PNEU007_TOOL_TOKEN</code> on the bot's computer without putting token values in chat or shell arguments.</p>
+<pre>curl --fail --silent --show-error "$PNEU007_BUSINESS_URL/cli/garage.mjs" --output garage.mjs
+curl --fail --silent --show-error "$PNEU007_BUSINESS_URL/skills/pneu007-business/SKILL.md" --output pneu007-business-SKILL.md
+node garage.mjs tools
+node garage.mjs --url "$PNEU007_BUSINESS_URL" sources</pre>
+<p>Ask the business bot to read and save the provided instructions as its business workflow. Native skill import is not assumed; verify the actual account's setup. Node.js 18+ is required. The backend also serves authenticated machine-readable metadata at <code>GET /api/agent/tools</code>.</p>
+<h2>Example requests</h2>
+<p>Price input:</p><pre>{"service_spec":{"service_id":"tyre_change","vehicle_type":"personal","wheel_size_inches":18,"rim_type":"alu","runflat":false,"tpms":false,"wheel_count":4}}</pre>
+<p>Quote input:</p><pre>{"slot_id":"slot-main","discount_bps":0}</pre>
+<p>Use the actual returned case, order and slot IDs. Source IDs come from the source catalog. Dates must describe future appointments for the current run. Times are returned with timezone information; use offset-qualified timestamps when filtering a Prague day.</p>
+<h2>Permissions and booking states</h2>
+<p>The business bot issues quotes and starts checkout. The customer bot creates the case and accepts a quote against its human-approved mandate. A human owner activates rules and decides exceptional discounts. The business tool package does not expose those human actions, staff cancellation/rescheduling, raw SQL or unrestricted database access.</p>
+<p>Acceptance alone is not a confirmed reservation. Checkout creates a hold and payment intent. Only verified funding creates the confirmed booking. Order reads include saved payment, booking and receipt state. Reservation search excludes human-only and historical orders without assigned agent cases. Payment reconciliation remains on the backend.</p>
+<h2>Deployment and verification</h2>
+<p>Run the unified autoshop entrypoint <code>apps/legacy/src/system.ts</code> when using A2A plus booking tools. Put <code>LEGACY_DB_PATH</code> and <code>LEGACY_RELAY_DB_PATH</code> on Railway's persistent volume (for example <code>/data/legacy.db</code> and <code>/data/legacy-relay.db</code>). Supply production secrets and the actual public origin explicitly. The older relay deployment does not automatically gain these booking routes.</p>
+<p>Local automated checks exercise real HTTP endpoints and the bundled client against isolated SQLite data and an explicitly simulated payment provider. These checks do not prove GrokBot account installation, public deployment, unattended wake-up or live Preprod payment interoperability.</p>
+<p><a href="../skills/pneu007-business/SKILL.md">Portable business skill</a> · <a href="legacy-agent-tools.html">Existing backend and A2A details</a></p>
+</main></body></html>

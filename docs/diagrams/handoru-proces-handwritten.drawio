@@ -1,0 +1,571 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" agent="Codex" version="29.0.0" type="device">
+  <diagram id="handoru-1" name="01 · Celý proces">
+    <mxGraphModel dx="1880" dy="1380" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1880" pageHeight="1380" math="0" shadow="0" background="#FFFDF8">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="setup" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#FAF8F2;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="1800" height="235" as="geometry" />
+        </mxCell>
+        <mxCell id="start" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#F7FAFD;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="465" width="1800" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="deal" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#FAF8F2;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="755" width="1800" height="265" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="sources" target="audit">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="audit" target="proposal">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-3" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="proposal" target="owner">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="owner" target="active">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="brief" target="mandate">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-6" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="mandate" target="discovery">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-7" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="discovery" target="case">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-8" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="case" target="check">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-9" value="aktivní verze" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#8972A4;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;dashed=1;dashPattern=6 5;" edge="1" parent="1" source="active" target="check">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-10" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="check" target="negotiate">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-11" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="negotiate" target="exception">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-12" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="exception" target="accept">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-13" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="accept" target="commit">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-14" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="commit" target="result">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="title" value="Handoru — jak funguje celý proces" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=40;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="38" width="1670" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Od poznání firmy až k ověřené rezervaci. Dva skuteční GrokBoti; lidské schválení pravidel, mandátu a výjimky." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=18;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="64" y="111" width="1700" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="folio" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:19px&quot;&gt;01&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;HANDORU&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=ellipse;rounded=1;arcSize=12;strokeWidth=2;fillColor=#F5F1E7;strokeColor=#8B8474;fontSize=16;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1735" y="42" width="90" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="setup-label" value="A / Příprava firmy" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="62" y="204" width="1756" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="start-label" value="B / Zákazník zahájí vlastní případ" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="62" y="479" width="1756" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="deal-label" value="C / Vyjednání a dokončení  ←" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="62" y="769" width="1756" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;1. Firma poskytne zdroje&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Veřejný web + interní dokumenty&lt;br&gt;Ceník, booking a testovací evidence&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="260" width="300" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="audit" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;2. Firemní GrokBot audituje&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Zmapuje procesy, systémy,&lt;br&gt;pravomoci a neznámé&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="430" y="260" width="300" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="proposal" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;3. Navrhne rulebook&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Každé pravidlo má zdroj&lt;br&gt;Návrh ještě nedává pravomoc&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="790" y="260" width="300" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="owner" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;4. Majitel schválí verzi&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Návrh vidí vedle zdrojů&lt;br&gt;Může jej vrátit k doplnění&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="260" width="300" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="active" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;5. Pravidla se aktivují&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Schválený JSON → SKILL.md&lt;br&gt;Publikují se veřejné schopnosti&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="260" width="300" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="brief" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;6. Zákazník zadá úkol&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Služba, termín, celkový rozpočet,&lt;br&gt;záloha a povolené doplňky&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="540" width="300" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="mandate" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;7. Schválí svůj mandát&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Customer připraví návrh&lt;br&gt;Člověk povolí recommend / book&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="430" y="540" width="300" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="discovery" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;8. Agent objeví rozhraní&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Kontakt → živý web → Agent Card&lt;br&gt;Použije aktuální endpoint z karty&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="790" y="540" width="300" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="case" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;9. Handoru uloží případ&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Ověří identitu a oprávnění&lt;br&gt;Doručí zprávu firemnímu agentovi&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="540" width="300" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="check" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;10. Business ověří fakta&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Aktivní pravidla + cena + termín&lt;br&gt;Pracuje jen s daným případem&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="540" width="300" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="negotiate" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;11. Agenti vyjednávají&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Nabídka a protinabídka&lt;br&gt;V mezích pravomocí obou stran&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="835" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="exception" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;12. Případná výjimka&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Nad autonomní limit rozhoduje&lt;br&gt;majitel o konkrétní nabídce&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="835" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="accept" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;13. Customer přijme&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Ověří nabídku proti mandátu&lt;br&gt;Jen book dovoluje závazek&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="790" y="835" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="commit" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;14. Backend provede commit&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Znovu zkontroluje všechny limity&lt;br&gt;Booking + převod v jedné DB transakci&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="430" y="835" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="result" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;15. Ověřený výsledek&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Booking ID, termín, cena, záloha&lt;br&gt;Customer jej sdělí zákazníkovi&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="835" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="limit" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:20px&quot;&gt;Tvrdá hranice&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Sleva nad 10 % je zakázaná&lt;br&gt;i při souhlasu majitele.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FBE4DF;strokeColor=#AE5E54;fontSize=17;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1080" width="390" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="recommend" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:20px&quot;&gt;Pouze doporučit&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Režim recommend vrátí nabídku.&lt;br&gt;Bez bookingu a bez převodu.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=17;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1080" width="390" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="fresh" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:20px&quot;&gt;Před závazkem znovu ověřit&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Nabídka platí 10 min. Změna ceny,&lt;br&gt;termínu či pravidel může vyžádat nový souhlas.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=17;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="970" y="1080" width="390" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="proof" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:20px&quot;&gt;Co je skutečné&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Audit, dialog a testovací zápisy.&lt;br&gt;Firma, kontakty a peníze jsou fiktivní.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#F5F1E7;strokeColor=#8B8474;fontSize=17;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="1080" width="390" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="source-note" value="Zdroj: docs/scope-of-work.md (v2.0). Přímé načtení odkazované Page nebylo povoleno; její aktuální znění není ověřeno." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=14;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="1250" width="1750" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="Handoru · lokální zadání v2.0 · § 1, 4–10 a 15–18 · Fiktivní firma a sandboxové peníze; diagram popisuje návrh procesu." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=13;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="1326" width="1750" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="handoru-2" name="02 · Audit a pravidla">
+    <mxGraphModel dx="1880" dy="1370" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1880" pageHeight="1370" math="0" shadow="0" background="#FFFDF8">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="inputs" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#FAF8F2;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="195" width="420" height="700" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="web" target="audit">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="internal" target="audit">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-3" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="systems" target="audit">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="audit" target="outputs">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="outputs" target="review">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-6" value="schváleno" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#AD8231;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="review" target="active">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-7" value="vrátit k doplnění" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#AE5E54;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.75;entryX=1;entryY=0.3;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="review" target="fix">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1395" y="490" />
+              <mxPoint x="1395" y="745" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-8" value="nový návrh" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#AE5E54;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.1;exitY=0;entryX=0.8;entryY=1;fontSize=16;labelBackgroundColor=#FFFDF8;dashed=1;dashPattern=6 5;" edge="1" parent="1" source="fix" target="audit">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="996" y="640" />
+              <mxPoint x="795" y="640" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-9" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#4C8062;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.75;entryX=1;entryY=0.25;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="active" target="skill">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1390" y="813" />
+              <mxPoint x="1390" y="1018" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-10" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#577FA6;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="active" target="card">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="title" value="Nejdřív pochopit firmu, potom jednat" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=40;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="38" width="1670" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Firemní GrokBot provede audit s přístupem pouze ke schváleným zdrojům. Pravidla aktivuje člověk." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=18;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="64" y="111" width="1700" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="folio" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:19px&quot;&gt;02&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;HANDORU&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=ellipse;rounded=1;arcSize=12;strokeWidth=2;fillColor=#F5F1E7;strokeColor=#8B8474;fontSize=16;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1735" y="42" width="90" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-label" value="VSTUPY / povolené zdroje" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="62" y="209" width="376" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;4 veřejné stránky&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Služby · kalkulátor&lt;br&gt;Kontakt · podmínky a FAQ&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="265" width="360" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="internal" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;3 interní dokumenty&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;systems.json — systémy a autorita&lt;br&gt;operations.md — proces a pravomoci&lt;br&gt;partners.md — partneři a kanály&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="455" width="360" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="systems" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Ověřitelné systémové údaje&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Ceník a dostupnost&lt;br&gt;Booking a testovací peněženky&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="685" width="360" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="audit" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Firemní GrokBot / audit&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Nabídka, procesy a systémy&lt;br&gt;Autoritativní zdroje&lt;br&gt;Partneři, limity a eskalace&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="530" y="370" width="330" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="outputs" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Návrh s důkazy&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;business-profile.json&lt;br&gt;rulebook.json — návrh verze&lt;br&gt;audit-findings.json&lt;br&gt;&lt;br&gt;Ke každému závěru zdroj a citace.&lt;br&gt;Rozpory a neznámé zůstávají přiznané.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="960" y="265" width="360" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="review" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Majitel zkontroluje návrh&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Pravidla vedle původních zdrojů&lt;br&gt;Schválí verzi, nebo vrátí návrh&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="355" width="330" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="fix" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Doplnit nebo opravit&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Kritická neznámá či rozpor blokuje&lt;br&gt;příslušnou schopnost firmy.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FBE4DF;strokeColor=#AE5E54;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="960" y="700" width="360" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="active" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Schválit a aktivovat verzi&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Schválený rulebook.json&lt;br&gt;je jediný zdroj konfigurace.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="700" width="330" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="enforce" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Backend vynucuje pravidla&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Agent může pravidlo navrhnout,&lt;br&gt;ale nemůže je sám aktivovat.&lt;br&gt;SKILL.md sám oprávnění nevynucuje.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="530" y="700" width="330" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="skill" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Soukromý provozní návod&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;SKILL.md se generuje ze&lt;br&gt;schváleného rulebooku.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="960" y="980" width="360" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="card" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Veřejná Agent Card&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Schopnosti, vstupy, endpoint,&lt;br&gt;protokol a autentizace.&lt;br&gt;Bez interních limitů a klíčů.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="980" width="330" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="change-test" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:22px&quot;&gt;Důkaz, že audit mění chování&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Zdroj 5 % → 3 % → nový audit → lidská aktivace.&lt;br&gt;Stejná 4% sleva nově vyžaduje majitele.&lt;br&gt;Backend se mezi běhy ručně nepřepisuje.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#F5F1E7;strokeColor=#8B8474;fontSize=19;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="980" width="790" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="data-note" value="Stažený obsah je důkaz k posouzení. Nemění oprávnění ani povolené nástroje." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1198" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="version-note" value="Změna aktivní verze během rozpracované nabídky: commit ji odmítne a je nutné nové vystavení nabídky." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=16;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1242" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="Handoru · lokální zadání v2.0 · § 4.2, 5 a testy T01–T03 · Fiktivní firma a sandboxové peníze; diagram popisuje návrh procesu." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=13;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="1316" width="1750" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="handoru-3" name="03 · Ukázková zakázka">
+    <mxGraphModel dx="1880" dy="1870" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1880" pageHeight="1870" math="0" shadow="0" background="#FFFDF8">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lane0" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#FBF8ED;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="45" y="190" width="400" height="1460" as="geometry" />
+        </mxCell>
+        <mxCell id="lane1" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#F4F8FD;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="485" y="190" width="400" height="1460" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#F3F9F4;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="925" y="190" width="400" height="1460" as="geometry" />
+        </mxCell>
+        <mxCell id="lane3" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#FAF5EC;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="1365" y="190" width="400" height="1460" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="brief" target="mandate">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.7;entryX=1;entryY=0.35;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="mandate" target="approve">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="465" y="382" />
+              <mxPoint x="465" y="535" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-3" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="approve" target="discover">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="discover" target="facts">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="facts" target="offer">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-6" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="offer" target="counter">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-7" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.65;entryX=0;entryY=0.3;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="counter" target="auto">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="895" y="785" />
+              <mxPoint x="895" y="938" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-8" value="žádost" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="auto" target="owner">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-9" value="schváleno" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.75;entryX=1;entryY=0.35;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="owner" target="final">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1345" y="1010" />
+              <mxPoint x="1345" y="1162" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-10" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="final" target="fits">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-11" value="recommend" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#577FA6;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;dashed=1;dashPattern=6 5;" edge="1" parent="1" source="fits" target="recommend">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-12" value="nesplňuje" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#AE5E54;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.8;entryX=1;entryY=0.25;fontSize=16;labelBackgroundColor=#FFFDF8;dashed=1;dashPattern=6 5;" edge="1" parent="1" source="fits" target="new-mandate">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="465" y="1230" />
+              <mxPoint x="465" y="1372" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-13" value="splňuje + book" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#577FA6;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="fits" target="accept">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-14" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="accept" target="request">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-15" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="request" target="commit">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-16" value="úspěšně uloženo" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.88;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="commit" target="done">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1565" y="1580" />
+              <mxPoint x="1575" y="1580" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="title" value="Jedna zakázka — od mandátu k rezervaci" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=40;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="38" width="1670" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Přezutí 4 vlastních pneu · osobní auto · 18″ alu · bez runflat, TPMS, uskladnění a dalších služeb." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=18;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="64" y="111" width="1700" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="folio" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:19px&quot;&gt;03&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;HANDORU&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=ellipse;rounded=1;arcSize=12;strokeWidth=2;fillColor=#F5F1E7;strokeColor=#8B8474;fontSize=16;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1735" y="42" width="90" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="lane0-label" value="ZÁKAZNÍK" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="67" y="204" width="356" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="lane1-label" value="CUSTOMER GROKBOT" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="507" y="204" width="356" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2-label" value="BUSINESS GROKBOT" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="947" y="204" width="356" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="lane3-label" value="MAJITEL / BACKEND" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="1387" y="204" width="356" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="brief" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;1 / Zadání zákazníka&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Celkem nejvýše 2 300 Kč&lt;br&gt;Záloha nejvýše 500 Kč&lt;br&gt;Termín do 16. 10. 2026&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="270" width="350" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="mandate" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;2 / Návrh mandátu&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Služba, limit, termín, doplňky&lt;br&gt;Režim book nebo recommend&lt;br&gt;Návrh ještě není souhlas.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="270" width="350" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="approve" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;3 / Člověk potvrdí mandát&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Schválení ve vlastním&lt;br&gt;autentizovaném zobrazení.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="490" width="350" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="discover" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;4 / Živé discovery&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Známý kontakt → web → karta&lt;br&gt;Aktivní služba, binding a auth&lt;br&gt;Endpoint z právě načtené karty&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="490" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="facts" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;5 / Ověření proti systémům&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Aktivní rulebook, služba a cena&lt;br&gt;Booking: 16. 10., 16–17 h&lt;br&gt;Europe/Prague · demo termín&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="950" y="490" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="offer" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;6 / Základní nabídka&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;2 472 Kč&lt;br&gt;Cena z autoritativního ceníku&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="950" y="700" width="350" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="counter" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;7 / Protinabídka&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Potřebuji celkovou cenu&lt;br&gt;v mezích 2 300 Kč.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="700" width="350" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="auto" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;8 / Autonomní sleva nestačí&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;5 % → 2 348,40 Kč&lt;br&gt;Stále nad zákaznickým limitem.&lt;br&gt;Žádost o konkrétní 10% výjimku.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="950" y="890" width="350" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="hard" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Tvrdý zákaz: sleva nad 10 %&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Backend odmítne.&lt;br&gt;Majitel nesmí tento limit obejít.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FBE4DF;strokeColor=#AE5E54;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="700" width="350" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="owner" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;9 / Majitel rozhodne&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Schválí přesnou nabídku, cenu,&lt;br&gt;termín a verzi pravidel.&lt;br&gt;Globální rulebook tím nemění.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="890" width="350" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="final" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;10 / Schválená nabídka&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;10 % → 2 224,80 Kč&lt;br&gt;Záloha 500 Kč&lt;br&gt;Nabídka platí 10 minut.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="950" y="1110" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="fits" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;11 / Kontrola mandátu&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Cena, záloha, služba, termín,&lt;br&gt;doplňky a platnost souhlasí?&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1110" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="recommend" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Režim recommend&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Předložit nabídku zákazníkovi.&lt;br&gt;Bez rezervace a bez platby.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1110" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="accept" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;12 / Book: přijmout nabídku&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Customer uloží přijetí&lt;br&gt;konkrétní nabídky a její verze.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1335" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="request" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;13 / Business volá commit&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;garage.commit&lt;br&gt;Text v chatu není potvrzení&lt;br&gt;rezervace ani oprávnění platit.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="950" y="1335" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="commit" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;14 / Backend znovu ověří&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Pravidla + mandát + přijetí&lt;br&gt;Souhlas majitele + volný termín&lt;br&gt;Jedna transakce: booking + 500 Kč&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="1335" width="350" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="new-mandate" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Mimo schválené hranice&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Vyžádat nové rozhodnutí zákazníka&lt;br&gt;a odpovídající nový mandát.&lt;br&gt;Agent sám limit nezvýší.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FBE4DF;strokeColor=#AE5E54;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1335" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="done" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;15 / Customer ověří výsledek a potvrdí zákazníkovi&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Booking ID + termín + celkem 2 224,80 Kč + záloha 500 Kč + doplatek 1 724,80 Kč.&lt;br&gt;Sandboxová peněženka zákazníka: 10 000 → 9 500 Kč; firemní peněženka: +500 Kč.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1700" width="1710" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="reject-note" value="Zamítnutá výjimka → nová vyhovující nabídka nebo odmítnutí. Expirovaná nabídka / obsazený termín → znovu vyjednat; bez převodu." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=17;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1550" width="1220" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="Handoru · lokální zadání v2.0 · § 4.3 a 8–10 · částky jsou testovací data · Fiktivní firma a sandboxové peníze; diagram popisuje návrh procesu." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=13;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="1816" width="1750" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="handoru-4" name="04 · Systém a souběh">
+    <mxGraphModel dx="1880" dy="1680" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1880" pageHeight="1680" math="0" shadow="0" background="#FFFDF8">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="commit-box" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#FAF8F2;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="930" width="850" height="550" as="geometry" />
+        </mxCell>
+        <mxCell id="concurrency" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;rounded=1;arcSize=4;fillColor=#F6F8FC;strokeColor=#D4CDBE;strokeWidth=1;dashed=1;dashPattern=5 6;" vertex="1" parent="1">
+          <mxGeometry x="930" y="930" width="910" height="550" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-1" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="customer" target="customer-bot">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" value="discovery" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#577FA6;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.18;entryX=0;entryY=0.65;fontSize=16;labelBackgroundColor=#FFFDF8;dashed=1;dashPattern=6 5;" edge="1" parent="1" source="customer-bot" target="web">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="455" y="467" />
+              <mxPoint x="455" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-3" value="požadavek ↔ odpověď" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="customer-bot" target="a2a">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-4" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="a2a" target="handoru">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" value="inbox ↔ odpověď" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="handoru" target="business-bot">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-6" value="lidské operace" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#AD8231;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0;exitY=0.65;entryX=1;entryY=0.15;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="owner" target="handoru">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1340" y="310" />
+              <mxPoint x="1340" y="461" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-7" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#4C8062;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="business-bot" target="price">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1565" y="670" />
+              <mxPoint x="685" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-8" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#4C8062;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="business-bot" target="booking">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1565" y="670" />
+              <mxPoint x="1125" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-9" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#4C8062;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="business-bot" target="wallet">
+          <mxGeometry x="0" y="0" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1565" y="670" />
+              <mxPoint x="1565" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-10" value="" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=20;strokeColor=#293C34;strokeWidth=2;endArrow=block;endFill=1;endSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=16;labelBackgroundColor=#FFFDF8;" edge="1" parent="1" source="checks" target="transaction">
+          <mxGeometry x="0" y="0" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="title" value="Co dělají agenti a co hlídá systém" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=40;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="38" width="1670" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="GrokBoti interpretují a vyjednávají. Handoru doručuje, ukládá stav a vynucuje oprávnění." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=18;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="64" y="111" width="1700" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="folio" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:19px&quot;&gt;04&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;HANDORU&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=ellipse;rounded=1;arcSize=12;strokeWidth=2;fillColor=#F5F1E7;strokeColor=#8B8474;fontSize=16;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1735" y="42" width="90" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="customer" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Zákazník&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Potvrdí mandát&lt;br&gt;Dostane ověřený výsledek&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="230" width="330" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Web firmy / Agent Card&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Aktuální veřejné schopnosti,&lt;br&gt;endpoint, binding a autentizace&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="230" width="350" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="owner" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Majitel / lidská konzole&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Aktivuje pravidla a rozhoduje&lt;br&gt;o konkrétních výjimkách.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="230" width="350" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-bot" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Customer GrokBot&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Samostatný účet / identita&lt;br&gt;Mandát, discovery, vyjednání&lt;br&gt;Přijetí nabídky a kontrola výsledku&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="435" width="330" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="a2a" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Veřejný A2A adaptér&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Ověřená verze a binding&lt;br&gt;Jen deklarované schopnosti&lt;br&gt;Povolená autentizace&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="435" width="350" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="handoru" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Handoru / soukromý bridge&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Identita a oprávnění&lt;br&gt;Oddělené případy, inboxy a fronta&lt;br&gt;Doručení a uložené události&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="950" y="435" width="350" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="business-bot" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Business GrokBot&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Samostatný účet / identita&lt;br&gt;Aktivní rulebook a vlastní případ&lt;br&gt;Volá jen povolené nástroje&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="435" width="350" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="price" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Autoritativní ceník&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Cena a verzovaná nabídka&lt;br&gt;garage.quote&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="510" y="730" width="350" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="booking" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Booking a kapacita&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Volné termíny a rezervace&lt;br&gt;garage.availability&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="950" y="730" width="350" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="wallet" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Testovací peněženky&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Sandboxová záloha&lt;br&gt;Bez skutečných peněz&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E1F1E6;strokeColor=#4C8062;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="730" width="350" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="commit-box-label" value="KONTROLOVANÝ COMMIT / serverové operace" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="62" y="944" width="806" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="checks" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:22px&quot;&gt;Před každým závazkem znovu ověřit&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;1. Identitu, roli a příslušnost k případu.&lt;br&gt;2. Aktivní rulebook a aktuální nabídku.&lt;br&gt;3. Zákaznické přijetí a schválený mandát.&lt;br&gt;4. Konkrétní schválení majitele, je-li nutné.&lt;br&gt;5. Částky, službu, termín, expiraci, kapacitu&lt;br&gt;    a dostatek testovacích prostředků.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=19;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1000" width="790" height="255" as="geometry" />
+        </mxCell>
+        <mxCell id="transaction" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Jedna testovací DB transakce&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Jeden booking + jeden převod zálohy.&lt;br&gt;Opakování nebo restart vrátí původní ID.&lt;br&gt;Kolize posledního slotu: jeden úspěch, druhý bez platby.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#EEE6F8;strokeColor=#8972A4;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1300" width="790" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="concurrency-label" value="SOUBĚH / každý případ má vlastní historii a přístup" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="952" y="944" width="866" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="case-a" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Případ A / waiting_owner&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Uloží stav a uvolní pracovní krok i DB zámek.&lt;br&gt;Čekání na člověka nezablokuje další práci.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#FFF0C9;strokeColor=#AD8231;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="960" y="1005" width="850" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="case-b" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Případ B / pokračuje&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Firemní obsluha vezme další práci z fronty.&lt;br&gt;Rozhodnutí majitele později znovu zařadí správný případ A.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#E4F0FC;strokeColor=#577FA6;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="960" y="1160" width="850" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="private" value="&lt;div style=&quot;line-height:1.3&quot;&gt;&lt;b style=&quot;font-size:21px&quot;&gt;Interní případ majitele / návrh role&lt;/b&gt;&lt;div style=&quot;margin-top:12px;line-height:1.25&quot;&gt;Oddělená identita a nástroje; přehled za datum jen majiteli.&lt;br&gt;Dostupnost interního bota a izolaci runtime je nutné ověřit.&lt;/div&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;shape=rectangle;rounded=1;arcSize=12;strokeWidth=2;fillColor=#F5F1E7;strokeColor=#8B8474;fontSize=18;align=center;verticalAlign=middle;spacing=14;" vertex="1" parent="1">
+          <mxGeometry x="960" y="1315" width="850" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="state-path" value="requested → negotiating → [waiting_owner] → offered → accepted → committed" style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=21;fontStyle=1;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1510" width="1740" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="state-side" value="Vedlejší stavy: waiting_customer · rejected · expired · failed · cancelled. Webhook nebo ověřená předem spuštěná polling relace." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=16;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1555" width="1740" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" value="Bridge nevytváří dialog za agenty. Kontroly izolace případů samy nedokazují oddělenou dlouhodobou paměť GrokBota." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=16;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1593" width="1740" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="Handoru · lokální zadání v2.0 · § 6–7 a 10 · návrh, kompatibilitu A2A a runtime je nutné doložit testem · Fiktivní firma a sandboxové peníze; diagram popisuje návrh procesu." style="text;html=1;whiteSpace=wrap;sketch=1;comic=0;jiggle=1.4;curveFitting=1;fillStyle=solid;fontFamily=Comic Sans MS;fontColor=#293C34;strokeColor=none;fillColor=none;fontSize=13;fontStyle=0;align=left;verticalAlign=middle;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="1626" width="1750" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

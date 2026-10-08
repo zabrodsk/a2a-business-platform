@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zadání pro Claude Design — Pneu 007 / Handoru</title>
+<style>
+:root{color-scheme:light;--green:#071c17;--gold:#d8c394}*{box-sizing:border-box}body{margin:0;background:#f5f4ef;color:#18241f;font:16px/1.65 system-ui,sans-serif}header{background:var(--green);color:#fff;padding:44px max(24px,calc((100vw - 960px)/2))}h1{font:38px/1.2 Georgia,serif;margin:8px 0 18px}header p{max-width:760px;color:#e2e5df}.eyebrow{color:var(--gold);font-size:13px;letter-spacing:.12em;text-transform:uppercase}main{max-width:960px;margin:auto;padding:28px 24px 60px}section{background:#fff;border:1px solid #dce0d8;border-radius:12px;padding:26px;margin:20px 0;scroll-margin-top:20px}h2{font-size:21px;line-height:1.4;margin-top:0}p{margin:0 0 18px}p:last-child{margin-bottom:0}nav{display:grid;gap:6px;padding:20px 0}a{color:#125d42;text-underline-offset:3px}header a{color:var(--gold)}button{background:var(--gold);color:var(--green);border:0;border-radius:8px;padding:13px 20px;font:600 15px system-ui;cursor:pointer;margin:8px 14px 8px 0}button:focus-visible,a:focus-visible{outline:3px solid #ad7c19;outline-offset:4px}.source{font-size:14px}.status{font-size:14px;min-height:24px}footer{margin-top:32px;font-size:14px;color:#4b5b50}@media(max-width:600px){h1{font-size:30px}header{padding:30px 20px}main{padding:20px 14px}section{padding:20px}h2{font-size:19px}}@media print{header{background:white;color:#18241f;padding:0}header p{color:#18241f}button,.status,nav{display:none}main{max-width:none;padding:0}section{border:0;padding:12px 0;margin:0}h2{break-after:avoid}p{orphans:3;widows:3}}
+</style></head><body><header><div class="eyebrow">Pneu 007 · Handoru · český design brief</div><h1>Zadání pro Claude Design</h1><p>Samostatný prompt pro veřejný web, objednání, administraci a konzoli auditu. Zohledňuje rozšíření navazujícího chatu o backend, dodavatele a Masumi platby.</p><button id="copy">Zkopírovat celý prompt</button><a href="claude-design-pneu-007-zadani.txt" download>Stáhnout TXT</a><div id="status" class="status" role="status" aria-live="polite"></div><p class="source">Podklady: <a href="https://chatgpt.com/space/page_008ac5ce16e481919ce5d9221c642c15">Handoru zadání hackathonu verze 2 Draft</a> · <a href="codex://threads/01a11cda-22a6-75f0-bf86-517aaa65a3e5?hostId=remote-ssh-discovered%3Aclawdbot-mini">Navazující chat Pneu 007</a> · 8. října 2026</p></header><main><nav aria-label="Obsah"><a href="#s1">1. SMYSL PRODUKTU</a><a href="#s2">2. VIZUÁLNÍ SMĚR</a><a href="#s3">3. VEŘEJNÝ WEB — ČTYŘI OBSAHOVÉ STRÁNKY</a><a href="#s4">4. PŘESNÁ CENOVÁ LOGIKA</a><a href="#s5">5. POPTÁVKA, OBJEDNÁNÍ A PLATBA</a><a href="#s6">6. ZAMĚSTNANECKÁ ADMINISTRACE /admin</a><a href="#s7">7. KONZOLE HANDORU /handoru</a><a href="#s8">8. HLAVNÍ KLIKACÍ DEMO SCÉNÁŘ</a><a href="#s9">9. RESPONZIVITA A STAVY</a><a href="#s10">10. POŽADOVANÝ VÝSTUP</a></nav><section><p>Vytvoř propracovaný responzivní design a klikací prototyp pro fiktivní pneuservis Pneu 007: veřejný web, objednávkový proces, zaměstnaneckou administraci a samostatnou konzoli Handoru pro audit a provoz firemního agenta. Výstup bude podkladem pro vývojáře, kteří připojí skutečný backend, kalendář, agenty a Masumi platby.</p><p>Toto zadání obsahuje potřebný kontext; nepotřebuješ přístup k původnímu Codex chatu ani ChatGPT Page. Rovnou vytvoř návrh. Běžné vizuální volby rozhodni samostatně, obchodní logiku a částky zachovej. Neznámé technické údaje označ jako placeholder.</p></section><section id="s1"><h2>1. SMYSL PRODUKTU</h2><p>Pneu 007 má být uvěřitelný business s vlastním webem, objednávkami, kalendářem, historií, skladem a dvěma testovacími dodavateli. Člověk musí umět službu poptat, objednat a koupit i před vznikem agentího rulebooku.</p><p>Handoru umožní skutečnému firemnímu GrokBotovi auditovat tento existující systém, zjistit procesy a pravomoci ze zdrojů a navrhnout rulebook. Majitel pravidla schválí a teprve potom agent autonomně obsluhuje podporované zakázky. Zákaznický GrokBot objeví firemní rozhraní na webu, vyjedná službu podle zákazníkova mandátu a koupí ji přes testovací platební workflow.</p><p>Design musí srozumitelně ukázat řetězec:<br>Fungující firma → audit zdrojů → návrh pravidel → lidské schválení → jednání agentů → platba → potvrzená rezervace.</p><p>Tvým výstupem je design a interaktivní prototyp. Ukázková data a průchody označ jako demo. Prototyp sám nedokládá skutečný audit, komunikaci GrokBotů ani on-chain platbu; ty vzniknou při implementaci.</p></section><section id="s2"><h2>2. VIZUÁLNÍ SMĚR</h2><p>Atmosféra prémiového britského automobilového servisu, inspirovaná Aston Martin a James Bond. Vytvoř vlastní identitu a wordmark Pneu 007, s motivem sportovního kupé. Nepřebírej oficiální loga ani filmové postavy.</p><p>• British Racing Green #071C17, černé a antracitové plochy.<br>• Stříbrné kovové detaily, střídmý zlatý akcent #D8C394.<br>• Elegantní serifové nadpisy; čitelný sans serif pro text, formuláře a ceny.<br>• Velkorysé mezery, precizní zarovnání, výrazný vizuál kupé, jemné linky.<br>• Formuláře mají přednost před dekorací. Omez efekty a samoúčelné animace.</p><p>Administrace a Handoru mají stejnou barevnou příbuznost, ale kompaktní pracovní rozvržení. Statusy rozlišuj textem a ikonou, nejen barvou. Pneu 007 je značka servisu; Handoru je pracovní nástroj, nikoli hlavní značka veřejného webu.</p></section><section id="s3"><h2>3. VEŘEJNÝ WEB — ČTYŘI OBSAHOVÉ STRÁNKY</h2><p>Úvod a služby /<br>Navigace: Služby, Kalkulátor, Kontakt, Podmínky a FAQ.<br>Hero: „Připraveni na další jízdu.“ Vizuál kupé, stručné vysvětlení a CTA „Spočítat cenu“.<br>Dvě služby: přezutí pneumatik a výměna kompletních kol.<br>Obě zahrnují montáž kol na vozidle, mytí, vyvážení, nahuštění, ošetření dosedacích ploch a dotažení předepsaným momentem. Přezutí navíc zahrnuje demontáž a montáž pneumatik na disky.<br>Ukaž postup konfigurace → cena → poptávka nebo objednání → potvrzení.<br>V patičce čitelný odkaz „Pro agenty“ k veřejnému profilu / Agent Card.<br>Nevymýšlej recenze, certifikace ani skutečnou historii firmy.</p><p>Kalkulátor /kalkulator<br>Desktop: konfigurace vlevo, cenový souhrn vpravo. Mobil: jeden sloupec, souhrn a CTA snadno dostupné bez překrývání formuláře.<br>Volby: osobní auto / MPV, SUV, 4×4 / dodávka; výměna kompletních kol / přezutí; průměr 13″ až 22″; plechové / hliníkové disky; runflat ne/ano; TPMS ne/ano.<br>Runflat nápověda: „Pneumatika umožňující omezený dojezd po ztrátě tlaku.“<br>TPMS nápověda: „Systém sledování tlaku v pneumatikách.“<br>Při změně voleb okamžitě přepočítej cenu a ukaž položky i obsah služby. Při chybějícím povinném vstupu cenu nezobrazuj a označ konkrétní chybějící volbu.<br>Výchozí demo: osobní auto, přezutí, 18″, alu, bez runflat a TPMS — 2 472 Kč.<br>Oddělená CTA „Nezávazná poptávka“ a „Objednat službu“.</p><p>Kontakt /kontakt<br>Jedna testovací provozovna, provozní doba, kontakty a orientační informace. Adresa, telefon, provozní hodiny a nasazená URL zatím nejsou potvrzené: označené placeholdery. Testovací e-mail může být servis@pneu007.example. Bez skutečné provozovny a živého mapového záznamu.<br>Text: „Pneu 007 je fiktivní pneuservis pro hackathon. Na uvedené testovací adrese se autoservisní služby neposkytují.“</p><p>Podmínky a FAQ /podminky<br>Vlastní pneumatiky zákazníka, obsah ceny, rozdíl poptávka/rezervace, záloha jako část celkové ceny, potvrzení termínu a testovací platby. Nezveřejňuj interní slevové pravomoci. Storno a refund podmínky připrav jako obsahové placeholdery k doplnění; nevymýšlej hotová právní pravidla.</p><p>Na všech veřejných stránkách čitelné „Fiktivní pneuservis pro hackathon“. U plateb „Testnet platba, bez skutečné autoservisní služby“.</p></section><section id="s4"><h2>4. PŘESNÁ CENOVÁ LOGIKA</h2><p>Ceny v Kč pro čtyři kola. Příplatky se přičítají jednou k celku. K ceně služby nepřidávej další daň ani poplatek.</p><p>Služba: výměna kompletních kol 1 480 Kč; přezutí 1 800 Kč.<br>Vozidlo: osobní +0; MPV/SUV/4×4 nebo dodávka +520 Kč.<br>Disk: plech +0; alu +212 Kč.<br>Při přezutí: runflat +640 Kč, TPMS +400 Kč.<br>Průměr při přezutí:<br>13″ −360; 14″ −180; 15″ 0; 16–17″ +260; 18–19″ +460; 20–21″ +720; 22″ +920 Kč.</p><p>Přezutí = 1 800 + vozidlo + průměr + disk + runflat + TPMS.<br>Výměna kompletních kol = 1 480 + vozidlo + disk.<br>U výměny kompletních kol zachovej údaje o průměru, runflat a TPMS, ale vysvětli, že cenu této služby nemění.</p><p>Kontrolní příklady:<br>• Osobní, přezutí, 13″, plech, bez runflat/TPMS: 1 440 Kč.<br>• Osobní, přezutí, 18″, alu, bez runflat/TPMS: 2 472 Kč.<br>• Totéž s TPMS: 2 872 Kč.<br>• Totéž s runflat a TPMS: 3 512 Kč.<br>• Osobní, výměna kompletních alu kol: 1 692 Kč.<br>• SUV/dodávka, výměna kompletních alu kol: 2 212 Kč.</p><p>Český formát měny, například 2 224,80 Kč. Sleva se počítá z celkového součtu a zaokrouhlí jednou na haléře. Veřejný kalkulátor nabízí běžnou cenu; interní vyjednávání patří do konkrétního případu a schvalovací konzole.</p></section><section id="s5"><h2>5. POPTÁVKA, OBJEDNÁNÍ A PLATBA</h2><p>Nezávazná poptávka<br>Převezmi konfiguraci a kalkulaci. Jméno, e-mail, telefon a testovací provozovna; e-mail, telefon a provozovna jsou povinné. Po odeslání ukaž ID a „Poptávka byla přijata. Termín zatím není rezervován a platba neproběhla.“<br>V prototypu syntetické údaje a simulované uložení, bez skutečných e-mailů/SMS.</p><p>Objednání<br>Konfigurace → kontaktní údaje → volný termín → souhrn → autorizace nákupu → platba → stav objednávky /objednavka/:id.<br>Souhrn: služba, konfigurace, cenové položky, celková cena, částka nyní, doplatek a termín. Záloha nebo plná úhrada jako výslovná volba, je-li daný režim povolený.<br>Demo slot: 16. října 2026, 16:00–17:00, Europe/Prague.</p><p>Záloha 500 Kč je součástí celkové ceny:<br>• Běžná cena 2 472 Kč → doplatek 1 972 Kč.<br>• Schválená cena 2 224,80 Kč → doplatek 1 724,80 Kč.<br>• Plná úhrada → doplatek 0 Kč.<br>Interní výjimku nezobrazuj běžnému zákazníkovi bez existující schválené nabídky.</p><p>Masumi platba<br>Navrhni testovací platbu přes Masumi na síti Cardano Preprod. Obchodní cena v Kč a testnet částka v test-ADA jsou oddělené údaje. Kurz/demo mapování, síťový poplatek a konkrétní testnet částka nejsou zadané — označené placeholdery. Podmínky platby jsou viditelné před potvrzením; nepředstírej skutečnou korunovou platbu.</p><p>Stavy:<br>• Termín dočasně blokován, zbývající čas podle backendu.<br>• Čeká na potvrzení nákupu.<br>• Platba probíhá / čeká na ověření.<br>• Prostředky uzamčeny v escrow.<br>• Rezervace potvrzena.<br>• Výplata prodejci čeká / ověřena.<br>• Platba selhala, nabídka expirovala, termín se obsadil.<br>• Nejasný výsledek: „Ověřujeme stav platby“, bez výzvy k opakované platbě naslepo.<br>• Refund požadován / probíhá / ověřen.</p><p>Kliknutí na nákupní tlačítko samo neznamená „Zaplaceno“. Rozlišuj platbu, rezervaci a fyzické provedení služby. Escrow není výplata prodejci. Potvrzená rezervace není provedené přezutí. Technická ID a blockchainový odkaz dej do rozbalovacího detailu; prototypový hash je označený placeholder.</p></section><section id="s6"><h2>6. ZAMĚSTNANECKÁ ADMINISTRACE /admin</h2><p>Samostatná neveřejná část s přihlášením a pracovní navigací:<br>• Přehled: dnešní zakázky, čekající poptávky, platby k ověření, kapacita.<br>• Objednávky: filtry, seznam a detail s konfigurací, cenou, kontaktem, termínem, platbou a historií. Oddělené statusy objednávky, platby a služby. Změna termínu / storno podle stavu včetně případného řešení refundu.<br>• Kalendář: den/týden, servisní boxy, blokace vs potvrzené rezervace, konflikt slotů; mobilní agenda.<br>• Zákazníci: syntetické kontakty, vozidla a zakázky.<br>• Sklad a dodavatelé: položky, dostupnost, ETA, dva fiktivní partneři, komunikační kanál a historie RFQ/nákupů. Názvy „Demo dodavatel A/B“, kontakty .example. Žádný třetí autonomní agentický rozhovor ani automatický nákup dílů.<br>• Interní zdroje: procesní dokumenty a katalog systémů/partnerů včetně verzí.</p><p>Naplnění prototypu: přibližně 12 konzistentních zakázek s různými stavy, několik vozidel, skladových položek a partnerových záznamů. Společná ID napříč objednávkou, kalendářem a platbou. Vše označené jako demo data.</p><p>Reporty oddělují cenu zakázek v Kč, dummy historii, testnet escrow, výplaty a poplatky. Každá metrika má období a definici; test-ADA není korunová tržba.</p></section><section id="s7"><h2>7. KONZOLE HANDORU /handoru</h2><p>Čtyři hlavní pohledy, detaily mohou být v bočním panelu:</p><p>A. Zdroje a audit<br>Čtyři veřejné stránky, tři interní dokumenty a čtené systémové záznamy. U zdroje název, veřejný/soukromý přístup, verze, poslední načtení a autorita.<br>Interní dokumenty: systems.json, operations.md, partners.md; hlavní popisky lidsky, souborové názvy v detailu.<br>Stavy Nezahájen / Probíhá / Připraven k revizi / Vyžaduje doplnění.<br>Výstup: nabídka firmy, systémy a jejich autorita, proces, partneři/kanály, pravomoci a neznámé. Každý závěr vede na konkrétní podklad.<br>Ukázkové nálezy: archivní vs aktuální pravidlo, dokumentová ETA vs aktuální dodavatelské API, chybějící sváteční hodiny. Neznámá informace se nevydává za jistotu.</p><p>B. Rulebook a lidské schválení<br>Klíčová obrazovka: návrh pravidla vedle původního zdroje a citovaného úryvku. Verze, rozsah, zdroj a stav pravidla.<br>Akce majitele „Schválit a aktivovat verzi“, „Vrátit k doplnění“; potvrzení ukazuje změny.<br>Před prvním auditem prázdný stav „Zatím není aktivní rulebook“. Lidské objednání přesto funguje.</p><p>Interní demo pravidla:<br>• Autonomní sleva nejvýše 5 %.<br>• Nad 5 % do 10 % schvaluje majitel pro konkrétní nabídku.<br>• Nad 10 % tvrdý zákaz i pro majitele.<br>• Nabídka platí 10 minut; před závazným přijetím se ověřuje platnost a termín.<br>• Doplňky, další služby, uskladnění, pneu a díly jen s novým mandátem.<br>• Agent navrhuje pravidla; sám je neaktivuje ani neschvaluje svou výjimku.</p><p>Ukázka nové verze 5 % → 3 %: stejná 4% sleva po lidské aktivaci nově vyžaduje majitele. Jde o označený prototypový scénář; skutečný rulebook vznikne až z auditu. Kritické rozpory/neznámé blokují aktivaci příslušné schopnosti.</p><p>C. Veřejný profil pro agenty<br>Lidský náhled veřejných schopností, požadovaných vstupů a publikace; Agent Card v technickém detailu. Endpoint, verze protokolu a binding jako placeholder do ověření. Bez interních pravidel, soukromých dat a klíčů. Odznak A2A kompatibility až po doloženém testu.</p><p>D. Případy, schválení a výsledek<br>Seznam oddělených zákaznických případů. Detail s pozorovanými zprávami a časovou osou událostí; každý krok vede na pravidlo, zdroj, nabídku, schválení nebo uloženou rezervaci.<br>Nezobrazuj domnělé vnitřní uvažování modelu a nestav vlastní náhradu plného chatového UI GrokBota.<br>Žádost o výjimku: případ, původní/požadovaná cena, sleva, důvod, zákaznický limit, termín, platnost a Schválit/Zamítnout. Schválení nabídky nemění globální pravidlo.<br>Mandát: služba, rozpočet, termín, záloha/plná úhrada, doplňky a režim „Pouze doporučit“ / „Objednat v mezích mandátu“. Doporučení nevytváří nákup ani rezervaci.</p></section><section id="s8"><h2>8. HLAVNÍ KLIKACÍ DEMO SCÉNÁŘ</h2><p>1. Pneu 007 funguje pro člověka přes kalkulátor a objednání.<br>2. Audit zdrojů → nálezy a návrh → lidská aktivace pravidel.<br>3. Zákaznický agent má kontakt s názvem firmy, testovací adresou a webovou URL. Endpoint objeví až z aktuálního webu / Agent Card. Bez povinného marketplace či Google vyhledání.<br>4. Zákazník chce přezutí čtyř vlastních pneu, osobní auto, 18″, alu, bez runflat/TPMS/uskladnění. Limit 2 300 Kč, povolená záloha 500 Kč.<br>5. Základ 2 472 Kč. Sleva 5 % → 2 348,40 Kč, stále nad limitem.<br>6. Firemní agent požádá majitele o 10% výjimku → schválená cena 2 224,80 Kč.<br>7. Agenti pokračují: záloha 500 Kč, doplatek 1 724,80 Kč. Vedlejší průchod umožní plnou úhradu 2 224,80 Kč pouze s novým odpovídajícím mandátem.<br>8. Ověřování testnet platby → rezervace v kalendáři. Escrow a výplata odděleně; fyzická služba dosud neprovedena.<br>9. Sleva nad 10 % odmítnuta bez možnosti obejít zákaz tlačítkem.<br>10. Případ A čeká na majitele, B pokračuje. Interní report majitele zůstává soukromý.</p><p>Nabídka, blokace termínu a čekání na platbu mají odlišné stavy. Desetiminutová platnost nabídky není automaticky lhůta celé on-chain transakce nebo escrow.</p></section><section id="s9"><h2>9. RESPONZIVITA A STAVY</h2><p>Desktop 1440 px, mobil 375–390 px; funkční rozvržení mezi nimi.<br>Popisky formulářů, nápověda, validace u pole, viditelný focus, klávesnice. Kontrast běžného textu alespoň 4,5 : 1, dotykové cíle alespoň 44 px. Hover není jediný přístup k informacím; respektuj omezení animací.<br>Prázdné, načítací, úspěšné, chybové a čekající stavy. Zakázané akce mají konkrétní důvod. Nedostupný termín, expirovaná nabídka, zamítnutá výjimka a nejasná platba mají vlastní návrh.<br>CTA vždy říká, co se stane a zda je krok závazný.<br>Zákazník vidí vlastní objednávku; zaměstnanec provoz; majitel interní audit a schválení. Oddělený přepínač rolí je možný pro prezentaci prototypu, není skutečným zabezpečením.</p></section><section id="s10"><h2>10. POŽADOVANÝ VÝSTUP</h2><p>Jeden ucelený vizuální směr a klikací prototyp čtyř veřejných stránek, objednávkového toku, klíčových pohledů administrace a čtyř pohledů Handoru.<br>Priorita: úvod, kalkulátor, objednávka/platba, kalendář, pravidlo vedle zdroje. Další provozní pohledy sdílejí kvalitní tabulkový/detailový vzor.</p><p>Dodej:<br>• Hotové obrazovky s konkrétním českým textem a konzistentními demo daty.<br>• Desktopové a mobilní varianty klíčových obrazovek.<br>• Propojený zákaznický průchod a hlavní agentický demo průchod.<br>• Komponenty/tokeny: barvy, typografie, mezery, formuláře, CTA, statusy, tabulky, kalendář, dialogy a detailový panel.<br>• Stručné předání vývojářům: interakce, zdroje dat, očekávané backendové stavy a placeholdery. Nevymýšlej hotové API endpointy.</p><p>Nepřidávej marketplace, billing produktu, další zákaznické kanály, mainnet platby, autonomní nákup materiálu ani univerzální agentí chat.</p><p>Hotovo znamená: bez výkladu lze projít kalkulací a objednáním, pochopit stav platby a termínu, dohledat pravidlo ke zdroji a rozlišit návrh, lidské schválení a aktivní pravomoc. Cenové příklady sedí; interní slevové pravomoci nejsou na veřejném webu.</p></section><footer>Tento dokument je zadání designu. Neprohlašuje implementaci ani ověření externích integrací. Textové znění nahoře uvedeného TXT je připravené k vložení do Claude Design.</footer></main>
+<textarea id="prompt" hidden>ZADÁNÍ PRO CLAUDE DESIGN — PNEU 007 / HANDORU
+
+Vytvoř propracovaný responzivní design a klikací prototyp pro fiktivní pneuservis Pneu 007: veřejný web, objednávkový proces, zaměstnaneckou administraci a samostatnou konzoli Handoru pro audit a provoz firemního agenta. Výstup bude podkladem pro vývojáře, kteří připojí skutečný backend, kalendář, agenty a Masumi platby.
+
+Toto zadání obsahuje potřebný kontext; nepotřebuješ přístup k původnímu Codex chatu ani ChatGPT Page. Rovnou vytvoř návrh. Běžné vizuální volby rozhodni samostatně, obchodní logiku a částky zachovej. Neznámé technické údaje označ jako placeholder.
+
+1. SMYSL PRODUKTU
+
+Pneu 007 má být uvěřitelný business s vlastním webem, objednávkami, kalendářem, historií, skladem a dvěma testovacími dodavateli. Člověk musí umět službu poptat, objednat a koupit i před vznikem agentího rulebooku.
+
+Handoru umožní skutečnému firemnímu GrokBotovi auditovat tento existující systém, zjistit procesy a pravomoci ze zdrojů a navrhnout rulebook. Majitel pravidla schválí a teprve potom agent autonomně obsluhuje podporované zakázky. Zákaznický GrokBot objeví firemní rozhraní na webu, vyjedná službu podle zákazníkova mandátu a koupí ji přes testovací platební workflow.
+
+Design musí srozumitelně ukázat řetězec:
+Fungující firma → audit zdrojů → návrh pravidel → lidské schválení → jednání agentů → platba → potvrzená rezervace.
+
+Tvým výstupem je design a interaktivní prototyp. Ukázková data a průchody označ jako demo. Prototyp sám nedokládá skutečný audit, komunikaci GrokBotů ani on-chain platbu; ty vzniknou při implementaci.
+
+2. VIZUÁLNÍ SMĚR
+
+Atmosféra prémiového britského automobilového servisu, inspirovaná Aston Martin a James Bond. Vytvoř vlastní identitu a wordmark Pneu 007, s motivem sportovního kupé. Nepřebírej oficiální loga ani filmové postavy.
+
+• British Racing Green #071C17, černé a antracitové plochy.
+• Stříbrné kovové detaily, střídmý zlatý akcent #D8C394.
+• Elegantní serifové nadpisy; čitelný sans serif pro text, formuláře a ceny.
+• Velkorysé mezery, precizní zarovnání, výrazný vizuál kupé, jemné linky.
+• Formuláře mají přednost před dekorací. Omez efekty a samoúčelné animace.
+
+Administrace a Handoru mají stejnou barevnou příbuznost, ale kompaktní pracovní rozvržení. Statusy rozlišuj textem a ikonou, nejen barvou. Pneu 007 je značka servisu; Handoru je pracovní nástroj, nikoli hlavní značka veřejného webu.
+
+3. VEŘEJNÝ WEB — ČTYŘI OBSAHOVÉ STRÁNKY
+
+Úvod a služby /
+Navigace: Služby, Kalkulátor, Kontakt, Podmínky a FAQ.
+Hero: „Připraveni na další jízdu.“ Vizuál kupé, stručné vysvětlení a CTA „Spočítat cenu“.
+Dvě služby: přezutí pneumatik a výměna kompletních kol.
+Obě zahrnují montáž kol na vozidle, mytí, vyvážení, nahuštění, ošetření dosedacích ploch a dotažení předepsaným momentem. Přezutí navíc zahrnuje demontáž a montáž pneumatik na disky.
+Ukaž postup konfigurace → cena → poptávka nebo objednání → potvrzení.
+V patičce čitelný odkaz „Pro agenty“ k veřejnému profilu / Agent Card.
+Nevymýšlej recenze, certifikace ani skutečnou historii firmy.
+
+Kalkulátor /kalkulator
+Desktop: konfigurace vlevo, cenový souhrn vpravo. Mobil: jeden sloupec, souhrn a CTA snadno dostupné bez překrývání formuláře.
+Volby: osobní auto / MPV, SUV, 4×4 / dodávka; výměna kompletních kol / přezutí; průměr 13″ až 22″; plechové / hliníkové disky; runflat ne/ano; TPMS ne/ano.
+Runflat nápověda: „Pneumatika umožňující omezený dojezd po ztrátě tlaku.“
+TPMS nápověda: „Systém sledování tlaku v pneumatikách.“
+Při změně voleb okamžitě přepočítej cenu a ukaž položky i obsah služby. Při chybějícím povinném vstupu cenu nezobrazuj a označ konkrétní chybějící volbu.
+Výchozí demo: osobní auto, přezutí, 18″, alu, bez runflat a TPMS — 2 472 Kč.
+Oddělená CTA „Nezávazná poptávka“ a „Objednat službu“.
+
+Kontakt /kontakt
+Jedna testovací provozovna, provozní doba, kontakty a orientační informace. Adresa, telefon, provozní hodiny a nasazená URL zatím nejsou potvrzené: označené placeholdery. Testovací e-mail může být servis@pneu007.example. Bez skutečné provozovny a živého mapového záznamu.
+Text: „Pneu 007 je fiktivní pneuservis pro hackathon. Na uvedené testovací adrese se autoservisní služby neposkytují.“
+
+Podmínky a FAQ /podminky
+Vlastní pneumatiky zákazníka, obsah ceny, rozdíl poptávka/rezervace, záloha jako část celkové ceny, potvrzení termínu a testovací platby. Nezveřejňuj interní slevové pravomoci. Storno a refund podmínky připrav jako obsahové placeholdery k doplnění; nevymýšlej hotová právní pravidla.
+
+Na všech veřejných stránkách čitelné „Fiktivní pneuservis pro hackathon“. U plateb „Testnet platba, bez skutečné autoservisní služby“.
+
+4. PŘESNÁ CENOVÁ LOGIKA
+
+Ceny v Kč pro čtyři kola. Příplatky se přičítají jednou k celku. K ceně služby nepřidávej další daň ani poplatek.
+
+Služba: výměna kompletních kol 1 480 Kč; přezutí 1 800 Kč.
+Vozidlo: osobní +0; MPV/SUV/4×4 nebo dodávka +520 Kč.
+Disk: plech +0; alu +212 Kč.
+Při přezutí: runflat +640 Kč, TPMS +400 Kč.
+Průměr při přezutí:
+13″ −360; 14″ −180; 15″ 0; 16–17″ +260; 18–19″ +460; 20–21″ +720; 22″ +920 Kč.
+
+Přezutí = 1 800 + vozidlo + průměr + disk + runflat + TPMS.
+Výměna kompletních kol = 1 480 + vozidlo + disk.
+U výměny kompletních kol zachovej údaje o průměru, runflat a TPMS, ale vysvětli, že cenu této služby nemění.
+
+Kontrolní příklady:
+• Osobní, přezutí, 13″, plech, bez runflat/TPMS: 1 440 Kč.
+• Osobní, přezutí, 18″, alu, bez runflat/TPMS: 2 472 Kč.
+• Totéž s TPMS: 2 872 Kč.
+• Totéž s runflat a TPMS: 3 512 Kč.
+• Osobní, výměna kompletních alu kol: 1 692 Kč.
+• SUV/dodávka, výměna kompletních alu kol: 2 212 Kč.
+
+Český formát měny, například 2 224,80 Kč. Sleva se počítá z celkového součtu a zaokrouhlí jednou na haléře. Veřejný kalkulátor nabízí běžnou cenu; interní vyjednávání patří do konkrétního případu a schvalovací konzole.
+
+5. POPTÁVKA, OBJEDNÁNÍ A PLATBA
+
+Nezávazná poptávka
+Převezmi konfiguraci a kalkulaci. Jméno, e-mail, telefon a testovací provozovna; e-mail, telefon a provozovna jsou povinné. Po odeslání ukaž ID a „Poptávka byla přijata. Termín zatím není rezervován a platba neproběhla.“
+V prototypu syntetické údaje a simulované uložení, bez skutečných e-mailů/SMS.
+
+Objednání
+Konfigurace → kontaktní údaje → volný termín → souhrn → autorizace nákupu → platba → stav objednávky /objednavka/:id.
+Souhrn: služba, konfigurace, cenové položky, celková cena, částka nyní, doplatek a termín. Záloha nebo plná úhrada jako výslovná volba, je-li daný režim povolený.
+Demo slot: 16. října 2026, 16:00–17:00, Europe/Prague.
+
+Záloha 500 Kč je součástí celkové ceny:
+• Běžná cena 2 472 Kč → doplatek 1 972 Kč.
+• Schválená cena 2 224,80 Kč → doplatek 1 724,80 Kč.
+• Plná úhrada → doplatek 0 Kč.
+Interní výjimku nezobrazuj běžnému zákazníkovi bez existující schválené nabídky.
+
+Masumi platba
+Navrhni testovací platbu přes Masumi na síti Cardano Preprod. Obchodní cena v Kč a testnet částka v test-ADA jsou oddělené údaje. Kurz/demo mapování, síťový poplatek a konkrétní testnet částka nejsou zadané — označené placeholdery. Podmínky platby jsou viditelné před potvrzením; nepředstírej skutečnou korunovou platbu.
+
+Stavy:
+• Termín dočasně blokován, zbývající čas podle backendu.
+• Čeká na potvrzení nákupu.
+• Platba probíhá / čeká na ověření.
+• Prostředky uzamčeny v escrow.
+• Rezervace potvrzena.
+• Výplata prodejci čeká / ověřena.
+• Platba selhala, nabídka expirovala, termín se obsadil.
+• Nejasný výsledek: „Ověřujeme stav platby“, bez výzvy k opakované platbě naslepo.
+• Refund požadován / probíhá / ověřen.
+
+Kliknutí na nákupní tlačítko samo neznamená „Zaplaceno“. Rozlišuj platbu, rezervaci a fyzické provedení služby. Escrow není výplata prodejci. Potvrzená rezervace není provedené přezutí. Technická ID a blockchainový odkaz dej do rozbalovacího detailu; prototypový hash je označený placeholder.
+
+6. ZAMĚSTNANECKÁ ADMINISTRACE /admin
+
+Samostatná neveřejná část s přihlášením a pracovní navigací:
+• Přehled: dnešní zakázky, čekající poptávky, platby k ověření, kapacita.
+• Objednávky: filtry, seznam a detail s konfigurací, cenou, kontaktem, termínem, platbou a historií. Oddělené statusy objednávky, platby a služby. Změna termínu / storno podle stavu včetně případného řešení refundu.
+• Kalendář: den/týden, servisní boxy, blokace vs potvrzené rezervace, konflikt slotů; mobilní agenda.
+• Zákazníci: syntetické kontakty, vozidla a zakázky.
+• Sklad a dodavatelé: položky, dostupnost, ETA, dva fiktivní partneři, komunikační kanál a historie RFQ/nákupů. Názvy „Demo dodavatel A/B“, kontakty .example. Žádný třetí autonomní agentický rozhovor ani automatický nákup dílů.
+• Interní zdroje: procesní dokumenty a katalog systémů/partnerů včetně verzí.
+
+Naplnění prototypu: přibližně 12 konzistentních zakázek s různými stavy, několik vozidel, skladových položek a partnerových záznamů. Společná ID napříč objednávkou, kalendářem a platbou. Vše označené jako demo data.
+
+Reporty oddělují cenu zakázek v Kč, dummy historii, testnet escrow, výplaty a poplatky. Každá metrika má období a definici; test-ADA není korunová tržba.
+
+7. KONZOLE HANDORU /handoru
+
+Čtyři hlavní pohledy, detaily mohou být v bočním panelu:
+
+A. Zdroje a audit
+Čtyři veřejné stránky, tři interní dokumenty a čtené systémové záznamy. U zdroje název, veřejný/soukromý přístup, verze, poslední načtení a autorita.
+Interní dokumenty: systems.json, operations.md, partners.md; hlavní popisky lidsky, souborové názvy v detailu.
+Stavy Nezahájen / Probíhá / Připraven k revizi / Vyžaduje doplnění.
+Výstup: nabídka firmy, systémy a jejich autorita, proces, partneři/kanály, pravomoci a neznámé. Každý závěr vede na konkrétní podklad.
+Ukázkové nálezy: archivní vs aktuální pravidlo, dokumentová ETA vs aktuální dodavatelské API, chybějící sváteční hodiny. Neznámá informace se nevydává za jistotu.
+
+B. Rulebook a lidské schválení
+Klíčová obrazovka: návrh pravidla vedle původního zdroje a citovaného úryvku. Verze, rozsah, zdroj a stav pravidla.
+Akce majitele „Schválit a aktivovat verzi“, „Vrátit k doplnění“; potvrzení ukazuje změny.
+Před prvním auditem prázdný stav „Zatím není aktivní rulebook“. Lidské objednání přesto funguje.
+
+Interní demo pravidla:
+• Autonomní sleva nejvýše 5 %.
+• Nad 5 % do 10 % schvaluje majitel pro konkrétní nabídku.
+• Nad 10 % tvrdý zákaz i pro majitele.
+• Nabídka platí 10 minut; před závazným přijetím se ověřuje platnost a termín.
+• Doplňky, další služby, uskladnění, pneu a díly jen s novým mandátem.
+• Agent navrhuje pravidla; sám je neaktivuje ani neschvaluje svou výjimku.
+
+Ukázka nové verze 5 % → 3 %: stejná 4% sleva po lidské aktivaci nově vyžaduje majitele. Jde o označený prototypový scénář; skutečný rulebook vznikne až z auditu. Kritické rozpory/neznámé blokují aktivaci příslušné schopnosti.
+
+C. Veřejný profil pro agenty
+Lidský náhled veřejných schopností, požadovaných vstupů a publikace; Agent Card v technickém detailu. Endpoint, verze protokolu a binding jako placeholder do ověření. Bez interních pravidel, soukromých dat a klíčů. Odznak A2A kompatibility až po doloženém testu.
+
+D. Případy, schválení a výsledek
+Seznam oddělených zákaznických případů. Detail s pozorovanými zprávami a časovou osou událostí; každý krok vede na pravidlo, zdroj, nabídku, schválení nebo uloženou rezervaci.
+Nezobrazuj domnělé vnitřní uvažování modelu a nestav vlastní náhradu plného chatového UI GrokBota.
+Žádost o výjimku: případ, původní/požadovaná cena, sleva, důvod, zákaznický limit, termín, platnost a Schválit/Zamítnout. Schválení nabídky nemění globální pravidlo.
+Mandát: služba, rozpočet, termín, záloha/plná úhrada, doplňky a režim „Pouze doporučit“ / „Objednat v mezích mandátu“. Doporučení nevytváří nákup ani rezervaci.
+
+8. HLAVNÍ KLIKACÍ DEMO SCÉNÁŘ
+
+1. Pneu 007 funguje pro člověka přes kalkulátor a objednání.
+2. Audit zdrojů → nálezy a návrh → lidská aktivace pravidel.
+3. Zákaznický agent má kontakt s názvem firmy, testovací adresou a webovou URL. Endpoint objeví až z aktuálního webu / Agent Card. Bez povinného marketplace či Google vyhledání.
+4. Zákazník chce přezutí čtyř vlastních pneu, osobní auto, 18″, alu, bez runflat/TPMS/uskladnění. Limit 2 300 Kč, povolená záloha 500 Kč.
+5. Základ 2 472 Kč. Sleva 5 % → 2 348,40 Kč, stále nad limitem.
+6. Firemní agent požádá majitele o 10% výjimku → schválená cena 2 224,80 Kč.
+7. Agenti pokračují: záloha 500 Kč, doplatek 1 724,80 Kč. Vedlejší průchod umožní plnou úhradu 2 224,80 Kč pouze s novým odpovídajícím mandátem.
+8. Ověřování testnet platby → rezervace v kalendáři. Escrow a výplata odděleně; fyzická služba dosud neprovedena.
+9. Sleva nad 10 % odmítnuta bez možnosti obejít zákaz tlačítkem.
+10. Případ A čeká na majitele, B pokračuje. Interní report majitele zůstává soukromý.
+
+Nabídka, blokace termínu a čekání na platbu mají odlišné stavy. Desetiminutová platnost nabídky není automaticky lhůta celé on-chain transakce nebo escrow.
+
+9. RESPONZIVITA A STAVY
+
+Desktop 1440 px, mobil 375–390 px; funkční rozvržení mezi nimi.
+Popisky formulářů, nápověda, validace u pole, viditelný focus, klávesnice. Kontrast běžného textu alespoň 4,5 : 1, dotykové cíle alespoň 44 px. Hover není jediný přístup k informacím; respektuj omezení animací.
+Prázdné, načítací, úspěšné, chybové a čekající stavy. Zakázané akce mají konkrétní důvod. Nedostupný termín, expirovaná nabídka, zamítnutá výjimka a nejasná platba mají vlastní návrh.
+CTA vždy říká, co se stane a zda je krok závazný.
+Zákazník vidí vlastní objednávku; zaměstnanec provoz; majitel interní audit a schválení. Oddělený přepínač rolí je možný pro prezentaci prototypu, není skutečným zabezpečením.
+
+10. POŽADOVANÝ VÝSTUP
+
+Jeden ucelený vizuální směr a klikací prototyp čtyř veřejných stránek, objednávkového toku, klíčových pohledů administrace a čtyř pohledů Handoru.
+Priorita: úvod, kalkulátor, objednávka/platba, kalendář, pravidlo vedle zdroje. Další provozní pohledy sdílejí kvalitní tabulkový/detailový vzor.
+
+Dodej:
+• Hotové obrazovky s konkrétním českým textem a konzistentními demo daty.
+• Desktopové a mobilní varianty klíčových obrazovek.
+• Propojený zákaznický průchod a hlavní agentický demo průchod.
+• Komponenty/tokeny: barvy, typografie, mezery, formuláře, CTA, statusy, tabulky, kalendář, dialogy a detailový panel.
+• Stručné předání vývojářům: interakce, zdroje dat, očekávané backendové stavy a placeholdery. Nevymýšlej hotové API endpointy.
+
+Nepřidávej marketplace, billing produktu, další zákaznické kanály, mainnet platby, autonomní nákup materiálu ani univerzální agentí chat.
+
+Hotovo znamená: bez výkladu lze projít kalkulací a objednáním, pochopit stav platby a termínu, dohledat pravidlo ke zdroji a rozlišit návrh, lidské schválení a aktivní pravomoc. Cenové příklady sedí; interní slevové pravomoci nejsou na veřejném webu.
+
+</textarea><script>
+document.getElementById('copy').addEventListener('click',async()=>{const value=document.getElementById('prompt').value;const status=document.getElementById('status');try{if(!navigator.clipboard)throw new Error('clipboard unavailable');await navigator.clipboard.writeText(value);status.textContent='Prompt zkopírován.'}catch{const field=document.getElementById('prompt');field.hidden=false;field.style.width='100%';field.style.height='240px';field.focus();field.select();status.textContent='Použij Ctrl+C nebo ⌘C pro zkopírování označeného promptu.'}});
+</script></body></html>
