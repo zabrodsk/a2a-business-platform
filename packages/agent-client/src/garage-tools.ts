@@ -28,6 +28,7 @@ export const GARAGE_TOOLS: GarageTool[] = [
   { name: 'source', description: 'Export one authorized business audit source.', method: 'GET', path: '/api/audit/export/:id', arguments: [identifier('id')], read_only: true },
   { name: 'rulebook', description: 'Read the active owner-approved operating rulebook.', method: 'GET', path: '/api/agent/rulebook', arguments: [], read_only: true },
   { name: 'propose-rulebook', description: 'Submit a proposed rulebook for owner review; does not activate it.', method: 'POST', path: '/api/agent/rulebook/proposals', arguments: [payload], read_only: false },
+  { name: 'publish-registry-proof', description: 'Publish the registry business_id and challenge at the fixed website verification path; does not activate booking or verify the registry listing.', method: 'POST', path: '/api/agent/registry-proof', arguments: [payload], read_only: false },
   { name: 'cases', description: 'List customer cases accessible to this agent.', method: 'GET', path: '/api/agent/cases', arguments: [], read_only: true },
   { name: 'case', description: 'Read an accessible customer case.', method: 'GET', path: '/api/agent/cases/:id', arguments: [identifier('id')], read_only: true },
   { name: 'availability', description: 'Find available service slots within an optional time window.', method: 'GET', path: '/api/agent/availability', arguments: [{ name: '--service', required: false, location: 'query', parameter: 'service_id' }, ...dates], read_only: true },

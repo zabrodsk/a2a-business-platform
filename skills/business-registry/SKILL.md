@@ -9,7 +9,15 @@ Use `registry.mjs` with the operator-provided `REGISTRY_URL` (HTTPS origin). Dow
 
 ## Business registration
 
-The registry operator issues a publisher credential. Provide it to the business bot as `REGISTRY_TOKEN` through its credential mechanism. This credential manages only that publisher's listings; it is distinct from booking, A2A and infrastructure credentials. Never include it in listing JSON, commands or messages.
+The registry operator provides a short-lived, one-use publisher enrollment URL. Redeem it locally:
+
+```bash
+node registry.mjs enroll OPERATOR_PROVIDED_REDEEM_URL
+```
+
+The CLI saves the publisher credential to `~/.a2a/registry.json` with owner-only permissions. It never prints the token. `REGISTRY_CONFIG` selects another credential file. `REGISTRY_URL` and `REGISTRY_TOKEN` override saved values; never send a saved credential to a different registry. Enrollment rotates any previous credential for the same publisher. GET requests do not redeem the URL. Treat the enrollment link as a temporary credential: use it promptly and do not repeat it in messages or logs.
+
+The credential manages only that publisher's listings; it is distinct from booking, A2A and infrastructure credentials. Never include it in listing JSON, commands or messages. The operator may alternatively supply `REGISTRY_TOKEN` through the bot's credential mechanism.
 
 Prepare `business.json` from owner-authorized public facts:
 

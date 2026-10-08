@@ -37,6 +37,9 @@ export function createRegistry(config: RegistryConfig, options: RegistryOptions 
       revision INTEGER NOT NULL DEFAULT 0, verified_at INTEGER, last_checked_at INTEGER, health_error TEXT
     );
     CREATE INDEX IF NOT EXISTS businesses_publisher ON businesses(publisher_id);
+    CREATE TABLE IF NOT EXISTS publisher_enrollments (
+      code_hash TEXT PRIMARY KEY, publisher_id TEXT NOT NULL REFERENCES publishers(id), expires_at INTEGER NOT NULL
+    );
   `);
   const now = options.now ?? Date.now;
   const fetchJson = options.fetchJson ?? fetchPublicJson;
@@ -81,6 +84,41 @@ export function createRegistry(config: RegistryConfig, options: RegistryOptions 
     const name = text(input.name, 'name'), id = randomUUID(), token = `publisher_${randomBytes(32).toString('base64url')}`;
     db.prepare('INSERT INTO publishers (id, name, token_hash) VALUES (?, ?, ?)').run(id, name, hash(token));
     res.status(201).json({ publisher_id: id, name, token });
+  });
+  function enrollmentOrigin() {
+    let url: URL;
+    try { url = new URL(config.publicUrl ?? ''); } catch { throw new HttpError(503, 'Registry public URL is not configured'); }
+    if (url.username || url.password || url.pathname !== '/' || url.search || url.hash ||
+        (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)))) {
+      throw new HttpError(503, 'Registry public URL must be a secure origin');
+    }
+    return url.origin;
+  }
+  app.post('/api/publisher-enrollments', (req, res) => {
+    if (!timingSafeEqual(Buffer.from(hash(bearer(req))), Buffer.from(hash(config.adminToken)))) throw new HttpError(401, 'Invalid administrator token');
+    const origin = enrollmentOrigin(), input = object(req.body);
+    if (Object.keys(input).some(key => !['publisher_id', 'ttl_seconds'].includes(key))) throw new HttpError(400, 'Unknown enrollment field');
+    const publisherId = text(input.publisher_id, 'publisher_id');
+    const ttl = input.ttl_seconds ?? 300;
+    if (typeof ttl !== 'number' || !Number.isInteger(ttl) || ttl < 1 || ttl > 900) throw new HttpError(400, 'ttl_seconds must be an integer between 1 and 900');
+    if (!db.prepare('SELECT id FROM publishers WHERE id = ?').get(publisherId)) throw new HttpError(404, 'Publisher not found');
+    const code = randomBytes(32).toString('base64url'), expiresAt = now() + ttl * 1000;
+    db.transaction(() => {
+      db.prepare('DELETE FROM publisher_enrollments WHERE publisher_id = ? OR expires_at <= ?').run(publisherId, now());
+      db.prepare('INSERT INTO publisher_enrollments (code_hash, publisher_id, expires_at) VALUES (?, ?, ?)').run(hash(code), publisherId, expiresAt);
+    })();
+    res.status(201).json({ redeem_url: `${origin}/publisher-enrollments/${code}`, expires_at: timestamp(expiresAt) });
+  });
+  app.post('/publisher-enrollments/:code', (req, res) => {
+    const origin = enrollmentOrigin(), code = String(req.params.code);
+    if (!/^[A-Za-z0-9_-]{43}$/.test(code)) throw new HttpError(404, 'Enrollment unavailable or expired');
+    const token = `publisher_${randomBytes(32).toString('base64url')}`;
+    db.transaction(() => {
+      const entry = db.prepare('DELETE FROM publisher_enrollments WHERE code_hash = ? AND expires_at > ? RETURNING publisher_id').get(hash(code), now()) as { publisher_id: string } | undefined;
+      if (!entry) throw new HttpError(404, 'Enrollment unavailable or expired');
+      db.prepare('UPDATE publishers SET token_hash = ? WHERE id = ?').run(hash(token), entry.publisher_id);
+    })();
+    res.json({ role: 'publisher', registry_url: origin, token });
   });
   app.post('/api/businesses', (req, res) => {
     const publisherId = publisher(req), listing = validateListing(req.body);

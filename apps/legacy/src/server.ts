@@ -1,6 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import { existsSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BusinessError, type Actor, type PaymentJob, type PaymentProvider, type PurchaseAuthorization } from '../../../packages/contracts/index.js';
@@ -58,6 +58,8 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   store.db.exec(`CREATE TABLE IF NOT EXISTS order_contact_snapshots(order_id TEXT PRIMARY KEY REFERENCES orders(id),name TEXT NOT NULL,email TEXT NOT NULL,phone TEXT NOT NULL);`);
   store.db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS agent_case_relay_task_identity ON agent_cases(json_extract(payload_json,'$.relay_task_id')) WHERE json_extract(payload_json,'$.relay_task_id') IS NOT NULL;`);
   store.db.exec(`CREATE TABLE IF NOT EXISTS masumi_jobs(id TEXT PRIMARY KEY REFERENCES payment_intents(id),customer_id TEXT NOT NULL,identifier_from_purchaser TEXT NOT NULL,job_json TEXT NOT NULL,input_json TEXT NOT NULL);`);
+  store.db.exec(`CREATE TABLE IF NOT EXISTS business_registry_proof(id INTEGER PRIMARY KEY CHECK(id=1),business_id TEXT NOT NULL,challenge TEXT NOT NULL,published_by TEXT NOT NULL,published_at TEXT NOT NULL);`);
+  store.db.exec(`CREATE TABLE IF NOT EXISTS business_agent_enrollments(code_hash TEXT PRIMARY KEY,expires_at TEXT NOT NULL,created_by TEXT NOT NULL);`);
 
   const app = express();
   app.disable('x-powered-by');
@@ -73,6 +75,37 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   const auditReaders = auth.require('owner', 'staff', 'business_agent');
   const agents = auth.require('business_agent', 'customer_agent');
   const business = auth.require('business_agent');
+
+  app.post('/api/admin/agent-enrollments', owner, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    if (!req.legacySession) fail('FORBIDDEN', 'A human owner session is required.', 403);
+    if (!businessIdentity) fail('BUSINESS_AGENT_UNAVAILABLE', 'No business agent credential is configured.', 503);
+    const body: unknown = req.body;
+    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.getPrototypeOf(body) !== Object.prototype
+      || Object.keys(body).some(key => key !== 'ttl_minutes')) fail('INVALID_ENROLLMENT', 'Supply only optional ttl_minutes.');
+    const ttl = (body as Record<string, unknown>).ttl_minutes ?? 5;
+    if (!Number.isSafeInteger(ttl) || Number(ttl) < 1 || Number(ttl) > 15) fail('INVALID_ENROLLMENT', 'ttl_minutes must be an integer from 1 to 15.');
+    const code = randomBytes(32).toString('base64url');
+    const expires_at = new Date(now().getTime() + Number(ttl) * 60_000).toISOString();
+    store.db.prepare('DELETE FROM business_agent_enrollments WHERE expires_at<=?').run(now().toISOString());
+    store.db.prepare('INSERT INTO business_agent_enrollments VALUES(?,?,?)').run(createHash('sha256').update(code).digest('hex'), expires_at, actor(req).id);
+    event('business_agent', businessIdentity.id, 'enrollment_created', actor(req).id, { expires_at });
+    res.status(201).json({ redeem_url: `${cfg.publicUrl}/agent-enrollments/${code}`, expires_at });
+  });
+  app.get('/agent-enrollments/:code', (_req, res) => {
+    res.set('Cache-Control', 'no-store').set('Allow', 'POST').status(405).json({ error: 'Use the business CLI to redeem this link.' });
+  });
+  app.post('/agent-enrollments/:code', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const code = param(req, 'code');
+    const credential = [...cfg.auth.agentTokens.entries()].find(([, identity]) => identity.role === 'business_agent' && identity.id === businessIdentity?.id);
+    if (!credential || code.length !== 43 || /[^A-Za-z0-9_-]/.test(code)) fail('ENROLLMENT_UNAVAILABLE', 'Enrollment is unknown, expired or already used.', 404);
+    const redeemed = store.db.prepare('DELETE FROM business_agent_enrollments WHERE code_hash=? AND expires_at>? RETURNING code_hash')
+      .get(createHash('sha256').update(code).digest('hex'), now().toISOString());
+    if (!redeemed) fail('ENROLLMENT_UNAVAILABLE', 'Enrollment is unknown, expired or already used.', 404);
+    event('business_agent', businessIdentity!.id, 'enrollment_redeemed', businessIdentity!.id, {});
+    res.json({ role: 'business_agent', url: cfg.publicUrl, token: credential[0] });
+  });
 
   function event(entity: string, id: string, kind: string, by: string, detail: unknown) {
     store.db.prepare('INSERT INTO audit_events(entity_type,entity_id,event_type,actor_id,data_json,created_at) VALUES(?,?,?,?,?,?)')
@@ -295,6 +328,27 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.post('/api/admin/mandates/:id/approve', human, (req, res) => res.json({ mandate: policy.approveMandate(actor(req), param(req, 'id')) }));
   app.get('/api/agent/cases', agents, (req, res) => res.json({ cases: policy.listCases(actor(req)) }));
   app.get('/api/agent/tools', business, (_req, res) => res.json({ tools: GARAGE_TOOLS }));
+  app.post('/api/agent/registry-proof', business, (req, res) => {
+    const principal = actor(req);
+    if (principal.id !== businessIdentity?.id) fail('FORBIDDEN', 'Only this website\'s configured business agent can publish registry proof.', 403);
+    const body: unknown = req.body;
+    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.getPrototypeOf(body) !== Object.prototype
+      || Object.keys(body).length !== 2 || !Object.hasOwn(body, 'business_id') || !Object.hasOwn(body, 'challenge')) {
+      fail('INVALID_REGISTRY_PROOF', 'Supply exactly business_id and challenge.');
+    }
+    const { business_id, challenge } = body as Record<string, unknown>;
+    if (typeof business_id !== 'string' || business_id.length !== 36 || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(business_id)
+      || typeof challenge !== 'string' || challenge.length < 32 || challenge.length > 128 || /[^A-Za-z0-9_-]/.test(challenge)) {
+      fail('INVALID_REGISTRY_PROOF', 'Supply a registry UUID and a 32–128 character base64url challenge.');
+    }
+    store.db.transaction(() => {
+      store.db.prepare(`INSERT INTO business_registry_proof VALUES(1,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+        business_id=excluded.business_id,challenge=excluded.challenge,published_by=excluded.published_by,published_at=excluded.published_at`)
+        .run(business_id, challenge, principal.id, now().toISOString());
+      event('registry', business_id, 'website_proof_published', principal.id, { path: '/.well-known/business-registry-verification.json' });
+    })();
+    res.json({ published: true, url: `${cfg.publicUrl}/.well-known/business-registry-verification.json`, business_id });
+  });
   app.get('/api/agent/reservations', business, (req, res) => {
     const fromInput = query(req, 'from'), toInput = query(req, 'to'), status = query(req, 'status');
     if ((fromInput && !Number.isFinite(Date.parse(fromInput))) || (toInput && !Number.isFinite(Date.parse(toInput)))) {
@@ -408,6 +462,12 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
         availability: '/masumi/availability', input_schema: '/masumi/input_schema', start_job: '/masumi/start_job', status: '/masumi/status',
         authentication: 'Bearer token for the assigned agent identity; job creation requires a customer agent and an approved order.' },
       skills: active ? ['tyre_change', 'wheel_swap'] : [], agent_card_url: '/.well-known/agent-card.json' });
+  });
+  app.get('/.well-known/business-registry-verification.json', (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const proof = store.db.prepare('SELECT business_id,challenge FROM business_registry_proof WHERE id=1').get();
+    if (!proof) return void res.status(404).json({ error: 'REGISTRY_PROOF_NOT_PUBLISHED' });
+    res.json(proof);
   });
   app.get('/.well-known/agent-card.json', (_req, res) => {
     try { rulebooks.getActive(); } catch (error) { if (!(error instanceof BusinessError)) throw error; return void res.status(503).json({ error: 'AGENT_INACTIVE', message: 'Majitel zatím neaktivoval aktuální auditovaný rulebook.' }); }
