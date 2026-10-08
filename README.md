@@ -35,6 +35,6 @@ Skutečný audit Pneu 007 a následný nákup dvěma GrokBoty čekají na připo
 
 ## Publikování
 
-GitHub Actions ověřuje instalaci, typecheck a testy na Node.js 22 při pushi a pull requestu. Produkční služba Railway používá `Dockerfile.legacy`, persistentní volume a privátní proměnné služby. Railway konfigurace je v `railway.legacy.json`; služba se propojuje s větví `main` tohoto repozitáře. Stav propojení a nasazení popisuje [deployment runbook](docs/railway-deployment.html). Lokální změny se publikují commitem a pushem.
+GitHub Actions ověřuje instalaci, typecheck a testy na Node.js 22 při pushi a pull requestu. Produkční služba Railway používá `Dockerfile.legacy`, persistentní volume a privátní proměnné služby. Railway služba je propojená s větví `main` tohoto repozitáře. Přímo v nastavení služby se používá `Dockerfile.legacy` (`RAILWAY_DOCKERFILE_PATH=Dockerfile.legacy`), healthcheck `/healthz` a jedna replika. Stav propojení a nasazení popisuje [deployment runbook](docs/railway-deployment.html). Lokální změny se publikují commitem a pushem.
 
 Jde o hackathonové demo bez skutečných autoservisních služeb a bez mainnet plateb. Testovací konstanty v testech jsou syntetické a nesmí se používat jako produkční přístupy.
