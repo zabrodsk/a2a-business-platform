@@ -6,7 +6,7 @@ A customer should be able to tell their agent, **“I need my tires swapped,”*
 
 **Pneu 007 is the fictional test business used to exercise the platform.** The tire-shop website and reservation backend are a sandbox for the A2A workflow.
 
-[Demo business website](https://pneu007-production.up.railway.app) · [Registry API and setup](docs/business-registry.html) · [Agent tools](docs/grokbot-tools.html) · [Runtime evidence](docs/runtime-proof.md)
+[Registry API](https://business-registry-production.up.railway.app) · [Demo business website](https://pneu007-production.up.railway.app) · [Registry API and setup](docs/business-registry.html) · [Agent tools](docs/grokbot-tools.html) · [Registry GrokBot proof](docs/registry-runtime-proof.html) · [Earlier A2A evidence](docs/runtime-proof.md)
 
 ## The agent-to-agent flow
 
@@ -94,8 +94,9 @@ It listens on port 8792 by default. On Railway, leave `REGISTRY_HOST` and `REGIS
 - Automated tests cover discovery, authentication, registry ownership and search, business policy, reservation conflicts, idempotency, persistence, and payment-adapter behavior.
 - GitHub CI runs workspace typechecks/tests and builds both application images.
 - The Pneu 007 test business is deployed on Railway. Its website, booking API, calendar, and audit-source access have been checked over HTTPS.
+- An actual business GrokBot completed registry enrollment, registration, proof publication, verification, update, pause and reactivation. Read [the live registration report](docs/registry-runtime-proof.html).
 - An earlier small GrokBot conversation through A2A is recorded in [runtime proof](docs/runtime-proof.md), including its limitations.
 
-The complete discovery-to-booking scenario using actual GrokBot accounts still needs its own runtime proof. The registry has not yet been provisioned publicly. Directory verification checks website control and basic Agent Card metadata; advertised booking capabilities remain publisher declarations. The initial directory supports up to 100 listings.
+The complete discovery-to-booking scenario using actual GrokBot accounts still needs its own runtime proof. The registry is deployed at https://business-registry-production.up.railway.app. Directory verification checks website control and basic Agent Card metadata; advertised booking capabilities remain publisher declarations. The initial directory supports up to 100 listings.
 
 Payments default to **`local_demo`**, an explicitly labeled local simulation. The Masumi adapter targets **Cardano Preprod**; live wallet and payment verification remain **NOT_RUN** until configured and tested. See [Masumi setup](docs/masumi-setup.html). There are no real garage services or mainnet payments in the demo.
