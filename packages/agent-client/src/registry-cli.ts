@@ -20,7 +20,7 @@ const help = `Business registry client
 Usage:
   registry tools
   registry enroll REDEEM_URL
-  registry --url https://registry.example search [--service ID] [--action book] [--lat N --lon N --radius-km N] [--limit N --offset N]
+  registry --url https://registry.example search [--service ID] [--action book] [--q "Holešovice"] [--lat N --lon N --radius-km N] [--limit N --offset N]
   registry --url https://registry.example get BUSINESS_ID
   registry --url https://registry.example mine
   registry --url https://registry.example register --data-file business.json
@@ -45,7 +45,7 @@ function secureUrl(value: string, allowLocal: boolean) {
 export async function registryMain(args: string[], env: NodeJS.ProcessEnv = process.env) {
   const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: {
     url: { type: 'string' }, 'data-file': { type: 'string' }, 'allow-http-localhost': { type: 'boolean' },
-    service: { type: 'string' }, action: { type: 'string' }, lat: { type: 'string' }, lon: { type: 'string' },
+    service: { type: 'string' }, action: { type: 'string' }, q: { type: 'string' }, lat: { type: 'string' }, lon: { type: 'string' },
     'radius-km': { type: 'string' }, limit: { type: 'string' }, offset: { type: 'string' }, help: { type: 'boolean', short: 'h' },
   } });
   if (values.help || !positionals.length) { process.stdout.write(help); return; }
@@ -82,7 +82,7 @@ export async function registryMain(args: string[], env: NodeJS.ProcessEnv = proc
   if (!command) throw new Error(`Unknown command ${name}`);
   const hasId = command.path.includes(':id');
   if (positionals.length !== (hasId ? 2 : 1) || (hasId && !/^[a-zA-Z0-9_-]{1,100}$/.test(id ?? ''))) throw new Error('Invalid command arguments or business ID');
-  const filters = ['service', 'action', 'lat', 'lon', 'radius-km', 'limit', 'offset'] as const;
+  const filters = ['service', 'action', 'q', 'lat', 'lon', 'radius-km', 'limit', 'offset'] as const;
   if (name !== 'search' && filters.some(key => values[key] !== undefined)) throw new Error('Search filters require the search command');
   const needsFile = name === 'register' || name === 'update';
   if (needsFile !== Boolean(values['data-file'])) throw new Error(needsFile ? '--data-file is required' : '--data-file is not supported for this command');

@@ -29,17 +29,18 @@ test('registry CLI separates public discovery from publisher credentials and con
   const local = ['--allow-http-localhost'];
   try {
     assert.equal(JSON.parse((await call(['tools'], { REGISTRY_TOKEN: '' })).stdout).commands.length, 8);
-    await call([...local, 'search', '--service', 'tyre_change&action=cancel', '--lat', '50.08', '--lon', '14.43', '--radius-km', '10']);
+    await call([...local, 'search', '--service', 'tyre_change&action=cancel', '--q', 'Holešovice&action=book', '--lat', '50.08', '--lon', '14.43', '--radius-km', '10']);
     assert.equal(requests[0]!.token, undefined);
     const query = new URL(requests[0]!.path, base).searchParams;
     assert.equal(query.get('service'), 'tyre_change&action=cancel'); assert.equal(query.get('action'), null); assert.equal(query.get('radius_km'), '10');
+    assert.equal(query.get('q'), 'Holešovice&action=book');
     await call([...local, 'get', 'business-123']); assert.equal(requests[1]!.token, undefined);
     const file = join(dir, 'listing.json'); writeFileSync(file, JSON.stringify({ name: 'Demo garage' }));
     await call([...local, 'register', '--data-file', file]);
     assert.equal(requests[2]!.method, 'POST'); assert.equal(requests[2]!.token, `Bearer ${token}`); assert.equal(JSON.parse(requests[2]!.body).name, 'Demo garage');
     await call([...local, 'update', 'business-123', '--data-file', file]); assert.equal(requests[3]!.method, 'PATCH');
     const before = requests.length;
-    for (const args of [['pause','../escape'], ['register'], ['search','--data-file',file], ['mine','--service','tyre_change'], ['get','business-123','extra']]) await assert.rejects(call([...local, ...args]));
+    for (const args of [['pause','../escape'], ['register'], ['search','--data-file',file], ['mine','--service','tyre_change'], ['mine','--q','Holešovice'], ['get','business-123','extra']]) await assert.rejects(call([...local, ...args]));
     await assert.rejects(call(['mine']), /HTTPS/);
     await assert.rejects(call([...local, 'mine'], { REGISTRY_TOKEN: '' }), /REGISTRY_TOKEN/);
     assert.equal(requests.length, before);
