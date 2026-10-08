@@ -4,6 +4,8 @@ const handoru = location.pathname.startsWith('/handoru');
 const agentClaim = location.pathname === '/agent/claim';
 const agentAccess = location.pathname === '/agent/access';
 const agentMandates = location.pathname === '/agent/mandates';
+const customerPage = agentClaim || agentAccess || agentMandates;
+if (customerPage) document.querySelectorAll('footer a[href="/admin"], footer a[href="/handoru"]').forEach(link => link.remove());
 const mandateId = new URLSearchParams(location.search).get('mandate_id');
 const claimAttempt = new URLSearchParams(location.search).get('claim_attempt_token');
 let actor, selected = handoru ? 'sources' : 'overview';
@@ -39,7 +41,7 @@ function rows(records, kind) {
 }
 async function session() {
   const data = await api('/api/session'); actor = data.actor;
-  document.getElementById('session').innerHTML = actor ? `<span>${esc(actor.id)} · ${esc(actor.role)}</span> ${actor.role === 'human_customer' ? '<a href="/agent/access">Přístupy agentů</a> ' : ''}${action('Odhlásit', 'logout', '')}` : action('Přihlásit se','login','');
+  document.getElementById('session').innerHTML = actor ? `<span>${customerPage ? actor.role === 'human_customer' ? 'Zákaznický účet' : 'Přihlášený účet' : `${esc(actor.id)} · ${esc(actor.role)}`}</span> ${actor.role === 'human_customer' ? '<a href="/agent/access">Přístupy agentů</a> ' : ''}${action('Odhlásit', 'logout', '')}` : action('Přihlásit se','login','');
 }
 async function renderAgentAccess() {
   main.innerHTML = `<p class="eyebrow">Pneu 007 · přístupy agentů</p><h1>${agentClaim ? 'Propojit vašeho agenta' : 'Vaši propojení agenti'}</h1><section id="content" aria-live="polite"><p role="status">Načítání…</p></section>`;

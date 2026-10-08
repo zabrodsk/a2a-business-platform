@@ -4,7 +4,7 @@
 <style>body{max-width:920px;margin:48px auto;padding:0 24px;color:#172f28;background:#f5f5f0;font:16px/1.65 system-ui,sans-serif}h1,h2{line-height:1.25}table{border-collapse:collapse;width:100%}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd6ce;padding:12px}code{overflow-wrap:anywhere}a{color:inherit}.note{padding:16px;background:#fff;border-left:4px solid #957b42}</style></head>
 <body><h1>Agent identity and auth.md</h1>
 <p>The demo business implements a local customer-linking flow described by <code>/auth.md</code>, using its existing customer login. No external WorkOS account or subscription is required. Each registration receives a stable agent identity. It gains customer access only after that customer signs in and confirms a short-lived code. The business records the acting agent separately from the customer it represents.</p>
-<p class="note">Implemented locally; this document is not deployment or live GrokBot proof. The registry service and standalone relay keep their existing enrollment mechanisms. Provider-verified ID-JAG assertions and provider Security Event Tokens are not supported or advertised.</p>
+<p class="note">Deployed on the Pneu 007 demo. The <a href="customer-booking-runtime-proof.html">actual customer and business GrokBot test</a> records the live consent, negotiation and booking results. The registry service and standalone relay keep their existing enrollment mechanisms. Provider-verified ID-JAG assertions and provider Security Event Tokens are not supported or advertised.</p>
 <h2>Discovery and registration</h2>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody>
 <tr><td><code>GET /auth.md</code></td><td>Runtime instructions for registering, claiming, exchanging and revoking credentials.</td></tr>
@@ -31,5 +31,5 @@
 <p>Revoking a registration disables its access tokens and future assertion exchanges in both A2A and business tools. It does not cancel a booking or undo an already authorized transaction; those use the existing cancellation and payment workflow. Restarting the application preserves registrations, keys, expiry and revocation.</p>
 <h2>Verification</h2>
 <p>Automated tests exercise discovery, anonymous restrictions, customer-only confirmation, code and session checks, account isolation, signed-assertion validation, replay, expiry, revocation and persistence. The unified system test registers and links an agent, exchanges an A2A message, opens a business case for the linked customer, verifies that forged message identity does not change the binding, and revokes access on both API surfaces.</p>
-<p>Run <code>npm run typecheck</code> and <code>npm test</code>. Testing actual GrokBot accounts and deploying these changes are separate operational steps.</p>
+<p>Run <code>npm run typecheck</code> and <code>npm test</code>. The runtime report separately records actual GrokBot execution; distinct GrokBot accounts have not been verified.</p>
 </body></html>

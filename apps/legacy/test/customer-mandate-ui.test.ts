@@ -8,22 +8,27 @@ const mandate = {
   id: 'mandate-test', service_spec: {service_id:'tyre_change',vehicle_type:'personal',wheel_count:4,wheel_size_inches:18,rim_type:'alu',runflat:false,tpms:true},
   status:'pending',mode:'book',max_total_minor:250000,max_deposit_minor:50000,payment_mode:'deposit',latest_service_end:'2099-10-17T22:00:00Z',expires_at:'2099-10-09T10:00:00Z',network:'Preprod',max_asset_quantity:'25000000',max_network_fee:'2000000',seller_id:'pneu007-seller',mapping_version:'demo-map-v1',proposed_by:'customer-bot',
 };
-async function page(options: {actor?: {id:string;role:string}|null;search?:string;mandates?:unknown[];postError?:string} = {}) {
+async function page(options: {actor?: {id:string;role:string}|null;pathname?:string;search?:string;mandates?:unknown[];postError?:string} = {}) {
   const actor = options.actor === undefined ? {id:'customer-a',role:'human_customer'} : options.actor;
   const elements = new Map<string, {innerHTML:string;textContent:string;style:Record<string,string>;addEventListener:()=>void}>();
   const element = (id:string) => {
     if (!elements.has(id)) elements.set(id, {innerHTML:'',textContent:'',style:{},addEventListener:()=>{}});
     return elements.get(id)!;
   };
+  const removedFooterLinks: string[] = [];
   const listeners = new Map<string,(event:unknown)=>Promise<void>>();
   const requests: {path:string;options?:{method?:string;body?:unknown}}[] = [];
   const mandates = options.mandates ?? [structuredClone(mandate)];
   const context = {
-    location:{pathname:'/agent/mandates',search:options.search ?? '?mandate_id=mandate-test'},URLSearchParams,Intl,Date,BigInt,
-    document:{querySelector:()=>element('main'),getElementById:element,addEventListener:(name:string,listener:(event:unknown)=>Promise<void>)=>listeners.set(name,listener)},
+    location:{pathname:options.pathname ?? '/agent/mandates',search:options.search ?? '?mandate_id=mandate-test'},URLSearchParams,Intl,Date,BigInt,
+    document:{querySelector:()=>element('main'),querySelectorAll:(selector:string)=> {
+      assert.equal(selector, 'footer a[href="/admin"], footer a[href="/handoru"]');
+      return ['/admin','/handoru'].map(href=>({remove:()=>removedFooterLinks.push(href)}));
+    },getElementById:element,addEventListener:(name:string,listener:(event:unknown)=>Promise<void>)=>listeners.set(name,listener)},
     api: async (path:string, input?:{method?:string;body?:unknown}) => {
       requests.push({path,options:input});
       if(path === '/api/session') return {actor};
+      if(path === '/api/agent/identities') return {identities:[]};
       if(path === '/api/admin/mandates') return {mandates};
       if(path === '/api/admin/mandates/mandate-test/approve') {
         if(options.postError) throw new Error(options.postError);
@@ -38,7 +43,7 @@ async function page(options: {actor?: {id:string;role:string}|null;search?:strin
   };
   await runInNewContext(`(async()=>{${source}})()`,context);
   return {
-    html:()=>element('content').innerHTML,main:()=>element('main').innerHTML,requests,
+    html:()=>element('content').innerHTML,sessionHtml:()=>element('session').innerHTML,removedFooterLinks,main:()=>element('main').innerHTML,requests,
     inlineError:()=>element('mandate-error').textContent,
     approve:async(id='mandate-test')=> {
       const button={dataset:{action:'customer-mandate',id},disabled:false};
@@ -81,4 +86,17 @@ test('approval errors remain visible and mismatched click cannot target another 
   const p=await page({postError:'MANDATE_EXPIRED'});
   await p.approve('another-mandate');assert.equal(p.requests.filter(r=>r.options?.method === 'POST').length,0);
   await p.approve();assert.equal(p.inlineError(),'MANDATE_EXPIRED');
+});
+
+
+test('customer pages use friendly account labels and remove only operator footer links',async()=>{
+  for(const pathname of ['/agent/claim','/agent/access','/agent/mandates']) {
+    const p=await page({pathname});
+    assert.match(p.sessionHtml(),/Zákaznický účet/);
+    assert.doesNotMatch(p.sessionHtml(),/customer-a|human_customer/);
+    assert.deepEqual(p.removedFooterLinks,['/admin','/handoru']);
+  }
+  const owner=await page({pathname:'/admin',actor:{id:'owner-account',role:'owner'}});
+  assert.match(owner.sessionHtml(),/owner-account · owner/);
+  assert.deepEqual(owner.removedFooterLinks,[]);
 });
