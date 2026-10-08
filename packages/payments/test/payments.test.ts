@@ -10,6 +10,7 @@ const time = new Date('2026-10-08T08:00:00.000Z');
 const seller = 'f'.repeat(56);
 const agent = `${'a'.repeat(56)}0070`;
 const resultHash = createHash('sha256').update('voucher').digest('hex');
+const withdrawalHash = 'c'.repeat(64);
 function request(provider: 'local_demo' | 'masumi' = 'masumi'): PaymentRequest {
   const network = provider === 'masumi' ? 'Preprod' : 'local';
   const sellerId = provider === 'masumi' ? seller : 'pneu007-demo';
@@ -33,11 +34,11 @@ function fixture(recordRequest = request()) {
     unlockTime: String(time.getTime() + 90 * 60000), externalDisputeUnlockTime: String(time.getTime() + 120 * 60000),
   };
   const common = { ...deadlines, id: 'provider-payment-1', blockchainIdentifier: 'signed-blockchain-identifier', inputHash: recordRequest.input_hash,
-    PaymentSource: { network: 'Preprod', paymentType: 'Web3CardanoV1', policyId: agent.slice(0, 56), smartContractAddress: 'addr_test_contract' },
+    PaymentSource: { network: 'Preprod', paymentType: 'Web3CardanoV1', policyId: agent.slice(0, 56), smartContractAddress: 'addr_test1contract' },
     onChainState: null, resultHash: '', NextAction: { requestedAction: 'WaitingForExternalAction', errorType: null },
     CurrentTransaction: null, TransactionHistory: [], WithdrawnForSeller: [], WithdrawnForBuyer: [] };
   const payment: RecordData = { ...common, RequestedFunds: [{ unit: '', amount: recordRequest.asset_quantity }],
-    SmartContractWallet: { id: 'seller-wallet', walletVkey: seller, walletAddress: 'addr_test_seller' },
+    SmartContractWallet: { id: 'seller-wallet', walletVkey: seller, walletAddress: 'addr_test1seller' },
     metadata: JSON.stringify({ intent_id: recordRequest.intent_id, order_id: recordRequest.order_id, sku: recordRequest.sku }) };
   const purchase: RecordData = { ...common, id: 'provider-purchase-1', PaidFunds: [{ unit: '', amount: recordRequest.asset_quantity }],
     SellerWallet: null, NextAction: { requestedAction: 'FundsLockingRequested', errorType: null } };
@@ -50,12 +51,44 @@ function funded(purchase: RecordData, state = 'FundsLocked'): void {
   purchase.CurrentTransaction = { id: 'chain-tx', status: 'Confirmed', txHash: 'b'.repeat(64) };
 }
 
+function settlementFixture(recordRequest: PaymentRequest) {
+  const ada = (quantity: string) => [{ unit: 'lovelace', quantity }];
+  const datumHash = 'd'.repeat(64); const feeDatumHash = 'e'.repeat(64);
+  const fields: RecordData[] = Array.from({ length: 16 }, () => ({ int: 0 }));
+  fields[1] = { constructor: 0, fields: [{ constructor: 0, fields: [{ bytes: seller }] }] };
+  fields[5] = { bytes: recordRequest.identifier_from_purchaser };
+  fields[7] = { bytes: recordRequest.input_hash }; fields[8] = { bytes: resultHash };
+  fields[15] = { constructor: 1, fields: [] };
+  for (const [index, minutes] of [[9, 20], [10, 60], [11, 90], [12, 120]]) fields[index] = { int: time.getTime() + minutes * 60000 };
+  return {
+    fail: false,
+    tx: { hash: withdrawalHash, block: 'a'.repeat(64), block_height: 100, valid_contract: true, fees: '497499' },
+    utxos: { hash: withdrawalHash, inputs: [
+      { tx_hash: 'b'.repeat(64), output_index: 0, address: 'addr_test1contract', amount: ada('5000000'),
+        collateral: false, reference: false, data_hash: datumHash, inline_datum: 'd87980' },
+      { tx_hash: 'a'.repeat(64), output_index: 1, address: 'addr_test1seller', amount: ada('24231626'), collateral: false, reference: false },
+      { tx_hash: 'a'.repeat(64), output_index: 1, address: 'addr_test1seller', amount: ada('24231626'), collateral: true, reference: false },
+    ], outputs: [
+      { output_index: 0, address: 'addr_test1seller', amount: ada('3564770'), collateral: false, data_hash: null, inline_datum: null },
+      { output_index: 1, address: 'addr_test1fee', amount: ada('1435230'), collateral: false, data_hash: feeDatumHash, inline_datum: 'd87980' },
+      { output_index: 2, address: 'addr_test1seller', amount: ada('23734127'), collateral: false, data_hash: null, inline_datum: null },
+      { output_index: 3, address: 'addr_test1seller', amount: ada('19231626'), collateral: true, data_hash: null, inline_datum: null },
+    ] },
+    datum: { json_value: { constructor: 0, fields } },
+    feeDatum: { json_value: { constructor: 0, fields: [{ bytes: 'b'.repeat(64) }, { int: 0 }] } },
+    datumHash, feeDatumHash,
+  };
+}
+
 function server(recordRequest = request(), overrides: Partial<MasumiConfig> = {}) {
   const initial = fixture(recordRequest);
+  const chain = settlementFixture(recordRequest);
   let payment: RecordData | undefined;
   let purchase: RecordData | undefined;
   let lostPurchaseResponse = false;
   let lostPaymentResponse = false;
+  let hideSeller = false;
+  let hideBuyer = false;
   let walletBalance = 6000000;
   const calls: Array<{ url: string; init?: RequestInit; body?: RecordData }> = [];
   const fetcher: typeof fetch = async (input, init) => {
@@ -63,15 +96,27 @@ function server(recordRequest = request(), overrides: Partial<MasumiConfig> = {}
     const body = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
     calls.push({ url: url.toString(), init, body });
     const reply = (data: unknown) => new Response(JSON.stringify({ status: 'success', data }), { status: 200 });
+    if (url.origin === 'https://cardano-preprod.blockfrost.io') {
+      if (chain.fail) throw new Error('unavailable preprodPrivateTestKey');
+      const resources: Record<string, unknown> = {
+        [`/api/v0/txs/${withdrawalHash}`]: chain.tx,
+        [`/api/v0/txs/${withdrawalHash}/utxos`]: chain.utxos,
+        [`/api/v0/scripts/datum/${chain.datumHash}`]: chain.datum,
+        [`/api/v0/scripts/datum/${chain.feeDatumHash}`]: chain.feeDatum,
+      };
+      assert.ok(url.pathname in resources, url.pathname);
+      return new Response(JSON.stringify(resources[url.pathname]));
+    }
     if (url.pathname.endsWith('/payment/') && init?.method === 'GET') return reply({ Payments: payment ? [payment] : [] });
     if (url.pathname.endsWith('/payment/') && init?.method === 'POST') {
       payment = structuredClone(initial.payment);
       if (lostPaymentResponse) throw new Error('lost seller response');
       return reply(payment);
     }
-    if (url.pathname.endsWith('/payment/resolve-blockchain-identifier')) return payment ? reply(payment) : new Response('', { status: 404 });
-    if (url.pathname.endsWith('/purchase/resolve-blockchain-identifier')) return purchase ? reply(purchase) : new Response('', { status: 404 });
-    if (url.pathname.endsWith('/payment-source/')) return reply({ PaymentSources: [{ network: 'Preprod', PurchasingWallets: [{ walletAddress: 'addr_test_buyer' }] }] });
+    if (url.pathname.endsWith('/payment/resolve-blockchain-identifier')) return payment && !hideSeller ? reply(payment) : new Response('', { status: 404 });
+    if (url.pathname.endsWith('/purchase/resolve-blockchain-identifier')) return purchase && !hideBuyer ? reply(purchase) : new Response('', { status: 404 });
+    if (url.pathname.endsWith('/payment-source/')) return reply({ PaymentSources: [{ network: 'Preprod', policyId: agent.slice(0, 56),
+      feeRatePermille: 50, FeeReceiverNetworkWallet: { walletAddress: 'addr_test1fee' }, PurchasingWallets: [{ walletAddress: 'addr_test_buyer' }] }] });
     if (url.pathname.endsWith('/utxos/')) return reply({ Utxos: [{ address: 'addr_test_buyer', Amounts: [{ unit: '', quantity: walletBalance }] }] });
     if (url.pathname.endsWith('/purchase/')) {
       if (purchase) return new Response('', { status: 409 });
@@ -100,10 +145,11 @@ function server(recordRequest = request(), overrides: Partial<MasumiConfig> = {}
   const config: MasumiConfig = { sellerUrl: 'http://127.0.0.1:3001/api/v1', buyerUrl: 'http://127.0.0.1:3002/api/v1', sellerToken: 'seller-secret',
     buyerToken: 'buyer-secret', sellerVkey: seller, skus: { 'deposit-500': agent }, buyerWalletAddress: 'addr_test_buyer',
     dedicatedBuyerWallet: true, buyerLifecycleIsolated: true, allowLocalHttp: true, preprodPurchasesEnabled: true, ...overrides };
-  return { config, calls, initial, provider: new MasumiProvider(config, { fetch: fetcher, now: () => time }),
+  return { config, calls, initial, chain, fetcher, provider: new MasumiProvider(config, { fetch: fetcher, now: () => time }),
     get payment() { return payment; }, get purchase() { return purchase; },
     set losePurchaseResponse(value: boolean) { lostPurchaseResponse = value; },
     set losePaymentResponse(value: boolean) { lostPaymentResponse = value; },
+    set hideSeller(value: boolean) { hideSeller = value; }, set hideBuyer(value: boolean) { hideBuyer = value; },
     set walletBalance(value: number) { walletBalance = value; } };
 }
 
@@ -287,14 +333,119 @@ test('submit-result cannot change an already delivered voucher hash', async () =
 });
 
 test('funding, result submission and actual net seller payout remain different states', async () => {
-  const s = server(); const pending = await s.provider.start(request());
+  const s = server(request(), { blockfrostProjectId: 'preprodPrivateTestKey' }); const pending = await s.provider.start(request());
   assert.ok(s.purchase); funded(s.purchase);
   const fund = await s.provider.observe(request(), pending); assert.equal(fund.state, 'escrow_funded');
   const delivered = await s.provider.submitResult(request(), fund, resultHash); assert.equal(delivered.state, 'result_submitted');
-  funded(s.purchase, 'Withdrawn'); s.purchase.WithdrawnForSeller = [{ unit: '', amount: '4750000' }];
+  funded(s.purchase, 'Withdrawn'); s.purchase.CurrentTransaction = { status: 'Confirmed', txHash: withdrawalHash };
+  s.purchase.TransactionHistory = [{ status: 'Confirmed', txHash: 'b'.repeat(64) }];
+  assert.deepEqual(s.purchase.WithdrawnForSeller, []);
+  const paid = await s.provider.observe(request(), delivered);
+  assert.equal(paid.state, 'seller_paid'); assert.equal(paid.transaction_hash, withdrawalHash);
+  const proof = (paid.raw as RecordData).settlement as RecordData;
+  assert.equal(proof.escrow_transaction_hash, 'b'.repeat(64)); assert.equal(proof.escrow_output_index, 0);
+  assert.equal(proof.seller_gross_lovelace, '3564770'); assert.equal(proof.seller_net_lovelace, '3067271');
+  assert.equal(proof.chain_fee_lovelace, '497499'); assert.equal(proof.protocol_fee_lovelace, '1435230');
+  assert.ok(!JSON.stringify(paid).includes('preprodPrivateTestKey'));
+  const restarted = new MasumiProvider(s.config, { fetch: s.fetcher, now: () => time });
+  const reread = await restarted.observe(request(), JSON.parse(JSON.stringify(paid)));
+  assert.equal(reread.state, 'seller_paid'); assert.deepEqual((reread.raw as RecordData).settlement, proof);
+  const reads = s.calls.filter(call => new URL(call.url).hostname === 'cardano-preprod.blockfrost.io');
+  assert.equal(reads.length, 8);
+  assert.ok(reads.every(call => new Headers(call.init?.headers).get('project_id') === 'preprodPrivateTestKey'
+    && new Headers(call.init?.headers).get('token') === null && call.init?.redirect === 'error'));
+});
+
+async function withdrawnFixture() {
+  const s = server(request(), { blockfrostProjectId: 'preprodPrivateTestKey', collectionAddress: 'addr_test1seller' });
+  const pending = await s.provider.start(request()); assert.ok(s.purchase);
+  funded(s.purchase);
+  const delivered = await s.provider.submitResult(request(), await s.provider.observe(request(), pending), resultHash);
+  funded(s.purchase, 'Withdrawn'); s.purchase.CurrentTransaction = { status: 'Confirmed', txHash: withdrawalHash };
+  s.purchase.TransactionHistory = [{ status: 'Confirmed', txHash: 'b'.repeat(64) }];
+  return { s, delivered };
+}
+
+for (const mismatch of ['transaction', 'escrow-transaction', 'destination', 'asset', 'collateral', 'reference', 'datum',
+  'result', 'nonce', 'seller', 'contract', 'fee-reference', 'net', 'invalid-contract', 'change-only'] as const) {
+  test(`ordinary Withdrawn rejects ${mismatch} mismatch despite an empty provider payout array`, async () => {
+    const { s, delivered } = await withdrawnFixture();
+    if (mismatch === 'transaction') s.chain.tx.hash = 'a'.repeat(64);
+    if (mismatch === 'escrow-transaction') s.chain.utxos.inputs[0].tx_hash = 'a'.repeat(64);
+    if (mismatch === 'destination') s.chain.utxos.outputs[0].address = 'addr_test1different';
+    if (mismatch === 'asset') s.chain.utxos.outputs[0].amount[0].unit = 'unexpected-token';
+    if (mismatch === 'collateral') s.chain.utxos.inputs[0].collateral = true;
+    if (mismatch === 'reference') s.chain.utxos.inputs[0].reference = true;
+    if (mismatch === 'datum') s.chain.datum.json_value.fields[7] = { bytes: 'a'.repeat(64) };
+    if (mismatch === 'result') s.chain.datum.json_value.fields[8] = { bytes: 'a'.repeat(64) };
+    if (mismatch === 'nonce') s.chain.datum.json_value.fields[5] = { bytes: 'a'.repeat(20) };
+    if (mismatch === 'seller') s.chain.datum.json_value.fields[1] = { constructor: 0, fields: [{ constructor: 0, fields: [{ bytes: 'a'.repeat(56) }] }] };
+    if (mismatch === 'contract') s.chain.utxos.inputs[0].address = 'addr_test1othercontract';
+    if (mismatch === 'fee-reference') s.chain.feeDatum.json_value.fields[0] = { bytes: 'a'.repeat(64) };
+    if (mismatch === 'net') s.chain.utxos.outputs[2].amount[0].quantity = '23734128';
+    if (mismatch === 'invalid-contract') s.chain.tx.valid_contract = false;
+    if (mismatch === 'change-only') s.chain.utxos.outputs.splice(0, 1);
+    await assert.rejects(s.provider.observe(request(), delivered), { code: 'MASUMI_PAYOUT_UNVERIFIED' });
+    assert.equal(s.calls.filter(call => call.url.endsWith('/purchase/')).length, 1);
+  });
+}
+
+test('rolled-back withdrawal remains reconciliation and cannot reuse an older confirmed transaction as payout', async () => {
+  const { s, delivered } = await withdrawnFixture(); assert.ok(s.purchase);
+  s.purchase.CurrentTransaction = { status: 'RolledBack', txHash: withdrawalHash };
+  const reconciled = await s.provider.observe(request(), delivered);
+  assert.equal(reconciled.state, 'reconciliation_required');
+  assert.equal(s.calls.filter(call => new URL(call.url).hostname === 'cardano-preprod.blockfrost.io').length, 0);
+  s.purchase.CurrentTransaction = { status: 'Confirmed', txHash: withdrawalHash };
+  assert.equal((await s.provider.observe(request(), JSON.parse(JSON.stringify(reconciled)))).state, 'seller_paid');
+});
+
+test('settlement fails closed without the read key or prior result anchor even when provider payout amounts exist', async () => {
+  const noKey = server(); const pending = await noKey.provider.start(request()); assert.ok(noKey.purchase);
+  funded(noKey.purchase, 'Withdrawn'); noKey.purchase.WithdrawnForSeller = [{ unit: '', amount: '4750000' }];
+  await assert.rejects(noKey.provider.observe(request(), pending), { code: 'MASUMI_PAYOUT_UNVERIFIED' });
+  const { s } = await withdrawnFixture();
+  await assert.rejects(s.provider.observe(request()), { code: 'MASUMI_PAYOUT_UNVERIFIED' });
+});
+
+test('transient settlement reads are redacted and retry only observation without another purchase', async () => {
+  const { s, delivered } = await withdrawnFixture(); s.chain.fail = true;
+  await assert.rejects(s.provider.observe(request(), delivered), (error: Error & { code?: string }) => {
+    assert.equal(error.code, 'MASUMI_SETTLEMENT_UNAVAILABLE');
+    assert.ok(!error.message.includes('preprodPrivateTestKey')); return true;
+  });
+  s.chain.fail = false;
   assert.equal((await s.provider.observe(request(), delivered)).state, 'seller_paid');
-  s.purchase.WithdrawnForSeller = [];
-  await assert.rejects(s.provider.observe(request(), delivered), { code: 'MASUMI_PAYOUT_UNVERIFIED' });
+  assert.equal(s.calls.filter(call => call.url.endsWith('/purchase/')).length, 1);
+});
+
+for (const missing of ['seller', 'buyer'] as const) {
+  test(`a temporarily missing ${missing} record preserves original result lineage across restart`, async () => {
+    const { s, delivered } = await withdrawnFixture();
+    delete (delivered.raw as RecordData).result_transaction_hash;
+    if (missing === 'seller') s.hideSeller = true; else s.hideBuyer = true;
+    let uncertain = delivered;
+    if (missing === 'buyer') {
+      await assert.rejects(s.provider.observe(request(), delivered), { code: 'PAYMENT_IDENTITY_MISMATCH' });
+    } else {
+      uncertain = await s.provider.observe(request(), delivered);
+      assert.equal(uncertain.state, 'reconciliation_required');
+      assert.equal((uncertain.raw as RecordData).result_transaction_hash, 'b'.repeat(64));
+    }
+    s.hideSeller = false; s.hideBuyer = false;
+    const restarted = new MasumiProvider(s.config, { fetch: s.fetcher, now: () => time });
+    const paid = await restarted.observe(request(), JSON.parse(JSON.stringify(uncertain)));
+    assert.equal(paid.state, 'seller_paid');
+    assert.equal(s.calls.filter(call => call.url.endsWith('/purchase/')).length, 1);
+  });
+}
+
+test('already withdrawn start without persisted result evidence fails closed and direct settlement config rejects invalid values', async () => {
+  const { s } = await withdrawnFixture();
+  await assert.rejects(s.provider.start(request()), { code: 'MASUMI_PAYOUT_UNVERIFIED' });
+  assert.equal(s.calls.filter(call => call.url.endsWith('/purchase/')).length, 1);
+  assert.throws(() => new MasumiProvider({ ...s.config, blockfrostProjectId: 'mainnetInvalid' }), { code: 'MASUMI_INVALID_CONFIG' });
+  assert.throws(() => new MasumiProvider({ ...s.config, collectionAddress: 'addr1mainnet' }), { code: 'MASUMI_INVALID_CONFIG' });
 });
 
 test('buyer refund request does not call seller authorization and requires observed refund withdrawal', async () => {

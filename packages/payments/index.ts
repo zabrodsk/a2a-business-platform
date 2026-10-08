@@ -1,5 +1,5 @@
 import { BusinessError, type PaymentProvider } from '../contracts/index.js';
-import { integer, object, PAYMENT_SKUS } from './src/common.js';
+import { integer, object, PAYMENT_SKUS, DEMO_SELLER } from './src/common.js';
 import { LocalDemoProvider, type LocalDemoOptions } from './src/local.js';
 import { MasumiProvider, MASUMI_VERSION, validateMasumiUrl, type MasumiConfig, type MasumiOptions } from './src/masumi.js';
 
@@ -26,8 +26,17 @@ export function readMasumiConfig(env: NodeJS.ProcessEnv = process.env): MasumiCo
     throw new BusinessError('MASUMI_INVALID_CONFIG', 'Unknown Masumi timing profile', 503);
   }
   checkoutNetworkFee(env);
+  if (env.MASUMI_BLOCKFROST_PROJECT_ID && !/^preprod[a-zA-Z0-9]+$/.test(env.MASUMI_BLOCKFROST_PROJECT_ID)) {
+    throw new BusinessError('MASUMI_INVALID_CONFIG', 'Settlement verification requires a Blockfrost Preprod project', 503);
+  }
+  if (env.MASUMI_COLLECTION_ADDRESS && !/^addr_test1[a-z0-9]+$/.test(env.MASUMI_COLLECTION_ADDRESS)) {
+    throw new BusinessError('MASUMI_INVALID_CONFIG', 'Collection address must belong to Cardano Preprod', 503);
+  }
   if (!env.MASUMI_PAYMENT_SERVICE_URL || !env.MASUMI_PAYMENT_API_KEY || !env.MASUMI_BUYER_API_KEY
     || !env.MASUMI_SELLER_VKEY || !env.MASUMI_SKUS) return undefined;
+  if (!/^(?:[a-f0-9]{56}|[a-f0-9]{64})$/.test(env.MASUMI_SELLER_VKEY)) {
+    throw new BusinessError('MASUMI_INVALID_CONFIG', 'Seller verification key must be public hexadecimal key material', 503);
+  }
   let parsed: Record<string, unknown>;
   try { parsed = object(JSON.parse(env.MASUMI_SKUS)); } catch { throw new BusinessError('MASUMI_INVALID_CONFIG', 'MASUMI_SKUS must contain fixed SKU agent identifiers', 503); }
   const skus: Record<string, string> = {};
@@ -47,6 +56,7 @@ export function readMasumiConfig(env: NodeJS.ProcessEnv = process.env): MasumiCo
   catch { throw new BusinessError('MASUMI_INVALID_CONFIG', 'Masumi server URLs are invalid', 503); }
   return { sellerUrl, buyerUrl, sellerToken: env.MASUMI_PAYMENT_API_KEY, buyerToken: env.MASUMI_BUYER_API_KEY,
     sellerVkey: env.MASUMI_SELLER_VKEY, skus, timeoutMs, buyerWalletAddress: env.MASUMI_BUYER_WALLET_ADDRESS,
+    blockfrostProjectId: env.MASUMI_BLOCKFROST_PROJECT_ID, collectionAddress: env.MASUMI_COLLECTION_ADDRESS,
     dedicatedBuyerWallet: env.MASUMI_DEDICATED_BUYER_WALLET === 'true', allowLocalHttp, deadlineProfile,
     buyerLifecycleIsolated: env.MASUMI_BUYER_LIFECYCLE_ISOLATED === 'true',
     preprodPurchasesEnabled: env.MASUMI_ENABLE_PREPROD_PURCHASES === 'true' };
@@ -54,7 +64,7 @@ export function readMasumiConfig(env: NodeJS.ProcessEnv = process.env): MasumiCo
 
 export function paymentProviderStatus(env: NodeJS.ProcessEnv = process.env) {
   const provider = env.PAYMENT_PROVIDER ?? 'local_demo';
-  if (provider === 'local_demo') return { provider, network: 'local', simulation: true, configured: true, checkout_network_fee: '2000000',
+  if (provider === 'local_demo') return { provider, network: 'local', simulation: true, configured: true, checkout_network_fee: '2000000', seller_id: DEMO_SELLER,
     live_verification: 'NOT_RUN', notice: 'Local simulation; not Masumi on-chain payment', mapping_version: 'demo-map-v1', skus: PAYMENT_SKUS };
   if (provider !== 'masumi') throw new BusinessError('PAYMENT_INVALID_PROVIDER', 'Select local_demo or masumi explicitly', 503);
   try {
@@ -69,6 +79,8 @@ export function paymentProviderStatus(env: NodeJS.ProcessEnv = process.env) {
     ];
     const proofConfigured = Boolean(config?.dedicatedBuyerWallet && config?.buyerWalletAddress && config?.buyerLifecycleIsolated);
     return { provider, network: 'Preprod', simulation: false, configured: Boolean(config),
+      seller_id: config?.sellerVkey,
+      settlement_verification_configured: Boolean(config?.blockfrostProjectId),
       timing_profile: config?.deadlineProfile ?? env.MASUMI_TIMING_PROFILE ?? 'standard',
       checkout_network_fee: checkoutNetworkFee(env),
       missing_configuration: missingConfiguration, missing_purchase_configuration: missingPurchaseConfiguration,
@@ -80,7 +92,8 @@ export function paymentProviderStatus(env: NodeJS.ProcessEnv = process.env) {
       reason: !config ? 'MASUMI_NOT_CONFIGURED' : !proofConfigured ? 'MASUMI_FEE_CAP_NOT_ENFORCED'
         : !config.preprodPurchasesEnabled ? 'MASUMI_PREPROD_PURCHASES_DISABLED' : 'LIVE_SMOKE_TEST_REQUIRED',
       notice: 'Cardano Preprod test-ADA; no monetary value. Configuration is not on-chain verification.',
-      mapping_version: 'demo-map-v1', skus: PAYMENT_SKUS.map((entry) => ({ ...entry, registered: Boolean(config?.skus[entry.sku]) })) };
+      mapping_version: 'demo-map-v1', skus: PAYMENT_SKUS.map((entry) => ({ ...entry,
+        registered: Boolean(config?.skus[entry.sku]), agent_identifier: config?.skus[entry.sku] })) };
   } catch (error) {
     return { provider, network: 'Preprod', simulation: false, configured: false, purchase_ready: false,
       live_verification: 'NOT_RUN', reason: error instanceof BusinessError ? error.code : 'MASUMI_INVALID_CONFIG' };

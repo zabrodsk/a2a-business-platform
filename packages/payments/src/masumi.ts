@@ -1,5 +1,6 @@
 import { BusinessError, type PaymentJob, type PaymentObservation, type PaymentProvider, type PaymentRequest } from '../../contracts/index.js';
 import { integer, object, string, validateRequest, type JsonObject } from './common.js';
+import { resultAnchor, verifySettlement } from './settlement.js';
 
 export const MASUMI_VERSION = '5fccf58b0f30873085b59ee540c67b4ae8433cd0';
 export interface MasumiConfig {
@@ -11,6 +12,8 @@ export interface MasumiConfig {
   allowLocalHttp?: boolean;
   preprodPurchasesEnabled?: boolean;
   deadlineProfile?: 'standard' | 'preprod_smoke';
+  blockfrostProjectId?: string;
+  collectionAddress?: string;
 }
 export interface MasumiOptions { fetch?: typeof fetch; now?: () => Date }
 
@@ -66,6 +69,10 @@ export class MasumiProvider implements PaymentProvider {
     this.fetcher = options.fetch ?? fetch;
     this.now = options.now ?? (() => new Date());
     if (config) {
+      if ((config.blockfrostProjectId !== undefined && !/^preprod[a-zA-Z0-9]+$/.test(config.blockfrostProjectId))
+        || (config.collectionAddress !== undefined && !/^addr_test1[a-z0-9]+$/.test(config.collectionAddress))) {
+        throw new BusinessError('MASUMI_INVALID_CONFIG', 'Masumi settlement verification configuration is invalid', 503);
+      }
       if (config.deadlineProfile !== undefined && config.deadlineProfile !== 'standard' && config.deadlineProfile !== 'preprod_smoke') {
         throw new BusinessError('MASUMI_INVALID_CONFIG', 'Unknown Masumi timing profile', 503);
       }
@@ -167,13 +174,16 @@ export class MasumiProvider implements PaymentProvider {
     }
   }
 
-  private observation(request: PaymentRequest, payment?: JsonObject, purchase?: JsonObject,
-    forcedState?: PaymentObservation['state']): PaymentObservation {
+  private async observation(request: PaymentRequest, payment?: JsonObject, purchase?: JsonObject,
+    forcedState?: PaymentObservation['state'], previous?: PaymentObservation): Promise<PaymentObservation> {
     if (payment) this.verify(payment, request, 'seller');
     if (purchase) this.verify(purchase, request, 'buyer', payment ? String(payment.blockchainIdentifier) : undefined);
+    const previousRaw = previous?.raw && typeof previous.raw === 'object' ? object(previous.raw) : undefined;
     let state: PaymentObservation['state'] = forcedState ?? 'reconciliation_required';
     const record = purchase ?? payment;
     let transactionHash: string | undefined;
+    let settlement: JsonObject | undefined;
+    let resultTransactionHash: string | undefined;
     if (purchase && !forcedState) {
       const tx = purchase.CurrentTransaction === null || purchase.CurrentTransaction === undefined ? undefined : object(purchase.CurrentTransaction);
       if (tx?.status === 'FailedViaTimeout' || tx?.status === 'RolledBack') state = 'reconciliation_required';
@@ -185,11 +195,13 @@ export class MasumiProvider implements PaymentProvider {
           exactAmounts(purchase.WithdrawnForBuyer, request); state = 'refunded'; break;
         }
         case 'Withdrawn': {
-          const payout = amounts(purchase.WithdrawnForSeller, 'seller payout');
-          if (payout.length !== 1 || domainAsset(payout[0].unit) !== request.asset || BigInt(payout[0].amount) <= 0n
-            || BigInt(payout[0].amount) > BigInt(request.asset_quantity)) {
-            throw new BusinessError('MASUMI_PAYOUT_UNVERIFIED', 'Seller payout proof is missing or invalid', 502);
-          }
+          if (tx?.status !== 'Confirmed') { state = 'reconciliation_required'; break; }
+          const config = this.configured();
+          if (!payment || !config.blockfrostProjectId) throw new BusinessError('MASUMI_PAYOUT_UNVERIFIED', 'Independent Preprod settlement verification is required', 502);
+          settlement = await verifySettlement({ request, payment, purchase, previous,
+            paymentSources: await this.api('buyer', '/payment-source/?network=Preprod'),
+            projectId: config.blockfrostProjectId, collectionAddress: config.collectionAddress,
+            fetcher: this.fetcher, timeoutMs: config.timeoutMs ?? 10000 });
           state = 'seller_paid'; break;
         }
         case 'FundsOrDatumInvalid': state = 'failed'; break;
@@ -206,6 +218,12 @@ export class MasumiProvider implements PaymentProvider {
       if (confirmed && typeof confirmed.txHash === 'string' && /^[a-f0-9]{64}$/.test(confirmed.txHash)) transactionHash = confirmed.txHash;
       if (['escrow_funded', 'result_submitted', 'seller_paid', 'refunded'].includes(state) && !transactionHash) state = 'reconciliation_required';
     }
+    if (previousRaw?.purchase) {
+      try { resultTransactionHash = resultAnchor(previous, purchase ?? object(previousRaw.purchase)).hash; }
+      catch { /* Missing lineage cannot authorize settlement. */ }
+    }
+    if (!resultTransactionHash && state === 'result_submitted' && purchase?.CurrentTransaction
+      && object(purchase.CurrentTransaction).status === 'Confirmed' && transactionHash) resultTransactionHash = transactionHash;
     if ((state === 'seller_paid' || state === 'refunded') && this.walletIntent === request.intent_id) this.walletIntent = undefined;
     return {
       provider: this.name, network: 'Preprod', state,
@@ -215,8 +233,11 @@ export class MasumiProvider implements PaymentProvider {
       ...(transactionHash ? { transaction_hash: transactionHash } : {}),
       asset: request.asset, asset_quantity: request.asset_quantity, seller_id: request.seller_id,
       input_hash: request.input_hash, observed_at: this.now().toISOString(),
-      raw: { api_version: MASUMI_VERSION, payment: payment ? this.publicRecord(payment) : undefined,
-        purchase: purchase ? this.publicRecord(purchase) : undefined },
+      raw: { api_version: MASUMI_VERSION,
+        payment: payment ? this.publicRecord(payment) : previousRaw?.payment ? this.publicRecord(object(previousRaw.payment)) : undefined,
+        purchase: purchase ? this.publicRecord(purchase) : previousRaw?.purchase ? this.publicRecord(object(previousRaw.purchase)) : undefined,
+        ...(resultTransactionHash ? { result_transaction_hash: resultTransactionHash } : {}),
+        ...(settlement ? { settlement } : {}) },
     };
   }
 
@@ -280,7 +301,7 @@ export class MasumiProvider implements PaymentProvider {
     try { payment = existingPayment ?? await this.prepareSeller(request); }
     catch (error) {
       if (error instanceof BusinessError && error.code === 'MASUMI_TRANSPORT_UNCERTAIN') {
-        return this.observation(request, undefined, undefined, 'reconciliation_required');
+        return await this.observation(request, undefined, undefined, 'reconciliation_required');
       }
       throw this.safeError(error);
     }
@@ -289,7 +310,7 @@ export class MasumiProvider implements PaymentProvider {
     const existing = await this.resolve('buyer', identifier);
     if (existing) {
       this.claimWallet(request);
-      return this.observation(request, payment, existing);
+      return await this.observation(request, payment, existing);
     }
     await this.verifyFeeBudget(request);
     this.claimWallet(request);
@@ -302,12 +323,12 @@ export class MasumiProvider implements PaymentProvider {
         unlockTime: validTimestamp(payment.unlockTime), externalDisputeUnlockTime: validTimestamp(payment.externalDisputeUnlockTime),
         metadata: JSON.stringify({ intent_id: request.intent_id, order_id: request.order_id, sku: request.sku }),
       });
-      return this.observation(request, payment, purchase);
+      return await this.observation(request, payment, purchase);
     } catch (error) {
-      if (error instanceof BusinessError && error.code === 'MASUMI_TRANSPORT_UNCERTAIN') return this.observation(request, payment, undefined, 'reconciliation_required');
+      if (error instanceof BusinessError && error.code === 'MASUMI_TRANSPORT_UNCERTAIN') return await this.observation(request, payment, undefined, 'reconciliation_required');
       if (error instanceof HttpError && [400, 409].includes(error.status)) {
         const existingPurchase = await this.resolve('buyer', identifier);
-        if (existingPurchase) return this.observation(request, payment, existingPurchase);
+        if (existingPurchase) return await this.observation(request, payment, existingPurchase);
       }
       throw this.safeError(error);
     }
@@ -385,7 +406,7 @@ export class MasumiProvider implements PaymentProvider {
     if (previous) this.verifyPrevious(request, previous);
     const payment = previous?.blockchain_identifier
       ? await this.resolve('seller', previous.blockchain_identifier) : await this.findPayment(request);
-    if (!payment) return this.observation(request, undefined, undefined, 'reconciliation_required');
+    if (!payment) return await this.observation(request, undefined, undefined, 'reconciliation_required', previous);
     this.verify(payment, request, 'seller', previous?.blockchain_identifier);
     if (previous?.seller_payment_id && previous.seller_payment_id !== payment.id) {
       throw new BusinessError('PAYMENT_IDENTITY_MISMATCH', 'Seller payment id changed during reconciliation', 502);
@@ -395,7 +416,7 @@ export class MasumiProvider implements PaymentProvider {
       throw new BusinessError('PAYMENT_IDENTITY_MISMATCH', 'Previously verified buyer purchase id changed or disappeared', 502);
     }
     if (purchase) this.claimWallet(request);
-    return this.observation(request, payment, purchase);
+    return await this.observation(request, payment, purchase, undefined, previous);
   }
 
   async submitResult(request: PaymentRequest, previous: PaymentObservation, resultHash: string): Promise<PaymentObservation> {

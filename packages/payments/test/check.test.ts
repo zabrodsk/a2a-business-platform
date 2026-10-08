@@ -61,3 +61,28 @@ test('invalid checkout budgets fail closed before creating a Masumi provider and
     assert.ok(!JSON.stringify(status).includes('private-invalid-budget'));
   }
 });
+
+test('agent discovery exposes the public recipient and registered identifier without signing credentials', () => {
+  const status = checkMasumi(configured);
+  const wire = JSON.parse(JSON.stringify(status));
+  assert.equal(wire.seller_id, configured.MASUMI_SELLER_VKEY);
+  assert.equal(wire.skus.find((sku: { sku: string }) => sku.sku === 'deposit-500').agent_identifier, 'a'.repeat(60));
+  assert.equal(wire.skus.find((sku: { sku: string }) => sku.sku === 'full-main-base').agent_identifier, undefined);
+  const json = JSON.stringify(status);
+  assert.ok(!json.includes(configured.MASUMI_PAYMENT_API_KEY));
+  assert.ok(!json.includes(configured.MASUMI_BUYER_API_KEY));
+  const invalid = checkMasumi({ ...configured, MASUMI_SELLER_VKEY: 'private mnemonic accidentally configured here' });
+  assert.equal(invalid.configured, false);
+  assert.equal(invalid.reason, 'MASUMI_INVALID_CONFIG');
+  assert.ok(!JSON.stringify(invalid).includes('private mnemonic'));
+});
+
+test('settlement read credentials stay private and reject non-Preprod projects', () => {
+  const env = { ...configured, MASUMI_BLOCKFROST_PROJECT_ID: 'preprodPrivateReadKey', MASUMI_COLLECTION_ADDRESS: 'addr_test1publicdestination' };
+  assert.equal(readMasumiConfig(env)?.blockfrostProjectId, env.MASUMI_BLOCKFROST_PROJECT_ID);
+  assert.equal(checkMasumi(env).settlement_verification_configured, true);
+  assert.ok(!JSON.stringify(checkMasumi(env)).includes(env.MASUMI_BLOCKFROST_PROJECT_ID));
+  for (const key of ['mainnetPrivateKey', 'previewPrivateKey']) {
+    assert.throws(() => readMasumiConfig({ ...env, MASUMI_BLOCKFROST_PROJECT_ID: key }), { code: 'MASUMI_INVALID_CONFIG' });
+  }
+});

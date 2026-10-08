@@ -16,9 +16,10 @@
   },
   "scripts": {
     "masumi:check": "node --env-file-if-exists=.env.legacy.local --import tsx packages/payments/src/check.ts",
+    "test:masumi-infra": "node --test infra/masumi/*.test.mjs",
     "build": "npm run build -w @pneu007/agent-client",
     "typecheck": "npm run typecheck --workspaces",
-    "test": "npm run build && npm test --workspaces --if-present",
+    "test": "npm run build && npm test --workspaces --if-present && npm run test:masumi-infra",
     "start": "npm start -w @pneu007/relay",
     "db:migrate": "npm run db:migrate -w @pneu007/relay",
     "start:legacy": "npm start -w @pneu007/legacy",

@@ -119,6 +119,8 @@ try {
   Object.assign(app, { PAYMENT_PROVIDER: 'masumi', MASUMI_NETWORK: 'Preprod',
     MASUMI_PAYMENT_SERVICE_URL: seller.base, MASUMI_BUYER_SERVICE_URL: buyer.base,
     MASUMI_PAYMENT_API_KEY: seller.token, MASUMI_BUYER_API_KEY: buyer.token,
+    MASUMI_BLOCKFROST_PROJECT_ID: rpcKey,
+    MASUMI_COLLECTION_ADDRESS: seller.collection_address || seller.selling_address,
     MASUMI_SELLER_VKEY: seller.seller_vkey, MASUMI_BUYER_WALLET_ADDRESS: buyer.purchasing_address,
     MASUMI_ALLOW_LOCAL_HTTP: 'true' });
   app.MASUMI_SKUS ??= '{}';

@@ -9,11 +9,18 @@ x-node: &node
   command: ["node", "--import", "tsx", "/usr/src/app/masumi-runtime/bootstrap.mjs"]
   volumes:
     - ./runtime:/usr/src/app/masumi-runtime:ro
-  restart: "no"
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/v1/health',{signal:AbortSignal.timeout(3000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    interval: 30s
+    timeout: 5s
+    start_period: 60s
+    retries: 3
 
 services:
   seller-db:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: masumi
       POSTGRES_DB: masumi
@@ -28,6 +35,7 @@ services:
 
   buyer-db:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: masumi
       POSTGRES_DB: masumi
