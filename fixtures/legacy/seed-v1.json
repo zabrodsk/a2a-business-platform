@@ -5,86 +5,86 @@
   "customers": [
     {
       "id": "customer-001",
-      "name": "Testovací zákazník 01",
-      "email": "customer01@example.com",
-      "phone": "+420 000 000 001",
+      "name": "Jana Veselá",
+      "email": "jana.vesela@example.com",
+      "phone": "+420 000 137 482",
       "origin": "fixture"
     },
     {
       "id": "customer-002",
-      "name": "Testovací zákazník 02",
-      "email": "customer02@example.com",
-      "phone": "+420 000 000 002",
+      "name": "Martin Dvořák",
+      "email": "martin.dvorak@example.com",
+      "phone": "+420 000 284 619",
       "origin": "fixture"
     },
     {
       "id": "customer-003",
-      "name": "Testovací zákazník 03",
-      "email": "customer03@example.com",
-      "phone": "+420 000 000 003",
+      "name": "Petra Malá",
+      "email": "petra.mala@example.com",
+      "phone": "+420 000 395 728",
       "origin": "fixture"
     },
     {
       "id": "customer-004",
-      "name": "Testovací zákazník 04",
-      "email": "customer04@example.com",
-      "phone": "+420 000 000 004",
+      "name": "Tomáš Král",
+      "email": "tomas.kral@example.com",
+      "phone": "+420 000 416 853",
       "origin": "fixture"
     },
     {
       "id": "customer-005",
-      "name": "Testovací zákazník 05",
-      "email": "customer05@example.com",
-      "phone": "+420 000 000 005",
+      "name": "Lucie Benešová",
+      "email": "lucie.benesova@example.com",
+      "phone": "+420 000 527 964",
       "origin": "fixture"
     },
     {
       "id": "customer-006",
-      "name": "Testovací zákazník 06",
-      "email": "customer06@example.com",
-      "phone": "+420 000 000 006",
+      "name": "Adam Novotný",
+      "email": "adam.novotny@example.com",
+      "phone": "+420 000 638 175",
       "origin": "fixture"
     },
     {
       "id": "customer-007",
-      "name": "Testovací zákazník 07",
-      "email": "customer07@example.com",
-      "phone": "+420 000 000 007",
+      "name": "Klára Horáková",
+      "email": "klara.horakova@example.com",
+      "phone": "+420 000 749 286",
       "origin": "fixture"
     },
     {
       "id": "customer-008",
-      "name": "Testovací zákazník 08",
-      "email": "customer08@example.com",
-      "phone": "+420 000 000 008",
+      "name": "Ondřej Procházka",
+      "email": "ondrej.prochazka@example.com",
+      "phone": "+420 000 851 397",
       "origin": "fixture"
     },
     {
       "id": "customer-009",
-      "name": "Testovací zákazník 09",
-      "email": "customer09@example.com",
-      "phone": "+420 000 000 009",
+      "name": "Tereza Svobodová",
+      "email": "tereza.svobodova@example.com",
+      "phone": "+420 000 962 418",
       "origin": "fixture"
     },
     {
       "id": "customer-010",
-      "name": "Testovací zákazník 10",
-      "email": "customer10@example.com",
-      "phone": "+420 000 000 010",
+      "name": "Filip Černý",
+      "email": "filip.cerny@example.com",
+      "phone": "+420 000 173 529",
       "origin": "fixture"
     },
     {
       "id": "customer-011",
-      "name": "Testovací zákazník 11",
-      "email": "customer11@example.com",
-      "phone": "+420 000 000 011",
+      "name": "Veronika Pokorná",
+      "email": "veronika.pokorna@example.com",
+      "phone": "+420 000 284 630",
       "origin": "fixture"
     },
     {
       "id": "customer-012",
-      "name": "Testovací zákazník 12",
-      "email": "customer12@example.com",
-      "phone": "+420 000 000 012",
+      "name": "David Kučera",
+      "email": "david.kucera@example.com",
+      "phone": "+420 000 395 741",
       "origin": "fixture"
     }
   ],

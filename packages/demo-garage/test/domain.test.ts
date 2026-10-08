@@ -7,6 +7,40 @@ import { LegacyStore,calculatePrice, type PaymentIntent } from '../index.js';
 import type { PaymentObservation, PurchaseAuthorization, ServiceSpec } from '../../contracts/index.js';
 
 const BASE:ServiceSpec={service_id:'tyre_change',vehicle_type:'personal',wheel_size_inches:18,rim_type:'alu',runflat:false,tpms:false,wheel_count:4};
+test('seed customers have distinct fictional names and reserved demo contacts',()=>{
+  const {store}=setup();
+  try {
+    const customers=store.customers();
+    assert.equal(customers.length,12);
+    for(const field of ['name','email','phone'])assert.equal(new Set(customers.map(c=>c[field])).size,12);
+    for(const customer of customers){
+      assert.doesNotMatch(String(customer.name),/Testovací zákazník/);
+      assert.match(String(customer.email),/^[a-z.]+@example\.com$/);
+      assert.match(String(customer.phone),/^\+420 000 \d{3} \d{3}$/);
+    }
+  } finally {store.close();}
+});
+test('existing placeholder customer profiles upgrade without changing custom contacts or linked business records',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'pneu-profiles-'));
+  try {
+    const path=join(directory,'legacy.db');
+    let store=new LegacyStore(path);
+    const orders=store.listOrders(),bookings=store.calendar();
+    store.db.prepare('DELETE FROM seed_meta WHERE key=?').run('customer-profiles-v2');
+    store.db.prepare('UPDATE customers SET name=?,email=?,phone=? WHERE id=?').run('Testovací zákazník 01','customer01@example.com','+420 000 000 001','customer-001');
+    store.db.prepare('UPDATE customers SET name=?,email=?,phone=? WHERE id=?').run('Vlastní zákazník','custom@example.test','+420 000 777 888','customer-002');
+    store.close();
+    store=new LegacyStore(path);
+    assert.deepEqual(store.customers().find(c=>c.id==='customer-001'),{id:'customer-001',name:'Jana Veselá',email:'jana.vesela@example.com',phone:'+420 000 137 482',origin:'fixture'});
+    const custom=store.customers().find(c=>c.id==='customer-002')!;
+    assert.equal(custom.name,'Vlastní zákazník');assert.equal(custom.email,'custom@example.test');assert.equal(custom.phone,'+420 000 777 888');
+    assert.deepEqual(store.listOrders(),orders);assert.deepEqual(store.calendar(),bookings);
+    store.db.prepare('UPDATE customers SET name=? WHERE id=?').run('Pozdější úprava','customer-001');
+    store.close();store=new LegacyStore(path);
+    assert.equal(store.customers().find(c=>c.id==='customer-001')!.name,'Pozdější úprava');
+    assert.equal(store.validateSeed().ok,true);store.close();
+  } finally {rmSync(directory,{recursive:true,force:true});}
+});
 function setup(){let time=new Date('2026-10-08T08:00:00Z');const store=new LegacyStore(':memory:',{now:()=>time});return {store,advance:(ms:number)=>{time=new Date(time.getTime()+ms);}};}
 function checkout(store:LegacyStore, options:{slot?:string;discount?:number;provider?:'local_demo'|'masumi';mode?:'full'|'deposit';customer?:string;purchaser_identifier?:string;input_hash?:string}={}){
   const quote=store.createQuote({customer_id:options.customer??'customer-001',service_spec:BASE,slot_id:options.slot??'slot-main',discount_bps:options.discount??0,requires_owner_approval:(options.discount??0)>500});

@@ -36,6 +36,7 @@ export class LegacyStore {
     this.db.pragma('journal_mode = WAL'); this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql',import.meta.url),'utf8'));
     if (options.seed !== false) this.seed();
+    this.migrateFixtureCustomerProfiles();
   }
   private now():string { return this.clock().toISOString(); }
   private after(seconds:number):string { return new Date(this.clock().getTime()+seconds*1000).toISOString(); }
@@ -53,6 +54,28 @@ export class LegacyStore {
   private customer(customerId:string):void { if(!this.db.prepare('SELECT id FROM customers WHERE id=?').get(customerId)) fail('CUSTOMER_NOT_FOUND','Unknown synthetic customer.',404); }
   private owner(actorId:string):void { const actor=this.db.prepare('SELECT role FROM staff WHERE id=?').get(actorId) as {role:string}|undefined;if(actor?.role!=='owner') fail('OWNER_REQUIRED','An authenticated owner is required.',403); }
   private staff(actorId:string):void { if(!this.db.prepare('SELECT id FROM staff WHERE id=?').get(actorId)) fail('STAFF_REQUIRED','An authenticated staff actor is required.',403); }
+
+  /** Upgrade only original fixture placeholders; preserve customer edits and all business identities. */
+  private migrateFixtureCustomerProfiles():void {
+    this.db.transaction(()=>{
+      if(!this.db.prepare('SELECT value FROM seed_meta WHERE key=?').get('version')||this.db.prepare('SELECT value FROM seed_meta WHERE key=?').get('customer-profiles-v2'))return;
+      const update=this.db.prepare(`UPDATE customers SET
+        name=CASE WHEN name=? THEN ? ELSE name END,
+        email=CASE WHEN email=? THEN ? ELSE email END,
+        phone=CASE WHEN phone=? THEN ? ELSE phone END
+        WHERE id=? AND origin='fixture' AND (name=? OR email=? OR phone=?)`);
+      let changed=0;
+      for(const customer of seedFixture.customers!){
+        const suffix=String(customer.id).match(/^customer-(\d{3})$/)?.[1];
+        if(!suffix)continue;
+        const oldName=`Testovací zákazník ${String(Number(suffix)).padStart(2,'0')}`;
+        const oldEmail=`customer${String(Number(suffix)).padStart(2,'0')}@example.com`,oldPhone=`+420 000 000 ${suffix}`;
+        changed+=update.run(oldName,customer.name,oldEmail,customer.email,oldPhone,customer.phone,customer.id,oldName,oldEmail,oldPhone).changes;
+      }
+      this.insert('seed_meta',{key:'customer-profiles-v2',value:this.now()});
+      if(changed)this.event('business','pneu007','fixture_customer_profiles_updated',{migration:'customer-profiles-v2',updated_customers:changed});
+    }).immediate();
+  }
 
   seed():void {
     this.db.transaction(()=>{
