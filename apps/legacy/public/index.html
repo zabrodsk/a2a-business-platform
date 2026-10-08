@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="cs"><head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<title>Pneu 007 — Úvod a služby</title>
+<script src="/assets/47eeca62-2159-41fe-9b12-38b4d8c24906.js"></script><script src="/assets/9c7382f7-ac4c-451e-b16a-03eefa86c088.js"></script><script src="/assets/02c6e987-5384-493f-911e-0046172115a9.js"></script>
+<style>/* Pneu 007 / Handoru — sdílené tokeny a komponenty (prototyp) */
+:root{
+  --g900:#071C17; --g800:#0D2620; --g700:#14352C; --g600:#1E4A3D; --g500:#2C6553;
+  --blk:#0B0D0C; --anth:#1A1E1D; --anth2:#262B2A;
+  --silver:#C9CECB; --silver2:#A6AEAB; --silver3:#7E8784;
+  --gold:#D8C394; --goldd:#6F5A27;
+  --paper:#F2F1EC; --paper2:#E8E7E0; --card:#FFFFFF; --line:#D8DAD4; --line2:#B9BEB9;
+  --ink:#111614; --ink2:#2F3835; --mute:#535D5A;
+  --ok:#1C6644; --okb:#E2EFE7; --warn:#855000; --warnb:#F7ECD5; --bad:#9E2E28; --badb:#F6E0DC;
+  --info:#22568A; --infob:#E0EAF4; --neu:#4B5452; --neub:#E7E8E4; --esc:#4F3D86; --escb:#ECE8F6;
+  --focus:#2F6FD6;
+  --serif:'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --sans:'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{margin:0}
+.p7{font-family:var(--sans);color:var(--ink);background:var(--paper);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.p7 h1,.p7 h2,.p7 h3,.p7 h4,.p7 p,.p7 ul,.p7 ol,.p7 dl,.p7 figure{margin:0}
+.p7 ul,.p7 ol{padding-left:20px}
+.serif{font-family:var(--serif);font-weight:400;letter-spacing:-.02em;line-height:1;text-wrap:balance}
+.it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:0}
+.serif em,.serif i{font-style:italic}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+.kicker{font:600 12px/1.3 var(--sans);letter-spacing:.16em;text-transform:uppercase}
+.mute{color:var(--mute)}
+.small{font-size:13.5px;line-height:1.5}
+.pretty{text-wrap:pretty}
+.wrap{width:100%;max-width:1280px;margin:0 auto;padding-left:40px;padding-right:40px}
+@media (max-width:700px){.wrap{padding-left:16px;padding-right:16px}}
+.p7 a{color:var(--g600);text-underline-offset:3px}
+.p7 a:hover{color:var(--g900)}
+.p7 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+/* dark surfaces */
+.dark{background:var(--g900);color:#F2F1EC}
+.dark .mute{color:var(--silver2)}
+.p7 .dark a{color:var(--gold)}
+.p7 .dark a:hover{color:#EFE2C2}
+.blk{background:var(--blk);color:var(--silver)}
+
+/* wordmark */
+.wm{display:inline-flex;align-items:center;gap:12px;text-decoration:none;color:#F2F1EC;min-height:44px}
+.p7 a.wm,.p7 .dark a.wm{color:#F2F1EC;text-decoration:none}
+.wm-a{font:300 20px/1 var(--sans);letter-spacing:.42em;text-transform:uppercase}
+.wm-b{font:500 20px/1 var(--sans);letter-spacing:.3em;color:var(--gold)}
+.wm.ink{color:var(--ink)} .wm.ink .wm-b{color:var(--goldd);border-color:var(--goldd)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:10px 22px;border:1px solid transparent;border-radius:999px;font:700 15px/1.25 var(--sans);letter-spacing:.005em;text-decoration:none;cursor:pointer;background:none;color:inherit;text-align:center}
+.p7 a.btn{text-decoration:none}
+.btn-gold,.p7 a.btn-gold,.p7 .dark a.btn-gold{background:var(--gold);color:#17140C;border-color:var(--gold)}
+.btn-gold:hover,.p7 a.btn-gold:hover,.p7 .dark a.btn-gold:hover{background:#E6D7B1;color:#17140C}
+.btn-green,.p7 a.btn-green{background:var(--g900);color:#F2F1EC;border-color:var(--g900)}
+.btn-green:hover,.p7 a.btn-green:hover{background:var(--g700);color:#fff}
+.btn-line,.p7 a.btn-line{border-color:currentColor;color:var(--ink)}
+.dark .btn-line,.p7 .dark a.btn-line{color:#F2F1EC}
+.btn-line:hover{background:rgba(7,28,23,.06)}
+.dark .btn-line:hover{background:rgba(255,255,255,.06)}
+.btn-danger{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn-sm{min-height:44px;padding:8px 14px;font-size:14px}
+.btn-q{min-height:44px;padding:8px 6px;text-decoration:underline;text-underline-offset:3px;font-weight:600;color:var(--g600);background:none;border:0;cursor:pointer;font:600 14px var(--sans)}
+.btn[disabled],.btn.is-off{background:var(--paper2);color:#5F6765;border-color:var(--line2);cursor:not-allowed}
+.btn-col{border-radius:14px}
+.btn .bsub{display:block;font-weight:500;font-size:12px;opacity:.9;margin-top:2px}
+.btn-col{flex-direction:column;gap:0}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lbl{font-weight:600;font-size:14px;color:var(--ink)}
+.req{color:var(--bad);font-weight:600}
+.hint{font-size:13px;color:var(--mute);line-height:1.45}
+.err{font-size:13px;color:var(--bad);font-weight:600;display:flex;gap:6px;align-items:flex-start;line-height:1.4}
+.input{width:100%;min-height:46px;border:1px solid var(--line2);background:#fff;border-radius:2px;padding:10px 12px;font:16px/1.3 var(--sans);color:var(--ink)}
+.input:hover{border-color:var(--mute)}
+.input.bad{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.input[readonly]{background:var(--paper)}
+.fs{border:0;padding:0;margin:0;min-width:0;display:flex;flex-direction:column;gap:10px}
+.fs legend{padding:0;font-weight:600;font-size:15px;margin-bottom:2px}
+.opts{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))}
+.opt{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 14px;border:1px solid var(--line2);background:#fff;border-radius:2px;font:500 15px/1.3 var(--sans);color:var(--ink);cursor:pointer;text-align:left;width:100%}
+.opt:hover{border-color:var(--g600)}
+.opt .rad{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--mute);flex:none;display:grid;place-items:center;background:#fff}
+.opt.on{border-color:var(--g900);box-shadow:inset 0 0 0 1px var(--g900);background:#F5F7F1}
+.opt.on .rad{border-color:var(--g900)}
+.opt.on .rad::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--g900)}
+.opt .osub{display:block;font-size:12.5px;color:var(--mute);font-weight:400;margin-top:2px}
+.opts.bad .opt{border-color:var(--bad)}
+.dia{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.dia .opt{justify-content:center;padding:8px 4px;font-variant-numeric:tabular-nums;font-weight:600}
+.dia .opt .rad{display:none}
+.dia.bad .opt{border-color:var(--bad)}
+.check{display:flex;gap:10px;align-items:flex-start;min-height:44px;font-size:14.5px;cursor:pointer}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--g900);flex:none}
+
+/* status chips: text + glyph, never color only */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 5px;border-radius:2px;border:1px solid;font:600 12.5px/1.35 var(--sans);white-space:nowrap;vertical-align:middle}
+.chip::before{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font:700 10.5px/1 var(--sans);flex:none;color:#fff}
+.chip.ok{color:var(--ok);background:var(--okb);border-color:#A6CBB5}.chip.ok::before{content:"\2713";background:var(--ok)}
+.chip.warn{color:var(--warn);background:var(--warnb);border-color:#DDBF85}.chip.warn::before{content:"!";background:var(--warn)}
+.chip.wait{color:var(--warn);background:#FBF4E4;border-color:#DDBF85}.chip.wait::before{content:"\2026";background:var(--warn)}
+.chip.bad{color:var(--bad);background:var(--badb);border-color:#DDA59F}.chip.bad::before{content:"\00D7";background:var(--bad);font-size:13px}
+.chip.info{color:var(--info);background:var(--infob);border-color:#A6C0DB}.chip.info::before{content:"i";background:var(--info);font-family:var(--serif);font-size:12px}
+.chip.neu{color:var(--neu);background:var(--neub);border-color:#C2C6C1}.chip.neu::before{content:"\2013";background:var(--neu)}
+.chip.esc{color:var(--esc);background:var(--escb);border-color:#C3B8E2}.chip.esc::before{content:"\25C6";background:var(--esc);font-size:9px}
+.chip.gold{color:#4E3F17;background:#F4ECD7;border-color:#CDB677}.chip.gold::before{content:"\2605";background:#7A6328;font-size:9px}
+.chip.lockd{color:#3A0F0C;background:#F2D4CF;border-color:#B5544B}.chip.lockd::before{content:"\00D7";background:#6E1C17;font-size:13px}
+.dark .chip{background:rgba(255,255,255,.06)}
+.dark .chip.ok{color:#9ED8B7;border-color:#3E7B5B}.dark .chip.warn,.dark .chip.wait{color:#F0CF8E;border-color:#8A6A2C}.dark .chip.info{color:#A9CBEE;border-color:#3D6790}.dark .chip.esc{color:#CBBEF2;border-color:#6352A0}.dark .chip.bad{color:#F2ADA6;border-color:#9A453E}.dark .chip.neu{color:#D3D7D4;border-color:#5F6966}
+
+/* cards, tables, misc */
+.card{background:#fff;border:1px solid var(--line);border-radius:2px}
+.pad{padding:24px}
+.pad-s{padding:16px}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.ph{display:inline-flex;align-items:center;gap:6px;font:500 12.5px/1.4 var(--mono);color:var(--goldd);background:#FBF5E6;border:1px dashed #A88B47;padding:2px 8px;border-radius:2px}
+.dark .ph,.blk .ph{color:var(--gold);background:rgba(216,195,148,.08);border-color:rgba(216,195,148,.55)}
+.demo{display:inline-flex;align-items:center;gap:6px;font:700 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;border:1px solid currentColor;border-radius:2px;white-space:nowrap}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i-s{width:15px;height:15px}
+.tscroll{overflow-x:auto;border:1px solid var(--line);background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font:600 11.5px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:10px 12px;border-bottom:1px solid var(--line2);white-space:nowrap;background:#F7F7F3}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr.sel td{background:#EDF2EA}
+.tbl .r{text-align:right;white-space:nowrap}
+.tbl .nw{white-space:nowrap}
+.rowbtn{background:none;border:0;padding:0;min-height:28px;font:600 14px var(--mono);color:var(--g600);text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left}
+.dl{display:grid;grid-template-columns:minmax(110px,40%) 1fr;gap:8px 16px;font-size:14px}
+.dl dt{color:var(--mute)} .dl dd{margin:0;min-width:0}
+.price{display:grid;grid-template-columns:1fr auto;gap:8px 16px;font-size:15px;font-variant-numeric:tabular-nums}
+.price .tot{font-weight:700;font-size:17px;padding-top:10px;border-top:1px solid var(--line2)}
+.price .r{text-align:right;white-space:nowrap}
+details.tech{border:1px solid var(--line);background:#fff}
+details.tech summary{cursor:pointer;font-weight:600;min-height:46px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px}
+details.tech .tb{padding:4px 14px 14px;font:13px/1.6 var(--mono);color:var(--ink2);word-break:break-all}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line2);background:#fff;font-size:14px;line-height:1.5}
+.note.warn{background:var(--warnb);border-color:#DDBF85;color:#4A2E00}
+.note.info{background:var(--infob);border-color:#A6C0DB;color:#14385C}
+.note.bad{background:var(--badb);border-color:#DDA59F;color:#5E1611}
+.note.ok{background:var(--okb);border-color:#A6CBB5;color:#0F3F29}
+.steps{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0}
+.stp{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--mute);padding:6px 10px 6px 6px;border:1px solid var(--line);background:#fff}
+.stp b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--line2);font-size:12px}
+.stp.on{color:var(--ink);border-color:var(--g900)} .stp.on b{background:var(--g900);color:#fff;border-color:var(--g900)}
+.stp.done{color:var(--ok)} .stp.done b{background:var(--okb);border-color:#A6CBB5}
+
+/* public chrome */
+.notice{background:var(--blk);color:#D3D7D4;font-size:13px}
+.nav{background:#000;color:#F2F1EC;border-bottom:1px solid rgba(201,206,203,.14)}
+.p7 .nav a.nl{color:#E3E3DC;text-decoration:none;font-weight:500;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;padding:10px 2px;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent}
+.p7 .nav a.nl:hover,.p7 .nav a.nl.cur{color:#fff;border-bottom-color:var(--gold)}
+.foot{background:#000;color:#C9CECB}
+.p7 .foot a{color:#ECEBE5}
+.p7 .foot a:hover{color:var(--gold)}
+
+/* app shell (admin, Handoru) */
+.app{display:flex;flex-wrap:wrap;min-height:100vh;background:var(--paper)}
+.side{flex:1 1 232px;background:var(--g900);color:#E3E3DC;padding:18px 12px;display:flex;flex-direction:column;gap:2px}
+.side.h{background:var(--anth)}
+.p7 .side a.sl{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;color:#D6DAD6;text-decoration:none;font-size:14.5px;border-radius:2px}
+.p7 .side a.sl:hover{background:rgba(255,255,255,.07);color:#fff}
+.p7 .side a.sl.cur{background:rgba(216,195,148,.16);color:#fff;font-weight:600}
+.side .sh{font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--silver2);padding:16px 12px 6px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.proto{background:#2B2511;color:#F1E6C6;font-size:12.5px;padding:6px 24px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.p7 .proto a{color:#F8EBC5}
+.topbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 28px;background:#fff;border-bottom:1px solid var(--line)}
+.content{padding:24px 28px 48px;display:flex;flex-direction:column;gap:20px}
+@media (max-width:700px){.content{padding:16px}.topbar{padding:12px 16px}}
+.h1a{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1.05;letter-spacing:-.01em}
+.h2a{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.1}
+.h3a{font-weight:600;font-size:16px;line-height:1.3}
+.tabs{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--line)}
+.tab{min-height:44px;padding:8px 14px;border:0;background:none;font:600 14px var(--sans);color:var(--mute);border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1px}
+.tab.on{color:var(--ink);border-bottom-color:var(--g900)}
+.seg{display:inline-flex;border:1px solid var(--line2);background:#fff}
+.seg button{min-height:40px;padding:6px 14px;border:0;background:none;font:600 13.5px var(--sans);color:var(--mute);cursor:pointer}
+.seg button.on{background:var(--g900);color:#fff}
+.kpi{display:flex;flex-direction:column;gap:4px;padding:18px 20px;background:#fff;border:1px solid var(--line)}
+.kpi .v{font:600 30px/1.1 var(--sans);font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12.5px;color:var(--mute);line-height:1.45}
+.panel{background:#fff;border:1px solid var(--line);display:flex;flex-direction:column}
+.panel-h{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel-b{padding:18px;display:flex;flex-direction:column;gap:16px}
+.tl{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:72px 18px 1fr;gap:10px;padding-bottom:16px;position:relative}
+.tl .t{font:500 12.5px/1.6 var(--mono);color:var(--mute);text-align:right}
+.tl .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--g600);background:#fff;margin-top:5px;position:relative;z-index:1}
+.tl li::after{content:"";position:absolute;left:89px;top:18px;bottom:0;width:1px;background:var(--line2)}
+.tl li:last-child::after{display:none}
+.tl .dot.ok{background:var(--ok);border-color:var(--ok)} .tl .dot.warn{background:var(--warn);border-color:var(--warn)} .tl .dot.bad{background:var(--bad);border-color:var(--bad)} .tl .dot.esc{background:var(--esc);border-color:var(--esc)} .tl .dot.open{background:#fff;border-style:dashed}
+.ref{display:inline-flex;align-items:center;gap:4px;font:500 12px/1.4 var(--mono);color:var(--g600);background:#EEF2EC;border:1px solid #C9D6CC;padding:1px 6px;border-radius:2px;text-decoration:none;white-space:nowrap}
+.cite{font-family:var(--serif);font-size:19px;line-height:1.4;color:var(--ink2);padding:14px 18px;background:#FAF8F1;border:1px solid #E3D9BD}
+.cite mark{background:#F1E2B5;color:inherit;padding:0 2px}
+.dlg-back{position:absolute;inset:0;background:rgba(7,28,23,.6);display:flex;align-items:flex-start;justify-content:center;padding:96px 16px 16px;z-index:20}
+.dlg{background:#fff;max-width:600px;width:100%;border:1px solid var(--line2);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.dlg-h{padding:20px 24px 12px;display:flex;flex-direction:column;gap:6px}
+.dlg-b{padding:4px 24px 20px;display:flex;flex-direction:column;gap:14px}
+.dlg-f{padding:16px 24px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;background:#F8F8F5}
+.diff{font:13px/1.6 var(--mono);border:1px solid var(--line)}
+.diff div{padding:4px 10px}
+.diff .m{background:#F8E4E1;color:#5E1611}
+.diff .p{background:#E2F0E7;color:#0F3F29}
+
+/* modern public layer */
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font:600 12px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.eyebrow::before{content:"";width:28px;height:1px;background:currentColor}
+.bento{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+.tile{border-radius:20px;padding:32px;display:flex;flex-direction:column;gap:16px;position:relative;overflow:hidden}
+.tile.l{background:#fff;border:1px solid var(--line)}
+.tile.d{background:var(--g900);color:#F2F1EC}
+.tile.a{background:var(--anth);color:#ECEBE5}
+.bignum{font:400 clamp(56px,6vw,88px)/.9 var(--serif);letter-spacing:-.03em;font-variant-numeric:lining-nums}
+.pill{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border-radius:999px;border:1px solid currentColor;font:600 12.5px/1 var(--sans)}
+.segs{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:999px;background:var(--paper)}
+.segs button{min-height:40px;padding:6px 16px;border:0;border-radius:999px;background:none;font:600 14px var(--sans);color:var(--ink2);cursor:pointer}
+.segs button.on{background:var(--g900);color:#fff}
+.qlab{font:600 11px/1.2 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.navx{position:absolute;left:0;right:0;top:0;z-index:5}
+
+/* ultra premium layer */
+.lux{background:#000;color:#F2F1EC}
+.caps{text-transform:uppercase;letter-spacing:.2em;font-weight:500;font-size:12.5px}
+.tlink{display:inline-flex;align-items:center;gap:14px;min-height:44px;color:#F2F1EC;text-decoration:none;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);border-bottom:1px solid rgba(242,241,236,.5);padding:14px 0}
+.p7 a.tlink{color:#F2F1EC;text-decoration:none}
+.p7 a.tlink:hover{color:var(--gold);border-color:var(--gold)}
+.p7 a.tlink.ink{color:var(--ink);border-color:rgba(17,22,20,.5)}
+.btn-lux,.p7 a.btn-lux{border-radius:0;min-height:52px;padding:14px 30px;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);background:#F2F1EC;color:#000;border:1px solid #F2F1EC;text-decoration:none;display:inline-flex;align-items:center;gap:12px}
+.p7 a.btn-lux:hover,.btn-lux:hover{background:var(--gold);border-color:var(--gold);color:#000}
+.btn-lux.ghost,.p7 a.btn-lux.ghost{background:transparent;color:#F2F1EC;border-color:rgba(242,241,236,.6)}
+.imgslot{position:relative;overflow:hidden;background:#0A0C0B;display:flex;align-items:center;justify-content:center}
+.imgslot::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 55% 60%,rgba(44,101,83,.28),rgba(0,0,0,0) 70%)}
+.imgslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.imgslot .lab{position:relative;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(216,195,148,.75);border:1px solid rgba(216,195,148,.35);padding:8px 14px;text-align:center}
+.shade-b{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 50%,rgba(0,0,0,.75) 100%);pointer-events:none}
+.luxseg{display:flex;flex-wrap:wrap;gap:0;border:1px solid rgba(242,241,236,.25)}
+.luxseg button{flex:1 1 auto;min-height:52px;padding:10px 18px;border:0;border-right:1px solid rgba(242,241,236,.18);background:none;color:#C9CECB;font:600 12px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+.luxseg button:last-child{border-right:0}
+.luxseg button.on{background:#F2F1EC;color:#000}
+
+/* hero photo slot (Main) */
+.hphoto{position:absolute;top:0;right:0;bottom:0;width:68%;background:#0A0C0B;overflow:hidden}
+.hphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hphoto::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#061611 0%,rgba(6,22,17,.8) 16%,rgba(6,22,17,0) 46%),linear-gradient(180deg,rgba(6,22,17,.55) 0%,rgba(6,22,17,0) 18%),linear-gradient(0deg,#061611 0%,rgba(6,22,17,0) 30%)}
+.hphoto .lab{position:absolute;right:48px;top:50%;transform:translateY(-50%);z-index:1;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(216,195,148,.8);border:1px solid rgba(216,195,148,.4);padding:8px 14px;max-width:340px;text-align:center}
+@media (max-width:900px){.hphoto{width:100%;opacity:.45}}
+</style>
+<link rel="stylesheet" href="/live.css"></head>
+<body>
+<x-dc>
+<helmet>
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/e92bd2f4-7436-4332-a9ee-807a738c6b0c.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/60eb6651-f2ca-4642-9b74-b414d4a02818.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/51181be1-bb8f-4b3d-a2ec-87f72ecd7a2b.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/15fc3a9f-d6e5-4f8e-9b96-98fc072eeca9.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/726d4469-f948-4e21-be26-ed8455688119.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/5f310cb9-75b4-44fc-98f7-7dc4a03ace6c.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/ad72b29f-ec65-49b4-81ec-009e33fd16d7.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/beeab967-62a6-412b-95e8-60f38b5480a2.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/f55f79e0-1473-4003-ad1f-a40e7a28b188.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/d73b75a9-04aa-4230-9997-06ce5958d8fd.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/e6193f48-d615-4684-b62c-912ebdb74bb4.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/21b97cc1-40a0-413c-a74b-7509b81b44c3.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/c7e1f724-6f87-463c-9686-79feabfa4cce.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/7c651d46-6688-42ae-919d-9ead86667da4.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/assets/99a0f64f-024c-42a6-899d-a98adc08d847.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/assets/efb54f16-4b27-4189-91f3-17c2d3370664.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/assets/99a0f64f-024c-42a6-899d-a98adc08d847.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/assets/efb54f16-4b27-4189-91f3-17c2d3370664.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/99a0f64f-024c-42a6-899d-a98adc08d847.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/efb54f16-4b27-4189-91f3-17c2d3370664.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/99a0f64f-024c-42a6-899d-a98adc08d847.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/efb54f16-4b27-4189-91f3-17c2d3370664.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/assets/99a0f64f-024c-42a6-899d-a98adc08d847.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/assets/efb54f16-4b27-4189-91f3-17c2d3370664.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/99a0f64f-024c-42a6-899d-a98adc08d847.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/efb54f16-4b27-4189-91f3-17c2d3370664.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/assets/99a0f64f-024c-42a6-899d-a98adc08d847.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/assets/efb54f16-4b27-4189-91f3-17c2d3370664.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+body{margin:0}
+a{color:#1E4A3D}a:hover{color:#071C17}
+.hnav a{color:#F2F1EC;text-decoration:none;text-transform:uppercase;letter-spacing:.2em;font:500 12px/1 'Manrope',sans-serif;min-height:44px;display:inline-flex;align-items:center}
+.hnav a:hover{color:#D8C394}
+.svc{transition:transform .2s ease}
+.svc:hover{transform:translateY(-2px)}
+</style>
+</helmet>
+<div class="p7" style="min-height: 100vh; display: flex; flex-direction: column; background: #F2F1EC">
+
+<section class="dark" aria-labelledby="hero-h" style="position: relative; overflow: hidden; background: #061611; padding-bottom: 150px; min-height: 860px">
+  <div class="hphoto">
+    <img src="/assets/bd7745e0-57f8-4e9f-86b9-ebb137d89c2c.jpg" alt="Zelené sportovní kupé na pobřežní silnici" style="object-position: 58% 50%">
+  </div>
+
+  <header class="wrap hnav" style="position: relative; z-index: 2; max-width: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding-top: 26px; padding-bottom: 26px">
+    <nav aria-label="Hlavní navigace" style="display: flex; flex-wrap: wrap; gap: 0 36px">
+      <a href="#sluzby">Služby</a>
+      <a href="/kalkulator">Kalkulátor</a>
+    </nav>
+    <a class="wm" href="/" aria-label="Pneu 007 — úvod"><span class="wm-a">Pneu</span><span class="wm-b">007</span></a>
+    <nav aria-label="Další odkazy" style="display: flex; flex-wrap: wrap; gap: 0 36px; justify-content: flex-end">
+      <a href="/kontakt">Kontakt</a>
+      <a href="/podminky">Podmínky</a>
+      <a href="/kalkulator" style="color: #D8C394">Objednat</a>
+    <div class="live-session"><button class="btn-q" type="button" data-live-login>Přihlásit se</button></div></nav>
+  </header>
+
+  <div class="wrap" style="position: relative; z-index: 2; padding-top: 96px; display: flex; flex-direction: column; gap: 32px">
+    <p class="eyebrow" style="color: #D8C394">Přezutí · výměna kol · online objednání</p>
+    <h1 id="hero-h" class="serif" style="font-size: clamp(60px, 8.4vw, 136px); max-width: 760px; line-height: .92">Připraveni na <em style="color: #D8C394">další jízdu.</em></h1>
+    <p class="pretty" style="font-size: 19px; line-height: 1.6; color: #D3D8D4; max-width: 470px">Cenu za čtyři kola znáte předem. Termín si vyberete online a zaplatíte rovnou při objednání — zálohu, nebo celou částku.</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px">
+      <a class="btn btn-gold" href="/kalkulator">Spočítat cenu <svg class="i" sc-camel-view-box="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+      <a class="btn btn-line" href="#postup">Jak to funguje</a>
+    </div>
+  </div>
+</section>
+
+<section aria-label="Rychlá kalkulace" class="wrap" style="position: relative; z-index: 3; margin-top: -96px">
+  <div style="background: #fff; border-radius: 24px; box-shadow: 0 30px 80px rgba(6,22,17,.22); padding: 28px; display: flex; flex-wrap: wrap; gap: 24px 32px; align-items: center">
+    <div style="flex: 999 1 640px; min-width: 0; display: flex; flex-wrap: wrap; gap: 18px 28px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span class="qlab" id="q-srv">Služba</span>
+        <div class="segs" role="group" aria-labelledby="q-srv">
+          <sc-for list="{{srvs}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" aria-pressed="{{o.p}}" sc-camel-on-click="{{o.pick}}">{{o.label}}</button></sc-for>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span class="qlab" id="q-veh">Vozidlo</span>
+        <div class="segs" role="group" aria-labelledby="q-veh">
+          <sc-for list="{{vehs}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" aria-pressed="{{o.p}}" sc-camel-on-click="{{o.pick}}">{{o.label}}</button></sc-for>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span class="qlab" id="q-disk">Disky</span>
+        <div class="segs" role="group" aria-labelledby="q-disk">
+          <sc-for list="{{disks}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" aria-pressed="{{o.p}}" sc-camel-on-click="{{o.pick}}">{{o.label}}</button></sc-for>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label class="qlab" for="q-dia">Průměr</label>
+        <sc-raw-select id="q-dia" class="input" value="{{dia}}" sc-camel-on-change="{{onDia}}" style="min-height: 48px; border-radius: 999px; padding: 0 16px; width: 120px; background: #F2F1EC; border-color: #F2F1EC; font-weight: 600">
+          <option value="13">13″</option><option value="14">14″</option><option value="15">15″</option><option value="16">16″</option><option value="17">17″</option><option value="18">18″</option><option value="19">19″</option><option value="20">20″</option><option value="21">21″</option><option value="22">22″</option>
+        </sc-raw-select>
+      </div>
+    </div>
+    <div style="flex: 1 1 300px; display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-left: 28px; border-left: 1px solid #D8DAD4; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span class="qlab">Cena za 4 kola</span>
+        <span aria-live="polite" class="num" style="font: 800 40px/1.05 Manrope, sans-serif; letter-spacing: -.02em">{{price}}</span>
+        <span class="small mute">{{qnote}}</span>
+      </div>
+      <a class="btn btn-green" href="/kalkulator">Upřesnit a objednat <svg class="i" sc-camel-view-box="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+    </div>
+  </div>
+</section>
+
+<section id="sluzby" aria-labelledby="sl-h" style="padding: 120px 0 40px">
+  <div class="wrap" style="display: flex; flex-direction: column; gap: 40px">
+    <div style="display: flex; flex-wrap: wrap; gap: 16px 48px; align-items: flex-end; justify-content: space-between">
+      <h2 id="sl-h" class="serif" style="font-size: clamp(44px, 5vw, 72px); max-width: 640px">Dvě služby. <em>Jedna péče.</em></h2>
+      <p class="pretty mute" style="max-width: 420px">Pracujeme s vašimi vlastními pneumatikami a koly. Cenu určuje vůz a konfigurace kol — nic dalšího se nepřičítá.</p>
+    </div>
+
+    <div class="bento">
+      <article class="tile d svc" style="min-height: 420px">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px"><span class="pill" style="color: #D8C394">01 · Přezutí</span><span class="mono small" style="color: #A6AEAB">od</span></div>
+        <p class="bignum">1 440 <span style="font-size: .45em">Kč</span></p>
+        <h3 class="serif" style="font-size: 40px">Přezutí pneumatik</h3>
+        <p class="pretty" style="color: #C9CECB">Přezujeme vaše pneumatiky na disky a kola namontujeme na vůz. Cenu ovlivní vůz, průměr, disky, runflat a TPMS.</p>
+        <a class="btn btn-gold" href="/kalkulator" style="margin-top: auto; align-self: flex-start">Spočítat přezutí</a>
+      </article>
+      <article class="tile l svc" style="min-height: 420px">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px"><span class="pill" style="color: #6F5A27">02 · Výměna kol</span><span class="mono small mute">od</span></div>
+        <p class="bignum">1 480 <span style="font-size: .45em">Kč</span></p>
+        <h3 class="serif" style="font-size: 40px">Výměna kompletních kol</h3>
+        <p class="pretty" style="color: #2F3835">Máte druhou sadu kol na discích? Vyměníme je. Cenu ovlivní jen typ vozu a materiál disku.</p>
+        <a class="btn btn-green" href="/kalkulator" style="margin-top: auto; align-self: flex-start">Spočítat výměnu</a>
+      </article>
+      <article class="tile a" style="min-height: 420px">
+        <span class="pill" style="color: #C9CECB; align-self: flex-start">V ceně obou služeb</span>
+        <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0; margin-top: 8px">
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Montáž kol na vozidlo</span><span class="mono" style="color: #D8C394">01</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Mytí kol</span><span class="mono" style="color: #D8C394">02</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Vyvážení a nahuštění</span><span class="mono" style="color: #D8C394">03</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Ošetření dosedacích ploch</span><span class="mono" style="color: #D8C394">04</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0"><span>Dotažení předepsaným momentem</span><span class="mono" style="color: #D8C394">05</span></li>
+        </ul>
+        <p class="small" style="color: #A6AEAB; margin-top: auto">Přezutí navíc zahrnuje demontáž a montáž pneumatik na disky.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="postup" aria-labelledby="po-h" style="padding: 80px 0 120px">
+  <div class="wrap" style="display: flex; flex-direction: column; gap: 48px">
+    <h2 id="po-h" class="serif" style="font-size: clamp(44px, 5vw, 72px)">Čtyři kroky <em>k termínu.</em></h2>
+    <ol style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 16px">
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #071C17">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">1</span>
+        <h3 style="font-size: 19px; font-weight: 700">Konfigurace</h3>
+        <p class="mute pretty">Vůz, služba, průměr a disky, runflat a TPMS.</p>
+      </li>
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #071C17">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">2</span>
+        <h3 style="font-size: 19px; font-weight: 700">Cena</h3>
+        <p class="mute pretty">Všechny položky a konečná cena za čtyři kola.</p>
+      </li>
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #071C17">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">3</span>
+        <h3 style="font-size: 19px; font-weight: 700">Termín a platba</h3>
+        <p class="mute pretty">Vyberete volný slot a zaplatíte zálohu 500 Kč, nebo celou cenu.</p>
+      </li>
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #D8C394">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">4</span>
+        <h3 style="font-size: 19px; font-weight: 700">Potvrzení</h3>
+        <p class="mute pretty">Po ověření platby je termín váš. Stav sledujete online.</p>
+      </li>
+    </ol>
+    <div class="dark" style="border-radius: 24px; padding: 40px; display: flex; flex-wrap: wrap; gap: 24px 40px; align-items: center; justify-content: space-between; background: #071C17">
+      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 640px">
+        <p class="serif" style="font-size: 40px">Záloha je součástí ceny.</p>
+        <p style="color: #C9CECB">U ceny 2 472 Kč zaplatíte 500 Kč předem a 1 972 Kč při návštěvě. Nebo vše najednou.</p>
+      </div>
+      <a class="btn btn-gold" href="/kalkulator">Spočítat a objednat</a>
+    </div>
+  </div>
+</section>
+
+<footer class="foot" style="margin-top: auto">
+  <div class="wrap" style="display: flex; flex-direction: column; gap: 48px; padding-top: 72px; padding-bottom: 32px">
+    <div style="display: flex; flex-wrap: wrap; gap: 32px 64px; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 16px; max-width: 360px">
+        <a class="wm" href="/" aria-label="Pneu 007 — úvod"><span class="wm-a" style="font-size: 26px">Pneu</span><span class="wm-b" style="font-size: 26px">007</span></a>
+        <p class="small">servis@pneu007.example · telefon <span class="ph">[PLACEHOLDER]</span></p>
+      </div>
+      <nav aria-label="Patička" style="display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 4px 40px">
+        <a href="#sluzby" style="min-height: 40px; display: inline-flex; align-items: center">Služby</a>
+        <a href="/kalkulator" style="min-height: 40px; display: inline-flex; align-items: center">Kalkulátor</a>
+        <a href="/kontakt" style="min-height: 40px; display: inline-flex; align-items: center">Kontakt</a>
+        <a href="/podminky" style="min-height: 40px; display: inline-flex; align-items: center">Podmínky a FAQ</a>
+        <a href="/admin" style="min-height: 40px; display: inline-flex; align-items: center">Pro zaměstnance</a>
+        <a href="/pro-agenty" style="min-height: 40px; display: inline-flex; align-items: center; gap: 8px; color: #D8C394; font-weight: 700">Pro agenty <svg class="i i-s" sc-camel-view-box="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+      </nav>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; padding-top: 20px; border-top: 1px solid #262B2A; font-size: 13px; color: #A6AEAB">
+      <span>Fiktivní pneuservis pro hackathon.</span>
+      <span>Testnet platba přes Masumi, bez skutečné autoservisní služby.</span>
+    </div>
+  </div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:2700}}">
+var DIA = { 13: -360, 14: -180, 15: 0, 16: 260, 17: 260, 18: 460, 19: 460, 20: 720, 21: 720, 22: 920 };
+function fmt(v) {
+  var c = Math.round(Math.abs(v) * 100), i = Math.floor(c / 100), d = c % 100;
+  var s = String(i).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  if (d) s += ',' + (d < 10 ? '0' : '') + d;
+  return s + ' Kč';
+}
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { srv: 'prezuti', veh: 'osobni', disk: 'alu', dia: 18 }; this.requestKey = ''; this.requestNumber = 0; }
+  renderVals() {
+    var s = this.state, self = this;
+    var seg = function (k, list) {
+      return list.map(function (o) {
+        var on = s[k] === o[0];
+        return { label: o[1], cls: on ? 'on' : '', p: on ? 'true' : 'false', pick: function () { var x = {}; x[k] = o[0]; self.setState(x); } };
+      });
+    };
+    var P = s.srv === 'prezuti';
+    var spec = { service_id:P?'tyre_change':'wheel_swap',vehicle_type:{osobni:'personal',mpv:'suv',dodavka:'van'}[s.veh],rim_type:s.disk==='alu'?'alu':'steel',wheel_size_inches:s.dia,runflat:false,tpms:false,wheel_count:4 };
+    var key = JSON.stringify(spec); sessionStorage.setItem('pneu007-service-spec',key);
+    if(key!==this.requestKey){this.requestKey=key;var number=++this.requestNumber;Promise.resolve().then(function(){self.setState({serverPrice:null,serverError:''});fetch('/api/session',{credentials:'same-origin'}).then(function(response){return response.json();}).then(function(session){return fetch('/api/pricing/calculate',{method:'POST',credentials:'same-origin',body:JSON.stringify({service_spec:spec}), headers:{'Content-Type':'application/json','X-CSRF-Token':session.csrf_token || ''}});}).then(async function(response){var data=await response.json();if(!response.ok)throw new Error('Kalkulace není dostupná.');var price=data.price||data;if(self.requestNumber===number)self.setState({serverPrice:{key:key,total:price.total_minor}});}).catch(function(error){if(self.requestNumber===number)self.setState({serverError:error.message});});});}
+    var serverPrice=s.serverPrice&&s.serverPrice.key===key?s.serverPrice:null;
+    return {
+      srvs: seg('srv', [['prezuti', 'Přezutí'], ['vymena', 'Výměna kol']]),
+      vehs: seg('veh', [['osobni', 'Osobní'], ['mpv', 'MPV · SUV · 4×4'], ['dodavka', 'Dodávka']]),
+      disks: seg('disk', [['plech', 'Plech'], ['alu', 'Alu']]),
+      dia: String(s.dia), onDia: function (e) { self.setState({ dia: +e.target.value }); },
+      price: serverPrice ? fmt(serverPrice.total/100) : (s.serverError || 'Ověřuji cenu…'),
+      qnote: P ? 'Bez runflat a TPMS · upřesníte v kalkulátoru' : 'Průměr cenu výměny nemění'
+    };
+  }
+}
+</script>
+
+
+<script type="module" src="/live.js"></script></body></html>

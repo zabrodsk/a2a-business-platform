@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="cs"><head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<title>Pneu 007 — Kalkulátor ceny</title>
+<script src="/assets/722d8896-67ec-4540-afd7-fde4f5772795.js"></script><script src="/assets/91cb13f4-9f5c-4d40-84d6-4459ad1afcff.js"></script><script src="/assets/42084c12-6267-43e4-beb9-42d11de38f13.js"></script>
+<style>/* Pneu 007 / Handoru — sdílené tokeny a komponenty (prototyp) */
+:root{
+  --g900:#071C17; --g800:#0D2620; --g700:#14352C; --g600:#1E4A3D; --g500:#2C6553;
+  --blk:#0B0D0C; --anth:#1A1E1D; --anth2:#262B2A;
+  --silver:#C9CECB; --silver2:#A6AEAB; --silver3:#7E8784;
+  --gold:#D8C394; --goldd:#6F5A27;
+  --paper:#F2F1EC; --paper2:#E8E7E0; --card:#FFFFFF; --line:#D8DAD4; --line2:#B9BEB9;
+  --ink:#111614; --ink2:#2F3835; --mute:#535D5A;
+  --ok:#1C6644; --okb:#E2EFE7; --warn:#855000; --warnb:#F7ECD5; --bad:#9E2E28; --badb:#F6E0DC;
+  --info:#22568A; --infob:#E0EAF4; --neu:#4B5452; --neub:#E7E8E4; --esc:#4F3D86; --escb:#ECE8F6;
+  --focus:#2F6FD6;
+  --serif:'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --sans:'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{margin:0}
+.p7{font-family:var(--sans);color:var(--ink);background:var(--paper);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.p7 h1,.p7 h2,.p7 h3,.p7 h4,.p7 p,.p7 ul,.p7 ol,.p7 dl,.p7 figure{margin:0}
+.p7 ul,.p7 ol{padding-left:20px}
+.serif{font-family:var(--serif);font-weight:400;letter-spacing:-.02em;line-height:1;text-wrap:balance}
+.it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:0}
+.serif em,.serif i{font-style:italic}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+.kicker{font:600 12px/1.3 var(--sans);letter-spacing:.16em;text-transform:uppercase}
+.mute{color:var(--mute)}
+.small{font-size:13.5px;line-height:1.5}
+.pretty{text-wrap:pretty}
+.wrap{width:100%;max-width:1280px;margin:0 auto;padding-left:40px;padding-right:40px}
+@media (max-width:700px){.wrap{padding-left:16px;padding-right:16px}}
+.p7 a{color:var(--g600);text-underline-offset:3px}
+.p7 a:hover{color:var(--g900)}
+.p7 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+/* dark surfaces */
+.dark{background:var(--g900);color:#F2F1EC}
+.dark .mute{color:var(--silver2)}
+.p7 .dark a{color:var(--gold)}
+.p7 .dark a:hover{color:#EFE2C2}
+.blk{background:var(--blk);color:var(--silver)}
+
+/* wordmark */
+.wm{display:inline-flex;align-items:center;gap:12px;text-decoration:none;color:#F2F1EC;min-height:44px}
+.p7 a.wm,.p7 .dark a.wm{color:#F2F1EC;text-decoration:none}
+.wm-a{font:300 20px/1 var(--sans);letter-spacing:.42em;text-transform:uppercase}
+.wm-b{font:500 20px/1 var(--sans);letter-spacing:.3em;color:var(--gold)}
+.wm.ink{color:var(--ink)} .wm.ink .wm-b{color:var(--goldd);border-color:var(--goldd)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:10px 22px;border:1px solid transparent;border-radius:999px;font:700 15px/1.25 var(--sans);letter-spacing:.005em;text-decoration:none;cursor:pointer;background:none;color:inherit;text-align:center}
+.p7 a.btn{text-decoration:none}
+.btn-gold,.p7 a.btn-gold,.p7 .dark a.btn-gold{background:var(--gold);color:#17140C;border-color:var(--gold)}
+.btn-gold:hover,.p7 a.btn-gold:hover,.p7 .dark a.btn-gold:hover{background:#E6D7B1;color:#17140C}
+.btn-green,.p7 a.btn-green{background:var(--g900);color:#F2F1EC;border-color:var(--g900)}
+.btn-green:hover,.p7 a.btn-green:hover{background:var(--g700);color:#fff}
+.btn-line,.p7 a.btn-line{border-color:currentColor;color:var(--ink)}
+.dark .btn-line,.p7 .dark a.btn-line{color:#F2F1EC}
+.btn-line:hover{background:rgba(7,28,23,.06)}
+.dark .btn-line:hover{background:rgba(255,255,255,.06)}
+.btn-danger{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn-sm{min-height:44px;padding:8px 14px;font-size:14px}
+.btn-q{min-height:44px;padding:8px 6px;text-decoration:underline;text-underline-offset:3px;font-weight:600;color:var(--g600);background:none;border:0;cursor:pointer;font:600 14px var(--sans)}
+.btn[disabled],.btn.is-off{background:var(--paper2);color:#5F6765;border-color:var(--line2);cursor:not-allowed}
+.btn-col{border-radius:14px}
+.btn .bsub{display:block;font-weight:500;font-size:12px;opacity:.9;margin-top:2px}
+.btn-col{flex-direction:column;gap:0}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lbl{font-weight:600;font-size:14px;color:var(--ink)}
+.req{color:var(--bad);font-weight:600}
+.hint{font-size:13px;color:var(--mute);line-height:1.45}
+.err{font-size:13px;color:var(--bad);font-weight:600;display:flex;gap:6px;align-items:flex-start;line-height:1.4}
+.input{width:100%;min-height:46px;border:1px solid var(--line2);background:#fff;border-radius:2px;padding:10px 12px;font:16px/1.3 var(--sans);color:var(--ink)}
+.input:hover{border-color:var(--mute)}
+.input.bad{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.input[readonly]{background:var(--paper)}
+.fs{border:0;padding:0;margin:0;min-width:0;display:flex;flex-direction:column;gap:10px}
+.fs legend{padding:0;font-weight:600;font-size:15px;margin-bottom:2px}
+.opts{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))}
+.opt{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 14px;border:1px solid var(--line2);background:#fff;border-radius:2px;font:500 15px/1.3 var(--sans);color:var(--ink);cursor:pointer;text-align:left;width:100%}
+.opt:hover{border-color:var(--g600)}
+.opt .rad{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--mute);flex:none;display:grid;place-items:center;background:#fff}
+.opt.on{border-color:var(--g900);box-shadow:inset 0 0 0 1px var(--g900);background:#F5F7F1}
+.opt.on .rad{border-color:var(--g900)}
+.opt.on .rad::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--g900)}
+.opt .osub{display:block;font-size:12.5px;color:var(--mute);font-weight:400;margin-top:2px}
+.opts.bad .opt{border-color:var(--bad)}
+.dia{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.dia .opt{justify-content:center;padding:8px 4px;font-variant-numeric:tabular-nums;font-weight:600}
+.dia .opt .rad{display:none}
+.dia.bad .opt{border-color:var(--bad)}
+.check{display:flex;gap:10px;align-items:flex-start;min-height:44px;font-size:14.5px;cursor:pointer}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--g900);flex:none}
+
+/* status chips: text + glyph, never color only */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 5px;border-radius:2px;border:1px solid;font:600 12.5px/1.35 var(--sans);white-space:nowrap;vertical-align:middle}
+.chip::before{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font:700 10.5px/1 var(--sans);flex:none;color:#fff}
+.chip.ok{color:var(--ok);background:var(--okb);border-color:#A6CBB5}.chip.ok::before{content:"\2713";background:var(--ok)}
+.chip.warn{color:var(--warn);background:var(--warnb);border-color:#DDBF85}.chip.warn::before{content:"!";background:var(--warn)}
+.chip.wait{color:var(--warn);background:#FBF4E4;border-color:#DDBF85}.chip.wait::before{content:"\2026";background:var(--warn)}
+.chip.bad{color:var(--bad);background:var(--badb);border-color:#DDA59F}.chip.bad::before{content:"\00D7";background:var(--bad);font-size:13px}
+.chip.info{color:var(--info);background:var(--infob);border-color:#A6C0DB}.chip.info::before{content:"i";background:var(--info);font-family:var(--serif);font-size:12px}
+.chip.neu{color:var(--neu);background:var(--neub);border-color:#C2C6C1}.chip.neu::before{content:"\2013";background:var(--neu)}
+.chip.esc{color:var(--esc);background:var(--escb);border-color:#C3B8E2}.chip.esc::before{content:"\25C6";background:var(--esc);font-size:9px}
+.chip.gold{color:#4E3F17;background:#F4ECD7;border-color:#CDB677}.chip.gold::before{content:"\2605";background:#7A6328;font-size:9px}
+.chip.lockd{color:#3A0F0C;background:#F2D4CF;border-color:#B5544B}.chip.lockd::before{content:"\00D7";background:#6E1C17;font-size:13px}
+.dark .chip{background:rgba(255,255,255,.06)}
+.dark .chip.ok{color:#9ED8B7;border-color:#3E7B5B}.dark .chip.warn,.dark .chip.wait{color:#F0CF8E;border-color:#8A6A2C}.dark .chip.info{color:#A9CBEE;border-color:#3D6790}.dark .chip.esc{color:#CBBEF2;border-color:#6352A0}.dark .chip.bad{color:#F2ADA6;border-color:#9A453E}.dark .chip.neu{color:#D3D7D4;border-color:#5F6966}
+
+/* cards, tables, misc */
+.card{background:#fff;border:1px solid var(--line);border-radius:2px}
+.pad{padding:24px}
+.pad-s{padding:16px}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.ph{display:inline-flex;align-items:center;gap:6px;font:500 12.5px/1.4 var(--mono);color:var(--goldd);background:#FBF5E6;border:1px dashed #A88B47;padding:2px 8px;border-radius:2px}
+.dark .ph,.blk .ph{color:var(--gold);background:rgba(216,195,148,.08);border-color:rgba(216,195,148,.55)}
+.demo{display:inline-flex;align-items:center;gap:6px;font:700 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;border:1px solid currentColor;border-radius:2px;white-space:nowrap}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i-s{width:15px;height:15px}
+.tscroll{overflow-x:auto;border:1px solid var(--line);background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font:600 11.5px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:10px 12px;border-bottom:1px solid var(--line2);white-space:nowrap;background:#F7F7F3}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr.sel td{background:#EDF2EA}
+.tbl .r{text-align:right;white-space:nowrap}
+.tbl .nw{white-space:nowrap}
+.rowbtn{background:none;border:0;padding:0;min-height:28px;font:600 14px var(--mono);color:var(--g600);text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left}
+.dl{display:grid;grid-template-columns:minmax(110px,40%) 1fr;gap:8px 16px;font-size:14px}
+.dl dt{color:var(--mute)} .dl dd{margin:0;min-width:0}
+.price{display:grid;grid-template-columns:1fr auto;gap:8px 16px;font-size:15px;font-variant-numeric:tabular-nums}
+.price .tot{font-weight:700;font-size:17px;padding-top:10px;border-top:1px solid var(--line2)}
+.price .r{text-align:right;white-space:nowrap}
+details.tech{border:1px solid var(--line);background:#fff}
+details.tech summary{cursor:pointer;font-weight:600;min-height:46px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px}
+details.tech .tb{padding:4px 14px 14px;font:13px/1.6 var(--mono);color:var(--ink2);word-break:break-all}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line2);background:#fff;font-size:14px;line-height:1.5}
+.note.warn{background:var(--warnb);border-color:#DDBF85;color:#4A2E00}
+.note.info{background:var(--infob);border-color:#A6C0DB;color:#14385C}
+.note.bad{background:var(--badb);border-color:#DDA59F;color:#5E1611}
+.note.ok{background:var(--okb);border-color:#A6CBB5;color:#0F3F29}
+.steps{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0}
+.stp{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--mute);padding:6px 10px 6px 6px;border:1px solid var(--line);background:#fff}
+.stp b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--line2);font-size:12px}
+.stp.on{color:var(--ink);border-color:var(--g900)} .stp.on b{background:var(--g900);color:#fff;border-color:var(--g900)}
+.stp.done{color:var(--ok)} .stp.done b{background:var(--okb);border-color:#A6CBB5}
+
+/* public chrome */
+.notice{background:var(--blk);color:#D3D7D4;font-size:13px}
+.nav{background:#000;color:#F2F1EC;border-bottom:1px solid rgba(201,206,203,.14)}
+.p7 .nav a.nl{color:#E3E3DC;text-decoration:none;font-weight:500;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;padding:10px 2px;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent}
+.p7 .nav a.nl:hover,.p7 .nav a.nl.cur{color:#fff;border-bottom-color:var(--gold)}
+.foot{background:#000;color:#C9CECB}
+.p7 .foot a{color:#ECEBE5}
+.p7 .foot a:hover{color:var(--gold)}
+
+/* app shell (admin, Handoru) */
+.app{display:flex;flex-wrap:wrap;min-height:100vh;background:var(--paper)}
+.side{flex:1 1 232px;background:var(--g900);color:#E3E3DC;padding:18px 12px;display:flex;flex-direction:column;gap:2px}
+.side.h{background:var(--anth)}
+.p7 .side a.sl{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;color:#D6DAD6;text-decoration:none;font-size:14.5px;border-radius:2px}
+.p7 .side a.sl:hover{background:rgba(255,255,255,.07);color:#fff}
+.p7 .side a.sl.cur{background:rgba(216,195,148,.16);color:#fff;font-weight:600}
+.side .sh{font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--silver2);padding:16px 12px 6px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.proto{background:#2B2511;color:#F1E6C6;font-size:12.5px;padding:6px 24px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.p7 .proto a{color:#F8EBC5}
+.topbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 28px;background:#fff;border-bottom:1px solid var(--line)}
+.content{padding:24px 28px 48px;display:flex;flex-direction:column;gap:20px}
+@media (max-width:700px){.content{padding:16px}.topbar{padding:12px 16px}}
+.h1a{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1.05;letter-spacing:-.01em}
+.h2a{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.1}
+.h3a{font-weight:600;font-size:16px;line-height:1.3}
+.tabs{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--line)}
+.tab{min-height:44px;padding:8px 14px;border:0;background:none;font:600 14px var(--sans);color:var(--mute);border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1px}
+.tab.on{color:var(--ink);border-bottom-color:var(--g900)}
+.seg{display:inline-flex;border:1px solid var(--line2);background:#fff}
+.seg button{min-height:40px;padding:6px 14px;border:0;background:none;font:600 13.5px var(--sans);color:var(--mute);cursor:pointer}
+.seg button.on{background:var(--g900);color:#fff}
+.kpi{display:flex;flex-direction:column;gap:4px;padding:18px 20px;background:#fff;border:1px solid var(--line)}
+.kpi .v{font:600 30px/1.1 var(--sans);font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12.5px;color:var(--mute);line-height:1.45}
+.panel{background:#fff;border:1px solid var(--line);display:flex;flex-direction:column}
+.panel-h{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel-b{padding:18px;display:flex;flex-direction:column;gap:16px}
+.tl{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:72px 18px 1fr;gap:10px;padding-bottom:16px;position:relative}
+.tl .t{font:500 12.5px/1.6 var(--mono);color:var(--mute);text-align:right}
+.tl .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--g600);background:#fff;margin-top:5px;position:relative;z-index:1}
+.tl li::after{content:"";position:absolute;left:89px;top:18px;bottom:0;width:1px;background:var(--line2)}
+.tl li:last-child::after{display:none}
+.tl .dot.ok{background:var(--ok);border-color:var(--ok)} .tl .dot.warn{background:var(--warn);border-color:var(--warn)} .tl .dot.bad{background:var(--bad);border-color:var(--bad)} .tl .dot.esc{background:var(--esc);border-color:var(--esc)} .tl .dot.open{background:#fff;border-style:dashed}
+.ref{display:inline-flex;align-items:center;gap:4px;font:500 12px/1.4 var(--mono);color:var(--g600);background:#EEF2EC;border:1px solid #C9D6CC;padding:1px 6px;border-radius:2px;text-decoration:none;white-space:nowrap}
+.cite{font-family:var(--serif);font-size:19px;line-height:1.4;color:var(--ink2);padding:14px 18px;background:#FAF8F1;border:1px solid #E3D9BD}
+.cite mark{background:#F1E2B5;color:inherit;padding:0 2px}
+.dlg-back{position:absolute;inset:0;background:rgba(7,28,23,.6);display:flex;align-items:flex-start;justify-content:center;padding:96px 16px 16px;z-index:20}
+.dlg{background:#fff;max-width:600px;width:100%;border:1px solid var(--line2);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.dlg-h{padding:20px 24px 12px;display:flex;flex-direction:column;gap:6px}
+.dlg-b{padding:4px 24px 20px;display:flex;flex-direction:column;gap:14px}
+.dlg-f{padding:16px 24px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;background:#F8F8F5}
+.diff{font:13px/1.6 var(--mono);border:1px solid var(--line)}
+.diff div{padding:4px 10px}
+.diff .m{background:#F8E4E1;color:#5E1611}
+.diff .p{background:#E2F0E7;color:#0F3F29}
+
+/* modern public layer */
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font:600 12px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.eyebrow::before{content:"";width:28px;height:1px;background:currentColor}
+.bento{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+.tile{border-radius:20px;padding:32px;display:flex;flex-direction:column;gap:16px;position:relative;overflow:hidden}
+.tile.l{background:#fff;border:1px solid var(--line)}
+.tile.d{background:var(--g900);color:#F2F1EC}
+.tile.a{background:var(--anth);color:#ECEBE5}
+.bignum{font:400 clamp(56px,6vw,88px)/.9 var(--serif);letter-spacing:-.03em;font-variant-numeric:lining-nums}
+.pill{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border-radius:999px;border:1px solid currentColor;font:600 12.5px/1 var(--sans)}
+.segs{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:999px;background:var(--paper)}
+.segs button{min-height:40px;padding:6px 16px;border:0;border-radius:999px;background:none;font:600 14px var(--sans);color:var(--ink2);cursor:pointer}
+.segs button.on{background:var(--g900);color:#fff}
+.qlab{font:600 11px/1.2 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.navx{position:absolute;left:0;right:0;top:0;z-index:5}
+
+/* ultra premium layer */
+.lux{background:#000;color:#F2F1EC}
+.caps{text-transform:uppercase;letter-spacing:.2em;font-weight:500;font-size:12.5px}
+.tlink{display:inline-flex;align-items:center;gap:14px;min-height:44px;color:#F2F1EC;text-decoration:none;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);border-bottom:1px solid rgba(242,241,236,.5);padding:14px 0}
+.p7 a.tlink{color:#F2F1EC;text-decoration:none}
+.p7 a.tlink:hover{color:var(--gold);border-color:var(--gold)}
+.p7 a.tlink.ink{color:var(--ink);border-color:rgba(17,22,20,.5)}
+.btn-lux,.p7 a.btn-lux{border-radius:0;min-height:52px;padding:14px 30px;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);background:#F2F1EC;color:#000;border:1px solid #F2F1EC;text-decoration:none;display:inline-flex;align-items:center;gap:12px}
+.p7 a.btn-lux:hover,.btn-lux:hover{background:var(--gold);border-color:var(--gold);color:#000}
+.btn-lux.ghost,.p7 a.btn-lux.ghost{background:transparent;color:#F2F1EC;border-color:rgba(242,241,236,.6)}
+.imgslot{position:relative;overflow:hidden;background:#0A0C0B;display:flex;align-items:center;justify-content:center}
+.imgslot::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 55% 60%,rgba(44,101,83,.28),rgba(0,0,0,0) 70%)}
+.imgslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.imgslot .lab{position:relative;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(216,195,148,.75);border:1px solid rgba(216,195,148,.35);padding:8px 14px;text-align:center}
+.shade-b{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 50%,rgba(0,0,0,.75) 100%);pointer-events:none}
+.luxseg{display:flex;flex-wrap:wrap;gap:0;border:1px solid rgba(242,241,236,.25)}
+.luxseg button{flex:1 1 auto;min-height:52px;padding:10px 18px;border:0;border-right:1px solid rgba(242,241,236,.18);background:none;color:#C9CECB;font:600 12px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+.luxseg button:last-child{border-right:0}
+.luxseg button.on{background:#F2F1EC;color:#000}
+
+/* hero photo slot (Main) */
+.hphoto{position:absolute;top:0;right:0;bottom:0;width:68%;background:#0A0C0B;overflow:hidden}
+.hphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hphoto::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#061611 0%,rgba(6,22,17,.8) 16%,rgba(6,22,17,0) 46%),linear-gradient(180deg,rgba(6,22,17,.55) 0%,rgba(6,22,17,0) 18%),linear-gradient(0deg,#061611 0%,rgba(6,22,17,0) 30%)}
+.hphoto .lab{position:absolute;right:48px;top:50%;transform:translateY(-50%);z-index:1;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(216,195,148,.8);border:1px solid rgba(216,195,148,.4);padding:8px 14px;max-width:340px;text-align:center}
+@media (max-width:900px){.hphoto{width:100%;opacity:.45}}
+</style>
+<link rel="stylesheet" href="/live.css"></head>
+<body>
+<x-dc>
+<helmet>
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/5eba7395-a181-43ac-a1ca-9ef6bc49baf1.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/ecf9dd92-cd63-4942-ad53-464a4dfcb5b5.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/0654dd0a-67de-4555-8b6a-ac812b11fa91.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/39a31959-df73-4bba-824d-646ddb279408.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/68c30e6f-a45a-47ac-8669-c609299b5241.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/d1bb5a01-8d68-4f7d-8699-4f0820eb8d36.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/82a3eef3-23da-4aad-b355-0e53fde55ab4.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/e1af3565-6486-457e-a553-f50fdd7840d6.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/00968031-fb32-4e69-b05d-22faad67d2f3.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/192579d4-ea6a-4b74-a983-e31f80c24f2a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/8ccdd488-d135-4a8b-ae89-5a8634f9a3fe.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/c58151c5-d3d2-4f32-ae16-440b2b8d5251.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/4c2cd432-ff12-4079-b423-5bf1e731ed22.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/f6890f6a-1c16-4660-ab4d-d5e6c166ef27.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/assets/0eb246a0-46b7-4102-83f8-d64abdc8f81a.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/assets/083f27cb-6484-45a5-b7bf-93bc62667c8a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/assets/0eb246a0-46b7-4102-83f8-d64abdc8f81a.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/assets/083f27cb-6484-45a5-b7bf-93bc62667c8a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/0eb246a0-46b7-4102-83f8-d64abdc8f81a.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/083f27cb-6484-45a5-b7bf-93bc62667c8a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/0eb246a0-46b7-4102-83f8-d64abdc8f81a.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/083f27cb-6484-45a5-b7bf-93bc62667c8a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/assets/0eb246a0-46b7-4102-83f8-d64abdc8f81a.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/assets/083f27cb-6484-45a5-b7bf-93bc62667c8a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/0eb246a0-46b7-4102-83f8-d64abdc8f81a.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/083f27cb-6484-45a5-b7bf-93bc62667c8a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/assets/0eb246a0-46b7-4102-83f8-d64abdc8f81a.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/assets/083f27cb-6484-45a5-b7bf-93bc62667c8a.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+body{margin:0}
+a{color:#1E4A3D}a:hover{color:#071C17}
+</style>
+</helmet>
+<div class="p7" style="min-height: 100vh; display: flex; flex-direction: column">
+
+<header class="nav">
+  <nav class="wrap" aria-label="Hlavní navigace" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; padding-top: 14px; padding-bottom: 14px">
+    <a class="wm" href="/" aria-label="Pneu 007 — úvod"><span class="wm-a">Pneu</span><span class="wm-b">007</span></a>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 28px">
+      <a class="nl" href="/#sluzby">Služby</a>
+      <a class="nl cur" href="/kalkulator" aria-current="page">Kalkulátor</a>
+      <a class="nl" href="/kontakt">Kontakt</a>
+      <a class="nl" href="/podminky">Podmínky a FAQ</a>
+    </div>
+  <div class="live-session"><button class="btn-q" type="button" data-live-login>Přihlásit se</button></div></nav>
+</header>
+
+<main class="wrap" style="padding-top: 48px; padding-bottom: 96px; display: flex; flex-direction: column; gap: 36px">
+  <div style="display: flex; flex-wrap: wrap; gap: 16px 40px; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <p class="kicker" style="color: #6F5A27">Kalkulátor</p>
+      <h1 class="serif" style="font-size: 60px">Cena za čtyři kola</h1>
+      <p class="mute">Každá změna se přepočítá okamžitě. Objednáte a zaplatíte v dalším kroku.</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center">
+      <button class="btn-q" sc-camel-on-click="{{reset}}">Vymazat volby</button>
+      <button class="btn-q" sc-camel-on-click="{{demo}}">Načíst demo konfiguraci</button>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+    <form style="flex: 1 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 0" aria-label="Konfigurace služby">
+      <fieldset id="f-veh" class="fs" style="padding: 0 0 28px; border-bottom: 1px solid #D8DAD4">
+        <legend>1. Typ vozidla <span class="req" aria-hidden="true">*</span></legend>
+        <div class="opts {{eVeh}}">
+          <sc-for list="{{veh}}" as="o" hint-placeholder-count="3">
+            <button type="button" class="{{o.cls}}" aria-pressed="{{o.pressed}}" sc-camel-on-click="{{o.pick}}"><span class="rad"></span><span>{{o.label}}<span class="osub">{{o.sub}}</span></span></button>
+          </sc-for>
+        </div>
+        <sc-if value="{{eVeh}}" hint-placeholder-val="{{false}}"><p class="err">× Vyberte typ vozidla.</p></sc-if>
+      </fieldset>
+
+      <fieldset id="f-srv" class="fs" style="padding: 28px 0; border-bottom: 1px solid #D8DAD4">
+        <legend>2. Služba <span class="req" aria-hidden="true">*</span></legend>
+        <div class="opts {{eSrv}}" style="grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr))">
+          <sc-for list="{{srv}}" as="o" hint-placeholder-count="2">
+            <button type="button" class="{{o.cls}}" aria-pressed="{{o.pressed}}" sc-camel-on-click="{{o.pick}}"><span class="rad"></span><span>{{o.label}}<span class="osub">{{o.sub}}</span></span></button>
+          </sc-for>
+        </div>
+        <sc-if value="{{eSrv}}" hint-placeholder-val="{{false}}"><p class="err">× Vyberte službu.</p></sc-if>
+      </fieldset>
+
+      <fieldset id="f-dia" class="fs" style="padding: 28px 0; border-bottom: 1px solid #D8DAD4">
+        <legend>3. Průměr disku <span class="req" aria-hidden="true">*</span></legend>
+        <div class="dia {{eDia}}">
+          <sc-for list="{{dias}}" as="o" hint-placeholder-count="10">
+            <button type="button" class="{{o.cls}}" aria-pressed="{{o.pressed}}" sc-camel-on-click="{{o.pick}}" style="flex-direction: column; gap: 0"><span>{{o.label}}</span><span class="osub">{{o.delta}}</span></button>
+          </sc-for>
+        </div>
+        <sc-if value="{{eDia}}" hint-placeholder-val="{{false}}"><p class="err">× Vyberte průměr disku (13″–22″).</p></sc-if>
+        <sc-if value="{{isVym}}" hint-placeholder-val="{{false}}"><p class="hint">U výměny kompletních kol průměr zaznamenáme, cenu ale nemění.</p></sc-if>
+      </fieldset>
+
+      <fieldset id="f-disk" class="fs" style="padding: 28px 0; border-bottom: 1px solid #D8DAD4">
+        <legend>4. Materiál disku <span class="req" aria-hidden="true">*</span></legend>
+        <div class="opts {{eDisk}}" style="grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr))">
+          <sc-for list="{{disk}}" as="o" hint-placeholder-count="2">
+            <button type="button" class="{{o.cls}}" aria-pressed="{{o.pressed}}" sc-camel-on-click="{{o.pick}}"><span class="rad"></span><span>{{o.label}}<span class="osub">{{o.sub}}</span></span></button>
+          </sc-for>
+        </div>
+        <sc-if value="{{eDisk}}" hint-placeholder-val="{{false}}"><p class="err">× Vyberte plechové, nebo hliníkové disky.</p></sc-if>
+      </fieldset>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 28px; padding: 28px 0 0">
+        <fieldset id="f-rf" class="fs">
+          <legend>5. Runflat <span class="req" aria-hidden="true">*</span></legend>
+          <p class="hint" id="h-rf">Pneumatika umožňující omezený dojezd po ztrátě tlaku.</p>
+          <div class="opts {{eRf}}" aria-describedby="h-rf" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+            <sc-for list="{{rf}}" as="o" hint-placeholder-count="2">
+              <button type="button" class="{{o.cls}}" aria-pressed="{{o.pressed}}" sc-camel-on-click="{{o.pick}}"><span class="rad"></span><span>{{o.label}}<span class="osub">{{o.sub}}</span></span></button>
+            </sc-for>
+          </div>
+          <sc-if value="{{eRf}}" hint-placeholder-val="{{false}}"><p class="err">× Uveďte, zda jde o runflat.</p></sc-if>
+        </fieldset>
+        <fieldset id="f-tp" class="fs">
+          <legend>6. TPMS <span class="req" aria-hidden="true">*</span></legend>
+          <p class="hint" id="h-tp">Systém sledování tlaku v pneumatikách.</p>
+          <div class="opts {{eTp}}" aria-describedby="h-tp" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+            <sc-for list="{{tp}}" as="o" hint-placeholder-count="2">
+              <button type="button" class="{{o.cls}}" aria-pressed="{{o.pressed}}" sc-camel-on-click="{{o.pick}}"><span class="rad"></span><span>{{o.label}}<span class="osub">{{o.sub}}</span></span></button>
+            </sc-for>
+          </div>
+          <sc-if value="{{eTp}}" hint-placeholder-val="{{false}}"><p class="err">× Uveďte, zda vůz má TPMS.</p></sc-if>
+        </fieldset>
+      </div>
+      <sc-if value="{{isVym}}" hint-placeholder-val="{{false}}"><p class="note info" style="margin-top: 20px">Runflat a TPMS u výměny kompletních kol evidujeme pro servisní tým. Cenu této služby nemění.</p></sc-if>
+    </form>
+
+    <aside aria-label="Cenový souhrn" style="flex: 1 1 380px; min-width: 0; position: sticky; top: 24px; display: flex; flex-direction: column; gap: 0">
+      <div class="dark" style="padding: 28px 28px 24px; display: flex; flex-direction: column; gap: 6px">
+        <p class="kicker" style="color: #D8C394">Cenový souhrn</p>
+        <sc-if value="{{status}}" hint-placeholder-val="{{false}}"><p role="status" class="small mute">{{status}}</p></sc-if><sc-if value="{{complete}}" hint-placeholder-val="{{true}}">
+          <p class="mute small">{{srvLabel}} · celkem za 4 kola</p>
+          <p class="num" aria-live="polite" style="font: 600 52px/1.05 'IBM Plex Sans', sans-serif; letter-spacing: -.01em">{{total}}</p>
+          <sc-if value="{{status}}" hint-placeholder-val="{{false}}"><p role="status" class="small mute">{{status}}</p></sc-if><p class="small mute">Cena je konečná. Další daň ani poplatky se nepřičítají.</p>
+        </sc-if>
+        <sc-if value="{{incomplete}}" hint-placeholder-val="{{false}}">
+          <p class="serif" style="font-size: 30px">Cena zatím není k dispozici</p>
+          <p class="small mute">Doplňte chybějící volby:</p>
+        </sc-if>
+      </div>
+      <div class="card" style="border-top: 0; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px">
+        <sc-if value="{{incomplete}}" hint-placeholder-val="{{false}}">
+          <ul style="list-style: none; padding: 0; display: grid; gap: 8px" aria-live="polite">
+            <sc-for list="{{missing}}" as="m" hint-placeholder-count="2">
+              <li><a href="{{m.href}}" class="err" style="text-decoration: underline">× Chybí: {{m.label}}</a></li>
+            </sc-for>
+          </ul>
+        </sc-if>
+        <sc-if value="{{complete}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 15px" class="num">
+            <sc-for list="{{lines}}" as="l" hint-placeholder-count="6">
+              <div style="display: flex; justify-content: space-between; gap: 16px"><span class="{{l.cls}}">{{l.l}}</span><span class="{{l.cls}}" style="white-space: nowrap; text-align: right">{{l.v}}</span></div>
+            </sc-for>
+            <div style="display: flex; justify-content: space-between; gap: 16px; padding-top: 12px; border-top: 1px solid #B9BEB9; font-weight: 700; font-size: 17px"><span>Celkem za 4 kola</span><span>{{total}}</span></div>
+          </div>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <p class="kicker mute">Obsah služby</p>
+          <ul style="display: grid; gap: 4px; font-size: 14px; color: #2F3835">
+            <sc-for list="{{incl}}" as="x" hint-placeholder-count="6"><li>{{x}}</li></sc-for>
+          </ul>
+        </div>
+        <sc-if value="{{complete}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <a class="btn btn-green btn-col" href="/objednavka">Objednat službu<span class="bsub">Dále vyberete termín a zaplatíte</span></a><button type="button" class="btn btn-outline" data-live-inquiry>Nezávazná poptávka</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{incomplete}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <button class="btn btn-col" disabled="">Objednat službu<span class="bsub">Nejdřív doplňte chybějící volby</span></button>
+          </div>
+        </sc-if>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="foot" style="margin-top: auto">
+  <div class="wrap" style="display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: center; justify-content: space-between; padding-top: 28px; padding-bottom: 28px">
+    <a class="wm" href="/" aria-label="Pneu 007 — úvod"><span class="wm-a">Pneu</span><span class="wm-b">007</span></a>
+    <p class="small">Fiktivní pneuservis pro hackathon · servis@pneu007.example</p>
+    <a href="/pro-agenty" style="font-weight: 600; min-height: 44px; display: inline-flex; align-items: center">Pro agenty — Agent Card</a>
+  </div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1800}}">
+var VEH = [
+  { id: 'osobni', label: 'Osobní auto', add: 0 },
+  { id: 'mpv', label: 'MPV, SUV, 4×4', add: 520 },
+  { id: 'dodavka', label: 'Dodávka', add: 520 }
+];
+var SRV = [
+  { id: 'prezuti', label: 'Přezutí pneumatik', base: 1800 },
+  { id: 'vymena', label: 'Výměna kompletních kol', base: 1480 }
+];
+var DIA = { 13: -360, 14: -180, 15: 0, 16: 260, 17: 260, 18: 460, 19: 460, 20: 720, 21: 720, 22: 920 };
+var DISK = [
+  { id: 'plech', label: 'Plechové', add: 0 },
+  { id: 'alu', label: 'Hliníkové (alu)', add: 212 }
+];
+function fmt(v) {
+  var c = Math.round(Math.abs(v) * 100);
+  var i = Math.floor(c / 100), d = c % 100;
+  var s = String(i).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  if (d) s += ',' + (d < 10 ? '0' : '') + d;
+  return (v < 0 ? '−' : '') + s + ' Kč';
+}
+function sgn(v) { return v > 0 ? '+' + fmt(v) : v < 0 ? '−' + fmt(-v) : '0 Kč'; }
+var DEMO = { veh: 'osobni', srv: 'prezuti', dia: 18, disk: 'alu', rf: false, tp: false };
+var EMPTY = { veh: null, srv: null, dia: null, disk: null, rf: null, tp: null };
+class Component extends DCLogic {
+  constructor(p) { super(p); var stored; try {stored=JSON.parse(sessionStorage.getItem('pneu007-service-spec'));}catch{} this.state = stored ? {srv:stored.service_id==='tyre_change'?'prezuti':'vymena',veh:{personal:'osobni',suv:'mpv',van:'dodavka'}[stored.vehicle_type],disk:stored.rim_type==='alu'?'alu':'plech',dia:stored.wheel_size_inches,rf:stored.runflat,tp:stored.tpms} : Object.assign({}, DEMO); this.requestKey = ''; this.requestNumber = 0; }
+  renderVals() {
+    var s = this.state, self = this;
+    var P = s.srv === 'prezuti';
+    var set = function (k, v) { return function () { var o = {}; o[k] = v; self.setState(o); }; };
+    var mk = function (k, list) {
+      return list.map(function (o) {
+        var on = s[k] === o.id;
+        return { label: o.label, sub: o.sub, cls: on ? 'opt on' : 'opt', pressed: on ? 'true' : 'false', pick: set(k, o.id) };
+      });
+    };
+    var veh = mk('veh', VEH.map(function (o) { return { id: o.id, label: o.label, sub: sgn(o.add) }; }));
+    var srv = mk('srv', SRV.map(function (o) { return { id: o.id, label: o.label, sub: 'základ ' + fmt(o.base) }; }));
+    var disk = mk('disk', DISK.map(function (o) { return { id: o.id, label: o.label, sub: sgn(o.add) }; }));
+    var dias = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(function (d) {
+      var on = s.dia === d;
+      return { label: d + '″', delta: s.srv === 'vymena' ? 'bez vlivu' : sgn(DIA[d]), cls: on ? 'opt on' : 'opt', pressed: on ? 'true' : 'false', pick: set('dia', d) };
+    });
+    var yn = function (k, add) {
+      return [{ id: false, label: 'Ne' }, { id: true, label: 'Ano' }].map(function (o) {
+        var on = s[k] === o.id;
+        var sub = s.srv === 'vymena' ? 'cenu výměny nemění' : (o.id ? '+' + fmt(add) : '+0 Kč');
+        return { label: o.label, sub: sub, cls: on ? 'opt on' : 'opt', pressed: on ? 'true' : 'false', pick: set(k, o.id) };
+      });
+    };
+    var miss = [];
+    if (!s.veh) miss.push({ label: 'Typ vozidla', href: '#f-veh' });
+    if (!s.srv) miss.push({ label: 'Služba', href: '#f-srv' });
+    if (s.dia == null) miss.push({ label: 'Průměr disku', href: '#f-dia' });
+    if (!s.disk) miss.push({ label: 'Materiál disku', href: '#f-disk' });
+    if (s.rf == null) miss.push({ label: 'Runflat', href: '#f-rf' });
+    if (s.tp == null) miss.push({ label: 'TPMS', href: '#f-tp' });
+    var complete = miss.length === 0;
+    var configComplete = complete;
+    var spec = complete ? { service_id: s.srv === 'prezuti' ? 'tyre_change' : 'wheel_swap', vehicle_type: {osobni:'personal',mpv:'suv',dodavka:'van'}[s.veh], wheel_size_inches:s.dia, rim_type:s.disk === 'plech' ? 'steel' : 'alu', runflat:s.rf, tpms:s.tp, wheel_count:4 } : null;
+    var key = JSON.stringify(spec);
+    if (spec) sessionStorage.setItem('pneu007-service-spec', key);
+    if (key !== this.requestKey) {
+      this.requestKey = key; var requestNumber = ++this.requestNumber;
+      Promise.resolve().then(function () {
+        if (!spec) { self.setState({ serverQuote:null, serverError:'' }); return; }
+        self.setState({ serverQuote:null, serverError:'' });
+        fetch('/api/session',{credentials:'same-origin'}).then(function(response){return response.json();}).then(function(session){return fetch('/api/pricing/calculate', { method:'POST',credentials:'same-origin',body:JSON.stringify({service_spec:spec}) , headers:{'Content-Type':'application/json','X-CSRF-Token':session.csrf_token || ''} });}).then(async function(response) {
+          var data = await response.json(); if (!response.ok) throw new Error(data.message || data.error?.message || 'Kalkulace není dostupná.');
+          if (self.requestNumber === requestNumber) self.setState({serverQuote:{key:key,price:data.price || data.quote?.price || data},serverError:''});
+        }).catch(function(error) { if (self.requestNumber === requestNumber) self.setState({serverQuote:null,serverError:error.message}); });
+      });
+    }
+    var price = s.serverQuote && s.serverQuote.key === key ? s.serverQuote.price : null;
+    var labels = {tyre_change:'Přezutí pneumatik',wheel_swap:'Výměna kompletních kol',personal:'Osobní auto',suv:'SUV / MPV / 4×4',van:'Dodávka',steel:'Plechové disky',alu:'Hliníkové disky',diameter:'Průměr disku',runflat:'Runflat',tpms:'TPMS'};
+    var displayItems = price ? price.line_items.slice() : [];
+    if(price && P){ if(!displayItems.some(function(line){return line.label==='runflat';}))displayItems.push({label:'runflat',amount_minor:0}); if(!displayItems.some(function(line){return line.label==='tpms';}))displayItems.push({label:'tpms',amount_minor:0}); }
+    var displayOrder=[spec?.service_id,spec?.vehicle_type,'diameter',spec?.rim_type,'runflat','tpms'];
+    displayItems.sort(function(a,b){return displayOrder.indexOf(a.label)-displayOrder.indexOf(b.label);});
+    var lines = displayItems.map(function(line){var label=labels[line.label] || line.label; if(line.label===spec.vehicle_type)label='Vozidlo: '+label;if(line.label===spec.rim_type)label='Disky: '+label.toLowerCase();if(line.label==='diameter')label='Průměr '+spec.wheel_size_inches+'″';if(line.label==='runflat')label='Runflat: '+(spec.runflat?'ano':'ne');if(line.label==='tpms')label='TPMS: '+(spec.tpms?'ano':'ne');return {l:label,v:line.label===spec.service_id?fmt(line.amount_minor/100):sgn(line.amount_minor/100),cls:''};});
+    var total = price ? price.total_minor/100 : 0;
+    var srvLabel = s.srv === 'prezuti' ? 'Přezutí pneumatik' : 'Výměna kompletních kol';
+    complete = configComplete && !!price;
+    var common = ['Montáž kol na vozidlo', 'Mytí kol', 'Vyvážení', 'Nahuštění', 'Ošetření dosedacích ploch', 'Dotažení předepsaným momentem'];
+    var incl = s.srv === 'prezuti' ? ['Demontáž a montáž pneumatik na disky'].concat(common) : common;
+    return {
+      veh: veh, srv: srv, disk: disk, dias: dias, rf: yn('rf', 640), tp: yn('tp', 400),
+      eVeh: s.veh ? '' : 'bad', eSrv: s.srv ? '' : 'bad', eDia: s.dia == null ? 'bad' : '', eDisk: s.disk ? '' : 'bad',
+      eRf: s.rf == null ? 'bad' : '', eTp: s.tp == null ? 'bad' : '',
+      isVym: s.srv === 'vymena',
+      complete: complete, incomplete: !configComplete, missing: miss, status: s.serverError || (configComplete && !price ? 'Ověřuji cenu na serveru…' : ''),
+      lines: lines, total: fmt(total), srvLabel: srvLabel, incl: incl,
+      reset: function (e) { if (e && e.preventDefault) e.preventDefault(); self.setState(Object.assign({}, EMPTY)); },
+      demo: function (e) { if (e && e.preventDefault) e.preventDefault(); self.setState(Object.assign({}, DEMO)); }
+    };
+  }
+}
+</script>
+
+
+<script type="module" src="/live.js"></script></body></html>
