@@ -1,0 +1,1 @@
+{"name":"@pneu007/demo-garage","private":true,"type":"module","exports":"./index.ts","scripts":{"typecheck":"tsc -p tsconfig.json","test":"node --import tsx --test test/*.test.ts"}}

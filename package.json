@@ -1,0 +1,28 @@
+{
+  "name": "pneu007",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.4",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "masumi:check": "node --env-file-if-exists=.env.legacy.local --import tsx packages/payments/src/check.ts",
+    "build": "npm run build -w @pneu007/agent-client",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run build && npm test --workspaces --if-present",
+    "start": "npm start -w @pneu007/relay",
+    "db:migrate": "npm run db:migrate -w @pneu007/relay",
+    "start:legacy": "npm start -w @pneu007/legacy",
+    "start:system": "npm run start:system -w @pneu007/legacy",
+    "start:registry": "npm start -w @business-registry/server"
+  }
+}

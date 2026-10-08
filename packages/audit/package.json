@@ -1,0 +1,1 @@
+{"name":"@pneu007/audit","private":true,"type":"module","exports":"./index.ts","scripts":{"typecheck":"tsc -p tsconfig.json","test":"tsx --test test/*.test.ts"},"dependencies":{"@pneu007/contracts":"*","better-sqlite3":"^13.0.3"}}

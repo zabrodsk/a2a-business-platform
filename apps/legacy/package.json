@@ -1,0 +1,11 @@
+{
+  "name": "@pneu007/legacy", "private": true, "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=../../.env.legacy.local --import tsx src/server.ts",
+    "start:system": "node --env-file-if-exists=../../.env.legacy.local --import tsx src/system.ts",
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts"
+  },
+  "dependencies": { "express": "^5.2.1", "better-sqlite3": "^13.0.3", "@a2a-js/sdk": "^1.3.0" }
+}

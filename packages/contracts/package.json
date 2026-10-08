@@ -1,0 +1,5 @@
+{
+  "name": "@pneu007/contracts", "private": true, "type": "module",
+  "exports": "./index.ts",
+  "scripts": { "typecheck": "tsc -p tsconfig.json" }
+}

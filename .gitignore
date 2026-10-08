@@ -1,0 +1,29 @@
+# Private runtime state and deployment credentials
+.omx/
+.herenow/
+data/
+.env
+.env.*
+!.env.example
+*.env
+!*.env.example
+
+# Dependencies and build products
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Databases, logs and machine artifacts
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.log
+.DS_Store
+
+# Generated browser captures and transient reports
+playwright-report/
+test-results/
+screenshots/

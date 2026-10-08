@@ -1,0 +1,12 @@
+{
+  "name": "@business-registry/server",
+  "private": true,
+  "type": "module",
+  "dependencies": { "better-sqlite3": "^13.0.3", "express": "^5.2.1" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --import tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts"
+  }
+}
