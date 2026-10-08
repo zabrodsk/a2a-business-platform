@@ -15,5 +15,5 @@ node discover-sites.mjs --sites-file candidates.json --service tyre_change --are
 <p>Hosted scans accept at most 10 candidates per batch. Each service allows two concurrent batches and eight accepted batches per minute; busy requests return HTTP 429 with Retry-After. Blocked network requests, fetch failures and unavailable responses mark coverage incomplete rather than implying a completed negative scan.</p>
 <p>No setup commands from third-party sites are executed. Discovery performs no authentication, messaging, registration, booking or payment. An explicitly selected business's customer authentication and authorization remain separate steps.</p>
 <h2>Hackathon test</h2><p>The fictional Pneu 007 website provides a separate positive control for protocol discovery. It is not an organic Prague 6 result, and the test must not misrepresent its synthetic Prague 7 location. Real search results with no detected A2A support remain valid negative findings.</p>
-<p><a href="../skills/a2a-website-discovery/SKILL.md">Skill source</a> · <a href="../packages/agent-client/src/discover-sites-cli.ts">CLI source</a></p>
+<p><a href="web-discovery-runtime-proof.html">Actual GrokBot demo test</a> · <a href="../skills/a2a-website-discovery/SKILL.md">Skill source</a> · <a href="../packages/agent-client/src/discover-sites-cli.ts">CLI source</a></p>
 </main></body></html>

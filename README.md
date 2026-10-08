@@ -27,7 +27,7 @@ Ask GrokBot to read the [website-discovery skill](skills/a2a-website-discovery/S
 node discover-sites.mjs --sites-file candidates.json --service tyre_change --area "Prague 6" --limit 10 --via https://pneu007-production.up.railway.app --output report.json
 ```
 
-Download the helper at `/cli/discover-sites.mjs` and the skill at `/skills/a2a-website-discovery/SKILL.md` from the demo or registry origin. Hosted mode lets GrokBot scan through its network proxy while Railway retains DNS/address protections; omit `--via` for direct scans on ordinary networks. See the [workflow and report guide](docs/web-discovery.html). A missing card in a bounded scan is reported as “no card found,” and a discovered card's booking claims remain unverified until exercised.
+Download the helper at `/cli/discover-sites.mjs` and the skill at `/skills/a2a-website-discovery/SKILL.md` from the demo or registry origin. Hosted mode lets GrokBot scan through its network proxy while Railway retains DNS/address protections; omit `--via` for direct scans on ordinary networks. See the [workflow and report guide](docs/web-discovery.html) and [actual GrokBot demo test](docs/web-discovery-runtime-proof.html). A missing card in a bounded scan is reported as “no card found,” and a discovered card's booking claims remain unverified until exercised.
 
 ## Components
 
