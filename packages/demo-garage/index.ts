@@ -1,12 +1,33 @@
 import Database from 'better-sqlite3';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { BusinessError, type ServiceSpec, type PurchaseAuthorization, type PaymentProviderName, type PaymentObservation, type PaymentRequest, type PaymentState } from '../contracts/index.js';
 import { calculatePrice, PRICE_CONFIG } from './pricing.js';
 import type { Slot, Quote, Order, PaymentIntent, Booking } from './types.js';
 export { calculatePrice, validateServiceSpec, PRICE_CONFIG } from './pricing.js';
 export type { Slot, Quote, Order, PaymentIntent, Booking } from './types.js';
+
+export interface StripeCheckout {
+  id:string;order_id:string;hold_id:string;quote_id:string;quote_version:number;customer_id:string;actor_id:string;
+  payment_mode:'deposit'|'full';amount_minor:number;currency:'czk';stripe_account_id:string;idempotency_key:string;
+  integration_identifier:string;expires_at:string;dispatched_at:string|null;
+  state:'prepared'|'creating'|'open'|'processing'|'paid'|'expired'|'failed'|'reconciliation_required';
+  session_id:string|null;checkout_url:string|null;payment_intent_id:string|null;
+}
+/** Provider response plus account context verified by the authenticated Stripe adapter. */
+export interface StripeSession {
+  id:string;livemode:boolean;mode:string;status:'open'|'complete'|'expired';payment_status:'paid'|'unpaid'|'no_payment_required';
+  amount_total:number;currency:string;client_reference_id:string;metadata:Record<string,string>;expires_at:number;created:number;
+  url:string|null;payment_intent:string|null;stripe_account_id:string;
+}
+export interface StripePaymentIntentProof {
+  id:string;object:'payment_intent';livemode:false;status:'canceled'|'requires_payment_method';amount:number;currency:'czk';
+  stripe_account_id:string;metadata:Record<string,string>;
+  amount_received?:number;last_payment_error?:{type?:string;code?:string}|null;
+  /** Constructed only after the adapter verifies webhook authenticity and corroborates the provider objects. */
+  failure_event?:{id:string;type:'checkout.session.async_payment_failed';session_id:string};
+}
 
 type Row = Record<string, unknown>;
 type Hold = { id:string;order_id:string;slot_id:string;status:string;expires_at:string };
@@ -140,6 +161,15 @@ export class LegacyStore {
   private expireSafeHolds():void {
     const expired=this.db.prepare("SELECT h.* FROM booking_holds h JOIN payment_intents p ON p.hold_id=h.id WHERE h.status='active' AND h.expires_at<=? AND p.state='created'").all(this.now()) as Hold[];
     for(const hold of expired){this.db.prepare("UPDATE booking_holds SET status='released' WHERE id=?").run(hold.id);this.db.prepare("UPDATE orders SET status='expired',updated_at=? WHERE id=?").run(this.now(),hold.order_id);this.event('hold',hold.id,'expired_before_purchase');}
+    const undispatched=this.db.prepare(`SELECT c.id,c.hold_id,c.order_id FROM stripe_checkouts c JOIN booking_holds h ON h.id=c.hold_id
+      WHERE c.state='prepared' AND c.dispatched_at IS NULL AND c.session_id IS NULL AND c.payment_intent_id IS NULL
+      AND c.expires_at<=? AND h.status='active'`).all(this.now()) as {id:string;hold_id:string;order_id:string}[];
+    for(const checkout of undispatched){
+      this.db.prepare("UPDATE stripe_checkouts SET state='expired',updated_at=? WHERE id=?").run(this.now(),checkout.id);
+      this.db.prepare("UPDATE booking_holds SET status='released' WHERE id=?").run(checkout.hold_id);
+      this.db.prepare("UPDATE orders SET status='expired',updated_at=? WHERE id=?").run(this.now(),checkout.order_id);
+      this.event('stripe_checkout',checkout.id,'expired_before_dispatch');
+    }
   }
   private assertSlotAvailable(slotId:string, excludeOrder?:string, serviceId?:string):Slot {
     const slot=this.getSlot(slotId);
@@ -194,6 +224,7 @@ export class LegacyStore {
 
   prepareCheckout(orderId:string,input:{authorization:PurchaseAuthorization;provider:PaymentProviderName;sku:string;asset_quantity:string;max_network_fee:string;seller_id:string;purchaser_identifier?:string;input_hash?:string}):PaymentIntent {
     return this.db.transaction(()=>{
+      if(this.getStripeCheckoutForOrder(orderId))fail('CHECKOUT_PROVIDER_CONFLICT','This order already belongs to Stripe checkout.',409);
       if(input.purchaser_identifier!==undefined&&(typeof input.purchaser_identifier!=='string'||!/^[a-f0-9]{14,26}$/.test(input.purchaser_identifier)))fail('INVALID_PURCHASER_IDENTIFIER','Purchaser identifier must contain 14–26 lowercase hex characters.');
       if(input.input_hash!==undefined&&(typeof input.input_hash!=='string'||!/^[a-f0-9]{64}$/.test(input.input_hash)))fail('INVALID_INPUT_HASH','Input hash must contain 64 lowercase hex characters.');
       const order=this.getOrder(orderId),quote=this.getQuote(order.quote_id),auth=input.authorization;
@@ -218,6 +249,210 @@ export class LegacyStore {
       this.insert('payment_intents',{id:intentId,order_id:orderId,hold_id:holdId,request_json:JSON.stringify(request),state:'created',observation_json:null,created_at,updated_at:created_at,origin:input.provider==='masumi'?'live_preprod':'local_demo'});
       this.db.prepare('UPDATE orders SET payment_mode=?,amount_minor=?,updated_at=? WHERE id=?').run(auth.payment_mode,amount,created_at,orderId);this.event('payment_intent',intentId,'prepared',{order_id:orderId,hold_id:holdId,amount_minor:amount,network:auth.network},auth.actor_id);return this.getPaymentIntent(intentId);
     }).immediate();
+  }
+  prepareStripeCheckout(orderId:string,input:{actor_id:string;customer_id:string;quote_id:string;quote_version:number;payment_mode:'deposit'|'full';approved_at:string;stripe_account_id:string}):StripeCheckout {
+    return this.db.transaction(()=>{
+      const order=this.getOrder(orderId),quote=this.getQuote(order.quote_id);
+      if(typeof input.actor_id!=='string'||!input.actor_id.trim()||!Number.isFinite(Date.parse(input.approved_at))||input.approved_at>this.now()
+        ||Date.parse(input.approved_at)<Date.parse(quote.created_at))fail('INVALID_AUTHORIZATION','A current authenticated human checkout authorization is required.',403);
+      if(input.customer_id!==order.customer_id||input.quote_id!==quote.id||input.quote_version!==quote.version)fail('STRIPE_AUTHORIZATION_MISMATCH','Checkout authorization must match the customer and immutable quote.',403);
+      if(!['deposit','full'].includes(input.payment_mode))fail('INVALID_PAYMENT_MODE','Choose deposit or full.');
+      if(!/^acct_[a-zA-Z0-9]+$/.test(input.stripe_account_id))fail('STRIPE_INVALID_ACCOUNT','A verified Stripe account is required.',503);
+      if(this.db.prepare('SELECT id FROM payment_intents WHERE order_id=?').get(orderId))fail('CHECKOUT_PROVIDER_CONFLICT','This order already belongs to its original payment provider.',409);
+      const prior=this.getStripeCheckoutForOrder(orderId);
+      if(prior){
+        if(prior.actor_id!==input.actor_id||prior.customer_id!==input.customer_id||prior.quote_id!==input.quote_id
+          ||prior.quote_version!==input.quote_version||prior.payment_mode!==input.payment_mode||prior.stripe_account_id!==input.stripe_account_id
+          ||!this.stripeQuoteMatches(prior))fail('IMMUTABLE_CHECKOUT','An order has one immutable Stripe checkout.',409);
+        return prior;
+      }
+      if(order.status!=='awaiting_payment')fail('ORDER_STATE','This order cannot begin checkout.',409);
+      if(quote.expires_at<=this.now())fail('QUOTE_EXPIRED','Quote expired before checkout.',409);
+      if(quote.requires_owner_approval&&!quote.approved_by)fail('OWNER_APPROVAL_REQUIRED','The quote needs owner approval.',403);
+      this.expireSafeHolds();this.assertSlotAvailable(quote.slot_id,orderId,quote.price.service_spec.service_id);
+      const amount=input.payment_mode==='deposit'?Math.min(BOOKING_CONFIG.deposit_minor,quote.price.total_minor):quote.price.total_minor;
+      if(!Number.isSafeInteger(amount)||amount<=0)fail('INVALID_PAYMENT_AMOUNT','Checkout requires a positive CZK minor amount.');
+      const checkoutId=id('stripe'),holdId=id('hold'),created_at=this.now();
+      const expires_at=new Date((Math.floor(this.clock().getTime()/1000)+31*60)*1000).toISOString();
+      this.insert('booking_holds',{id:holdId,order_id:orderId,slot_id:quote.slot_id,status:'active',expires_at,created_at});
+      this.insert('stripe_checkouts',{id:checkoutId,order_id:orderId,hold_id:holdId,quote_id:quote.id,quote_version:quote.version,
+        quote_fingerprint:this.stripeQuoteFingerprint(quote),customer_id:order.customer_id,actor_id:input.actor_id,approved_at:input.approved_at,
+        payment_mode:input.payment_mode,amount_minor:amount,currency:'czk',stripe_account_id:input.stripe_account_id,
+        idempotency_key:`pneu007-stripe-${checkoutId}`,integration_identifier:`pneu007-${Array.from(randomBytes(8),byte=>String.fromCharCode(97+byte%26)).join('')}`,expires_at,dispatched_at:null,
+        state:'prepared',session_id:null,checkout_url:null,payment_intent_id:null,created_at,updated_at:created_at});
+      this.db.prepare('UPDATE orders SET payment_mode=?,amount_minor=?,updated_at=? WHERE id=?').run(input.payment_mode,amount,created_at,orderId);
+      this.event('stripe_checkout',checkoutId,'human_authorized',{order_id:orderId,quote_id:quote.id,quote_version:quote.version,amount_minor:amount,currency:'czk'},input.actor_id);
+      return this.getStripeCheckout(checkoutId);
+    }).immediate();
+  }
+  getStripeCheckout(checkoutId:string):StripeCheckout {
+    return this.db.transaction(()=>{
+      this.expireSafeHolds();
+      const row=this.db.prepare('SELECT * FROM stripe_checkouts WHERE id=?').get(checkoutId) as Row|undefined;
+      if(!row)fail('STRIPE_CHECKOUT_NOT_FOUND','Unknown Stripe checkout.',404);
+      const {quote_fingerprint,approved_at,created_at,updated_at,...checkout}=row;
+      return checkout as unknown as StripeCheckout;
+    }).immediate();
+  }
+  getStripeCheckoutForOrder(orderId:string):StripeCheckout|undefined {
+    const row=this.db.prepare('SELECT id FROM stripe_checkouts WHERE order_id=?').get(orderId) as {id:string}|undefined;
+    return row?this.getStripeCheckout(row.id):undefined;
+  }
+  listStripeCheckouts():StripeCheckout[] {return (this.db.prepare('SELECT id FROM stripe_checkouts ORDER BY created_at,id').all() as {id:string}[]).map(row=>this.getStripeCheckout(row.id));}
+  markStripeCheckoutDispatched(checkoutId:string):StripeCheckout {
+    return this.db.transaction(()=>{
+      const checkout=this.getStripeCheckout(checkoutId);
+      if(checkout.dispatched_at)return checkout;
+      const hold=this.db.prepare('SELECT * FROM booking_holds WHERE id=?').get(checkout.hold_id) as Hold;
+      if(checkout.state!=='prepared'||hold.status!=='active'||hold.expires_at<=this.now())fail('HOLD_EXPIRED','Cannot dispatch an expired checkout hold.',409);
+      if(!this.stripeQuoteMatches(checkout))fail('IMMUTABLE_CHECKOUT','The authorized quote changed before dispatch.',409);
+      this.db.prepare("UPDATE stripe_checkouts SET state='creating',dispatched_at=?,updated_at=? WHERE id=?").run(this.now(),this.now(),checkoutId);
+      this.event('stripe_checkout',checkoutId,'session_dispatch_started',{idempotency_key:checkout.idempotency_key});return this.getStripeCheckout(checkoutId);
+    }).immediate();
+  }
+  recordStripeSession(checkoutId:string,session:StripeSession):StripeCheckout {
+    return this.applyStripeSession(checkoutId,session,session?.status==='expired'?'expired':session?.payment_status==='paid'?'paid':'session');
+  }
+  recordStripePayment(checkoutId:string,session:StripeSession):StripeCheckout {return this.applyStripeSession(checkoutId,session,'paid');}
+  expireStripeCheckout(checkoutId:string,session:StripeSession):StripeCheckout {return this.applyStripeSession(checkoutId,session,'expired');}
+  failStripeCheckout(checkoutId:string,session:StripeSession,intent:StripePaymentIntentProof):StripeCheckout {
+    let mismatch=false;
+    const result=this.db.transaction(()=>{
+      const checkout=this.getStripeCheckout(checkoutId);
+      const payment=this.db.prepare('SELECT id FROM payments WHERE order_id=?').get(checkout.order_id);
+      if(checkout.state==='paid'||payment)return checkout;
+      const canceled=intent?.status==='canceled'&&(intent.amount_received===undefined||intent.amount_received===0);
+      const failedEvent=intent?.failure_event;
+      const asynchronousFailure=intent?.status==='requires_payment_method'&&intent.amount_received===0
+        &&intent.last_payment_error!==null&&typeof intent.last_payment_error==='object'&&!Array.isArray(intent.last_payment_error)
+        &&failedEvent?.type==='checkout.session.async_payment_failed'&&/^evt_[a-zA-Z0-9]+$/.test(failedEvent.id)
+        &&failedEvent.session_id===session.id;
+      const valid=this.validStripeSession(checkout,session)&&session.status==='complete'&&session.payment_status==='unpaid'
+        &&checkout.session_id===session.id&&checkout.payment_intent_id!==null&&checkout.payment_intent_id===session.payment_intent
+        &&intent?.id===checkout.payment_intent_id&&intent.object==='payment_intent'&&intent.livemode===false&&(canceled||asynchronousFailure)
+        &&intent.amount===checkout.amount_minor&&intent.currency==='czk'&&intent.stripe_account_id===checkout.stripe_account_id
+        &&this.stripeMetadataMatches(checkout,intent.metadata);
+      if(!valid){mismatch=true;this.stripeReconciliation(checkout,'Failed checkout requires verified terminal test payment evidence');return this.getStripeCheckout(checkoutId);}
+      if(checkout.state==='failed')return checkout;
+      if(this.db.prepare('SELECT id FROM bookings WHERE order_id=?').get(checkout.order_id)){
+        this.stripeReconciliation(checkout,'An existing booking prevents automatic failed-payment release');return this.getStripeCheckout(checkoutId);
+      }
+      this.db.prepare("UPDATE stripe_checkouts SET state='failed',updated_at=? WHERE id=?").run(this.now(),checkoutId);
+      this.db.prepare("UPDATE booking_holds SET status='released' WHERE id=?").run(checkout.hold_id);
+      this.db.prepare("UPDATE orders SET status='payment_failed',updated_at=? WHERE id=?").run(this.now(),checkout.order_id);
+      this.event('stripe_checkout',checkoutId,'provider_payment_failed',{session_id:session.id,payment_intent_id:intent.id,
+        payment_intent_status:intent.status,amount_received:intent.amount_received??0,
+        ...(asynchronousFailure?{failure_event:{id:failedEvent!.id,type:failedEvent!.type,session_id:failedEvent!.session_id},
+          last_payment_error:{type:intent.last_payment_error?.type,code:intent.last_payment_error?.code}}:{})});
+      return this.getStripeCheckout(checkoutId);
+    }).immediate();
+    if(mismatch)fail('STRIPE_SESSION_MISMATCH','Stripe failure evidence is incomplete; reconciliation required.',409);
+    return result;
+  }
+  markStripeCheckoutReconciliation(checkoutId:string,reason='Provider response is uncertain'):StripeCheckout {
+    return this.db.transaction(()=>{
+      const checkout=this.getStripeCheckout(checkoutId);
+      if(checkout.state==='paid'||this.db.prepare('SELECT id FROM payments WHERE order_id=?').get(checkout.order_id))return checkout;
+      this.stripeReconciliation(checkout,reason);return this.getStripeCheckout(checkoutId);
+    }).immediate();
+  }
+  private stripeQuoteFingerprint(quote:Quote):string {
+    return hash({id:quote.id,customer_id:quote.customer_id,slot_id:quote.slot_id,version:quote.version,price:quote.price,
+      requires_owner_approval:quote.requires_owner_approval,approved_by:quote.approved_by});
+  }
+  private stripeQuoteMatches(checkout:StripeCheckout):boolean {
+    const row=this.db.prepare('SELECT quote_fingerprint FROM stripe_checkouts WHERE id=?').get(checkout.id) as {quote_fingerprint:string};
+    return row.quote_fingerprint===this.stripeQuoteFingerprint(this.getQuote(checkout.quote_id));
+  }
+  private validStripeSession(checkout:StripeCheckout,session:StripeSession):boolean {
+    if(!session||!checkout.dispatched_at||session.livemode!==false||session.mode!=='payment'||session.stripe_account_id!==checkout.stripe_account_id
+      ||!/^cs_test_[a-zA-Z0-9]+$/.test(session.id)||session.client_reference_id!==checkout.id||session.currency!=='czk'
+      ||!Number.isSafeInteger(session.amount_total)||session.amount_total!==checkout.amount_minor
+      ||!['open','complete','expired'].includes(session.status)||!['unpaid','paid'].includes(session.payment_status)
+      ||(session.payment_intent!==null&&!/^pi_[a-zA-Z0-9]+$/.test(session.payment_intent))
+      ||(checkout.session_id!==null&&checkout.session_id!==session.id)
+      ||(checkout.payment_intent_id!==null&&checkout.payment_intent_id!==session.payment_intent)||!this.stripeQuoteMatches(checkout))return false;
+    const row=this.db.prepare('SELECT created_at FROM stripe_checkouts WHERE id=?').get(checkout.id) as {created_at:string};
+    if(!Number.isSafeInteger(session.created)||!Number.isSafeInteger(session.expires_at)
+      ||session.created<Math.floor(Date.parse(row.created_at)/1000)||session.created>=session.expires_at
+      ||session.created>Math.floor(this.clock().getTime()/1000)+5||session.expires_at!==Math.floor(Date.parse(checkout.expires_at)/1000))return false;
+    if(!this.stripeMetadataMatches(checkout,session.metadata))return false;
+    if(session.status==='open'){
+      try{const url=new URL(session.url??'');if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com'||url.username||url.password||url.port
+        ||!url.pathname.startsWith('/c/pay/'))return false;}catch{return false;}
+    }
+    const used=this.db.prepare('SELECT id FROM stripe_checkouts WHERE id<>? AND (session_id=? OR payment_intent_id=?) LIMIT 1').get(checkout.id,session.id,session.payment_intent);
+    return !used;
+  }
+  private stripeMetadataMatches(checkout:StripeCheckout,metadata:Record<string,string>|undefined):boolean {
+    const expected={checkout_id:checkout.id,order_id:checkout.order_id,quote_id:checkout.quote_id,quote_version:String(checkout.quote_version),
+      customer_id:checkout.customer_id,payment_mode:checkout.payment_mode,integration_identifier:checkout.integration_identifier};
+    return !!metadata&&Object.entries(expected).every(([key,value])=>metadata[key]===value);
+  }
+  private stripeReconciliation(checkout:StripeCheckout,reason:string):void {
+    this.db.prepare("UPDATE stripe_checkouts SET state='reconciliation_required',updated_at=? WHERE id=?").run(this.now(),checkout.id);
+    this.db.prepare("UPDATE booking_holds SET status='reconciliation' WHERE id=? AND status NOT IN ('confirmed','released')").run(checkout.hold_id);
+    this.db.prepare("UPDATE orders SET status='reconciliation_required',updated_at=? WHERE id=?").run(this.now(),checkout.order_id);
+    this.event('stripe_checkout',checkout.id,'reconciliation_required',{reason});
+  }
+  private applyStripeSession(checkoutId:string,session:StripeSession,action:'session'|'paid'|'expired'):StripeCheckout {
+    let mismatch=false;
+    const result=this.db.transaction(()=>{
+      const checkout=this.getStripeCheckout(checkoutId);
+      const invalid=!this.validStripeSession(checkout,session)
+        ||(action==='paid'&&(session.status!=='complete'||session.payment_status!=='paid'||!session.payment_intent))
+        ||(action==='expired'&&(session.status!=='expired'||session.payment_status!=='unpaid'))
+        ||(action==='session'&&(session.payment_status!=='unpaid'||!['open','complete'].includes(session.status)));
+      if(invalid){mismatch=true;this.stripeReconciliation(checkout,'Verified provider session differs from the authorized checkout');return this.getStripeCheckout(checkoutId);}
+      const payment=this.db.prepare('SELECT * FROM payments WHERE order_id=?').get(checkout.order_id) as Row|undefined;
+      if(payment&&(payment.provider!=='stripe'||payment.origin!=='stripe_test'||payment.amount_minor!==checkout.amount_minor)){
+        mismatch=true;this.stripeReconciliation(checkout,'Another payment already owns this order');return this.getStripeCheckout(checkoutId);
+      }
+      if(action!=='paid'&&payment)return checkout;
+      this.db.prepare('UPDATE stripe_checkouts SET session_id=?,checkout_url=?,payment_intent_id=?,updated_at=? WHERE id=?')
+        .run(session.id,session.status==='open'?session.url:checkout.checkout_url,session.payment_intent,this.now(),checkoutId);
+      if(action==='expired'){
+        if(this.db.prepare('SELECT id FROM bookings WHERE order_id=?').get(checkout.order_id)){
+          this.stripeReconciliation(checkout,'An existing booking prevents automatic hold release');return this.getStripeCheckout(checkoutId);
+        }
+        this.db.prepare("UPDATE stripe_checkouts SET state='expired' WHERE id=?").run(checkoutId);
+        this.db.prepare("UPDATE booking_holds SET status='released' WHERE id=?").run(checkout.hold_id);
+        this.db.prepare("UPDATE orders SET status='expired',updated_at=? WHERE id=?").run(this.now(),checkout.order_id);
+        this.event('stripe_checkout',checkoutId,'provider_expired',{session_id:session.id});return this.getStripeCheckout(checkoutId);
+      }
+      if(action==='session'){
+        if(['expired','failed'].includes(checkout.state)||(checkout.state==='processing'&&session.status==='open'))return this.getStripeCheckout(checkoutId);
+        this.db.prepare('UPDATE stripe_checkouts SET state=? WHERE id=?').run(session.status==='complete'?'processing':'open',checkoutId);
+        this.event('stripe_checkout',checkoutId,'provider_observed',{session_id:session.id,state:session.status});return this.getStripeCheckout(checkoutId);
+      }
+      if(!payment){
+        const paymentId=id('payment');this.insert('payments',{id:paymentId,order_id:checkout.order_id,intent_id:null,provider:'stripe',origin:'stripe_test',
+          amount_minor:checkout.amount_minor,payment_mode:checkout.payment_mode,state:'paid',recorded_at:this.now()});
+        this.insert('ledger_entries',{id:id('ledger'),payment_id:paymentId,kind:'stripe_paid',amount_minor:checkout.amount_minor,currency:'CZK',created_at:this.now()});
+        this.event('stripe_checkout',checkoutId,'provider_paid',{session_id:session.id,payment_intent_id:session.payment_intent,amount_minor:checkout.amount_minor,currency:'czk'});
+      }
+      const hold=this.db.prepare('SELECT * FROM booking_holds WHERE id=?').get(checkout.hold_id) as Hold;
+      const order=this.getOrder(checkout.order_id),quote=this.getQuote(checkout.quote_id);
+      const booking=this.db.prepare('SELECT * FROM bookings WHERE order_id=?').get(checkout.order_id) as Booking|undefined;
+      if(hold.status==='released'||['cancelled','cancel_requested','refund_pending','refunded'].includes(order.status)){
+        this.stripeReconciliation(checkout,'Payment arrived after safe release or cancellation');return this.getStripeCheckout(checkoutId);
+      }
+      if(!booking){
+        try{this.assertSlotAvailable(hold.slot_id,checkout.order_id,quote.price.service_spec.service_id);}
+        catch(error){if(error instanceof BusinessError){this.stripeReconciliation(checkout,'Paid slot is unavailable or in the past');return this.getStripeCheckout(checkoutId);}throw error;}
+        const bookingId=id('booking');this.insert('bookings',{id:bookingId,order_id:checkout.order_id,slot_id:hold.slot_id,customer_id:checkout.customer_id,status:'confirmed',created_at:this.now(),updated_at:this.now()});
+        this.event('booking',bookingId,'stripe_payment_confirmed',{checkout_id:checkoutId,session_id:session.id});
+      }else if(!['confirmed','service_completed'].includes(booking.status)){
+        this.stripeReconciliation(checkout,'Payment requires review of the existing booking');return this.getStripeCheckout(checkoutId);
+      }
+      this.db.prepare("UPDATE stripe_checkouts SET state='paid' WHERE id=?").run(checkoutId);
+      this.db.prepare("UPDATE booking_holds SET status='confirmed' WHERE id=?").run(checkout.hold_id);
+      this.db.prepare("UPDATE orders SET status=CASE WHEN status='service_completed' THEN status ELSE 'confirmed' END,balance_minor=?,updated_at=? WHERE id=?")
+        .run(quote.price.total_minor-checkout.amount_minor,this.now(),checkout.order_id);
+      return this.getStripeCheckout(checkoutId);
+    }).immediate();
+    if(mismatch)fail('STRIPE_SESSION_MISMATCH','Stripe evidence differs from the authorized checkout; reconciliation required.',409);
+    return result;
   }
   getPaymentIntent(intentId:string):PaymentIntent {
     const row=this.db.prepare('SELECT * FROM payment_intents WHERE id=?').get(intentId) as Row|undefined;if(!row)fail('INTENT_NOT_FOUND','Unknown payment intent.',404);
@@ -310,6 +545,8 @@ export class LegacyStore {
   }
   cancelOrder(orderId:string,actorId:string):Order {
     this.staff(actorId);return this.db.transaction(()=>{const order=this.getOrder(orderId);if(['cancelled','refunded'].includes(order.status))return order;if(order.status==='service_completed')fail('ORDER_STATE','Completed services cannot be cancelled.',409);
+      const stripe=this.getStripeCheckoutForOrder(orderId);
+      if(stripe&&!['expired','failed'].includes(stripe.state))fail('STRIPE_CANCELLATION_UNSUPPORTED','Stripe checkout must be safely expired or refunded by its provider before cancellation.',409);
       const row=this.db.prepare('SELECT id FROM payment_intents WHERE order_id=?').get(orderId) as {id:string}|undefined;const intent=row?this.getPaymentIntent(row.id):undefined;
       const uncertain=intent&&['purchase_requested','reconciliation_required'].includes(intent.state),funded=intent&&(['escrow_funded','result_submitted','seller_paid','refund_requested'].includes(intent.state));
       const status=uncertain?'cancel_requested':funded?'refund_pending':'cancelled';this.db.prepare('UPDATE orders SET status=?,updated_at=? WHERE id=?').run(status,this.now(),orderId);
@@ -344,9 +581,11 @@ export class LegacyStore {
   }
   resetLocal(beforeReset?:()=>void):void {
     this.db.transaction(()=>{
+      this.expireSafeHolds();
+      if(this.db.prepare("SELECT id FROM stripe_checkouts WHERE state NOT IN ('expired','failed') LIMIT 1").get())fail('UNSAFE_RESET','Reset refused: Stripe checkout or payment requires provider reconciliation.',409);
       if(this.db.prepare("SELECT id FROM payment_intents WHERE origin='live_preprod' OR state IN ('purchase_requested','escrow_funded','result_submitted','refund_requested','reconciliation_required') LIMIT 1").get())fail('UNSAFE_RESET','Reset refused: live Preprod or unresolved funding exists. Use a fresh isolated database.',409);
       beforeReset?.();
-      for(const table of ['ledger_entries','payments','bookings','payment_intents','booking_holds','orders','quotes','inquiries','purchase_orders','supplier_quotes','inventory','partners','vehicles','customers','staff','services','price_versions','calendar_slots','resources','seed_meta'])this.db.exec(`DELETE FROM ${table}`);
+      for(const table of ['ledger_entries','payments','bookings','payment_intents','stripe_checkouts','booking_holds','orders','quotes','inquiries','purchase_orders','supplier_quotes','inventory','partners','vehicles','customers','staff','services','price_versions','calendar_slots','resources','seed_meta'])this.db.exec(`DELETE FROM ${table}`);
       this.event('business','pneu007','local_reset',{preserved_events:true});this.seed();
     }).immediate();
   }

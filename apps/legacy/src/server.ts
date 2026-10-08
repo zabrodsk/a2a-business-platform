@@ -13,6 +13,7 @@ import { LegacyAuth } from './auth.js';
 import { AgentAuth } from './agent-auth.js';
 import { AgentPolicy } from './agent-policy.js';
 import { PaymentWorkflow } from './payment-workflow.js';
+import { StripeCheckoutWorkflow } from './stripe-checkout.js';
 import { loadLegacyConfig, repoRoot, type LegacyConfig } from './config.js';
 import { GARAGE_TOOLS } from '../../../packages/agent-client/src/garage-tools.js';
 import { loadProfile } from '../../relay/src/card.js';
@@ -22,6 +23,7 @@ export interface LegacyOptions {
   now?: () => Date;
   paymentProvider?: PaymentProvider;
   paymentStatus?: () => ReturnType<typeof paymentProviderStatus>;
+  stripeFetch?: typeof fetch;
   registry?: SourceRegistry;
   agentCard?: () => unknown;
   validateRelayTask?: (actor: Actor, taskId: string) => Promise<boolean>;
@@ -58,6 +60,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   const policy = new AgentPolicy(store, rulebooks, { now, businessActorId: businessIdentity?.id ?? 'garage-demo' });
   const provider = options.paymentProvider ?? createPaymentProvider(cfg.env, { now });
   const processor = new PaymentWorkflow(store, provider);
+  const stripe = new StripeCheckoutWorkflow(store, { env: cfg.env, publicUrl: cfg.publicUrl, fetch: options.stripeFetch, now });
   const providerStatus = options.paymentStatus ?? (() => paymentProviderStatus(cfg.env));
   const jobPreparations = new Map<string, Promise<PaymentJob>>();
   store.db.exec(`CREATE TABLE IF NOT EXISTS human_checkout_authorizations(order_id TEXT PRIMARY KEY REFERENCES orders(id),actor_id TEXT NOT NULL,authorization_json TEXT NOT NULL,approved_at TEXT NOT NULL);`);
@@ -87,6 +90,11 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.status(result.status).json(result.body);
   });
 
+  app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '256kb' }), async (req, res) => {
+    if (!Buffer.isBuffer(req.body)) fail('INVALID_STRIPE_WEBHOOK', 'Stripe webhook requires an unmodified JSON body.');
+    await stripe.webhook(req.body, req.get('stripe-signature'));
+    res.json({ received: true });
+  });
   app.use('/api', express.json({ limit: '512kb' }), auth.middleware, auth.protect);
   app.use('/masumi', express.json({ limit: '64kb' }), auth.middleware, auth.protect);
   app.use(agentAuth.router(auth));
@@ -140,12 +148,21 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     return fail('FORBIDDEN', 'Objednávka patří jiné identitě.', 403);
   }
   function intentForOrder(orderId: string) { return store.listPaymentIntents().find(value => value.order_id === orderId); }
+  function stripeView(orderId: string) {
+    const checkout = store.getStripeCheckoutForOrder(orderId);
+    if (!checkout) return null;
+    return { id: checkout.id, state: checkout.state, payment_mode: checkout.payment_mode,
+      amount_minor: checkout.amount_minor, currency: checkout.currency, mode: 'test',
+      checkout_url: checkout.checkout_url, expires_at: checkout.expires_at,
+      session_id: checkout.session_id, payment_intent_id: checkout.payment_intent_id };
+  }
   function orderView(record: Order) {
     const quote = store.getQuote(record.quote_id), intent = intentForOrder(record.id);
     const booking = store.calendar(record.customer_id).find(value => value.order_id === record.id);
     const contact = store.db.prepare('SELECT name,email,phone FROM order_contact_snapshots WHERE order_id=?').get(record.id)
       ?? store.db.prepare('SELECT name,email,phone FROM customers WHERE id=?').get(record.customer_id);
     return { order: record, quote, contact, payment: intent ?? null, intent: intent ?? null, booking: booking ?? null,
+      stripe_checkout: stripeView(record.id),
       receipt: intent ? processor.getReceipt(intent.intent_id) ?? null : null,
       payment_error: intent ? processor.error(intent.intent_id) ?? null : null,
       simulation: intent?.provider === 'local_demo' };
@@ -213,6 +230,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/api/payments/config', (_req, res) => {
     const status = providerStatus();
     res.json({ ...status, available_skus: 'skus' in status ? status.skus : [], asset: 'lovelace',
+      stripe_link: stripe.status(),
       seller_id: provider.name === 'masumi' ? cfg.env.MASUMI_SELLER_VKEY : DEMO_SELLER });
   });
   app.post('/api/inquiries', (req, res) => {
@@ -240,6 +258,23 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   });
   app.get('/api/orders/:id', auth.require('owner', 'staff', 'human_customer'), (req, res) => res.json(orderView(ownOrder(req, param(req, 'id')))));
   app.post('/api/orders/:id/checkout', human, async (req, res) => res.json(await checkoutHuman(req, ownOrder(req, param(req, 'id')))));
+  app.post('/api/orders/:id/link-checkout', human, async (req, res) => {
+    const order = ownOrder(req, param(req, 'id'));
+    const input = req.body;
+    if (!input || typeof input !== 'object' || Array.isArray(input)
+      || Object.keys(input).some(key => !['payment_mode', 'confirm'].includes(key))
+      || !['deposit', 'full'].includes(input.payment_mode) || input.confirm !== true) {
+      fail('STRIPE_APPROVAL_REQUIRED', 'Choose the payment mode and explicitly approve this Stripe test checkout.');
+    }
+    await stripe.start(order.id, { id: actor(req).id, customer_id: actor(req).customer_id }, input);
+    res.json({ stripe_checkout: stripeView(order.id) });
+  });
+  app.get('/api/orders/:id/link-payment', auth.require('owner', 'staff', 'human_customer'), async (req, res) => {
+    const order = ownOrder(req, param(req, 'id'));
+    const checkout = store.getStripeCheckoutForOrder(order.id);
+    if (checkout) await stripe.reconcile(checkout.id);
+    res.json(orderView(store.getOrder(order.id)));
+  });
   app.get('/api/orders/:id/payment', auth.require('owner', 'staff', 'human_customer'), async (req, res) => {
     const record = ownOrder(req, param(req, 'id')), intent = intentForOrder(record.id);
     if (intent) await processor.reconcile(intent.intent_id);
@@ -532,8 +567,9 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/objednavka/:id', (_req, res) => res.sendFile(join(publicDirectory, 'objednavka.html')));
   app.use(express.static(publicDirectory, { index: false, dotfiles: 'deny' }));
   processor.start(cfg.reconciliationMs);
-  return { app, store, policy, rulebooks, registry, processor, auth, agentAuth,
-    close: async () => { await processor.close(); store.close(); } };
+  stripe.startBackground(cfg.reconciliationMs);
+  return { app, store, policy, rulebooks, registry, processor, stripe, auth, agentAuth,
+    close: async () => { await processor.close(); await stripe.close(); store.close(); } };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
