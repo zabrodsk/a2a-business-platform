@@ -5,7 +5,7 @@
 <h2>Agent payment activation</h2>
 <p>The existing adapter is exposed through <code>garage.mjs</code>: <code>payments</code>, <code>masumi-availability</code>, <code>masumi-schema</code>, customer-only <code>masumi-start --data-file job.json</code>, and <code>masumi-status --job JOB_ID</code>. The business profile publishes the service base URL ending <code>/masumi</code>. Register that base URL; node keys remain server-side.</p>
 <pre># Populate this local server environment with actual Preprod node configuration.
-cp infra/masumi/app.env.example .env.legacy.local
+cp -n infra/masumi/app.env.example .env.legacy.local
 # Inspect configuration without contacting a node or moving funds.
 npm run masumi:check
 # Once configured, build the client and start the unified application.

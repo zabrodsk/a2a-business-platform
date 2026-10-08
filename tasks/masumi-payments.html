@@ -3,11 +3,20 @@
 <body><h1>Enable Masumi agent payments</h1>
 <p>Use the existing Cardano Preprod adapter and approved-order workflow. Follow the official Masumi skill and verify API details against the pinned node source. Keep node keys on the server and preserve existing customer authorization and payment identity checks.</p>
 <ol>
-<li>Inspect existing integration, official API contracts and available configuration.</li>
-<li>Correct confirmed interoperability gaps and expose payment discovery, seller job preparation and job status through the agent tools.</li>
-<li>Add a read-only configuration check and document the exact activation steps and missing inputs.</li>
-<li>Run payment/API/client regression tests, workspace build and typechecks; record live verification separately.</li>
+<li>Complete: inspected the existing integration, official MIP specifications, pinned node source and SDK discrepancies.</li>
+<li>Complete: exposed payment commands and service discovery, corrected purchaser-bound input/output hashing and even-length nonce validation, preserved exact persisted result strings and existing authorization.</li>
+<li>Complete: added a read-only configuration check, missing-setting metadata, activation documentation, runtime instructions and exclusions for seller/buyer environment secrets.</li>
+<li>Complete: workspace build, typechecks and 179 tests passed; pinned upstream source checks passed; independent review approved the changes.</li>
 </ol>
 <p>Initial evidence: Masumi adapter and MIP-style routes already exist. No Masumi/Blockfrost credentials are present in the process or project environment files. Docker is available. A live funded transaction requires a configured Preprod node, wallets and registered SKU identifiers.</p>
-<p id="result">In progress.</p>
+<p id="result">Code integration verified. Live activation remains pending: this workspace has no Masumi node keys, funded Preprod wallets or registered SKU identifiers. The read-only check correctly returns MASUMI_NOT_CONFIGURED. No containers, wallets or payment transactions were created. Existing broker purchases use the configured buyer node; arbitrary external buyer nodes are not supported by the current reconciliation path.</p>
+<p>Reused the existing adapter, checkout policy and client manifest; no dependencies or separate payment framework were added. Formal MIP-004 raw-string output hashing is used. The inspected Python SDK version escapes output before hashing, so interoperability with that buyer requires explicit verification. Existing persisted intents retain their original hashes.</p>
+<h2>Changed files</h2>
+<ul>
+<li><code>packages/agent-client/src/garage-tools.ts</code>, <code>packages/agent-client/src/garage-cli.ts</code>, <code>packages/agent-client/test/garage-tools.test.ts</code>; rebuilt <code>packages/agent-client/dist/garage.mjs</code>.</li>
+<li><code>apps/legacy/src/server.ts</code>, <code>apps/legacy/src/payment-workflow.ts</code>, <code>apps/legacy/test/api.test.ts</code>.</li>
+<li><code>packages/payments/index.ts</code>, <code>packages/payments/src/common.ts</code>, <code>packages/payments/src/check.ts</code>, <code>packages/payments/test/check.test.ts</code>, <code>packages/payments/test/payments.test.ts</code>.</li>
+<li><code>package.json</code>, <code>.gitignore</code>, <code>.dockerignore</code>.</li>
+<li><code>skills/pneu007-business/SKILL.md</code>, <code>prompts/business-runtime.md</code>, <code>prompts/customer-runtime.md</code>, <code>docs/grokbot-tools.html</code>, <code>docs/masumi-setup.html</code>, this HTML work record.</li>
+</ul>
 </body></html>
