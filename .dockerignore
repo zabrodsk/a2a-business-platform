@@ -5,6 +5,8 @@ node_modules
 *.db
 .env
 .env.*
+infra/masumi/seller.env
+infra/masumi/buyer.env
 .omx
 tasks
 docs

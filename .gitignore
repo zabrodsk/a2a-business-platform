@@ -5,6 +5,8 @@ data/
 .env
 .env.*
 !.env.example
+infra/masumi/seller.env
+infra/masumi/buyer.env
 *.env
 !*.env.example
 
