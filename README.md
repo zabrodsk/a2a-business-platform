@@ -1,4 +1,4 @@
-# Pneu 007 / Handoru
+# Agentic Business Demo — Pneu 007
 
 Funkční demo fiktivního pneuservisu: dodaný webový design, kalkulátor, objednávky, servisní kalendář, dummy zákazníci a historie, sklad a dva simulovaní dodavatelé. Backend poskytuje auditní zdroje a nástroje pro firemního agenta. Agent navrhuje rulebook; majitel jej schvaluje před aktivací autonomních operací.
 
@@ -26,6 +26,21 @@ Web, konzole, legacy nástroje a A2A relay běží společně na `http://127.0.0
 - `packages`: obchodní pravidla, kontrakty, audit, platební adaptéry a agentí CLI.
 - `fixtures`: verzované syntetické podklady pro audit; `prompts` a `skills`: instrukce pro reálné boty.
 - `infra/masumi`: oddělené testovací buyer/seller uzly a prázdné environment šablony.
+
+## Jeden repozitář pro celý hackathon
+
+Kanonický veřejný repozitář je [zabrodsk/pneu007-business](https://github.com/zabrodsk/pneu007-business). Obsahuje web a backend autoservisu, rezervace, A2A relay, registr firem, nástroje a skills pro GrokBot, audit/rulebook i platební integraci Masumi. Samostatný repozitář `business-agent-registry` byl nahrazen tímto monorepem.
+
+Z tohoto stejného repozitáře se mohou v Railway projektu `pneu007-business` nasadit dvě služby:
+
+| Služba | Dockerfile | Databáze na vlastním volume |
+| --- | --- | --- |
+| Autoservis, web a A2A | `Dockerfile.legacy` | `/data/legacy.db`, `/data/legacy-relay.db` |
+| Registr firem | `Dockerfile.registry` | `/data/registry.db` |
+
+Obě používají větev `main`. Každá má vlastní persistentní volume, secrets a healthcheck `/healthz`. Registr používá `REGISTRY_ADMIN_TOKEN`; produkční konfigurace respektuje Railway `PORT` a odmítne spuštění bez persistentního volume. Na registru ponechte `REGISTRY_HOST` a `REGISTRY_PORT` nenastavené. Root `Dockerfile` slouží pouze samostatnému transportnímu relay; pro obě hlavní služby zvolte Dockerfile z tabulky.
+
+Registry workflow a nastavení popisuje [návod](docs/business-registry.html). Volitelný `.railway/railway.ts` spravuje pouze registry část projektu; existující autoservis zůstává pod současným nastavením Railway. Soubor se při obyčejném pushi sám neaplikuje. Registr zatím není veřejně nasazený.
 
 ## Stav integrací
 

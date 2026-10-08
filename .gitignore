@@ -1,6 +1,8 @@
 # Private runtime state and deployment credentials
 .omx/
 .herenow/
+.railway/state/
+.railway/*.json
 data/
 .env
 .env.*

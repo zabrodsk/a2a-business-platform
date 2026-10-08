@@ -21,3 +21,13 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        dockerfile: [Dockerfile.legacy, Dockerfile.registry]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f "${{ matrix.dockerfile }}" -t hackathon-demo:ci .

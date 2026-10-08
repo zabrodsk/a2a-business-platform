@@ -1,3 +1,5 @@
+import { isAbsolute, relative, resolve, sep } from 'node:path';
+
 export interface RegistryConfig {
   dbPath: string;
   port: number;
@@ -10,8 +12,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): RegistryConfig
   if (adminToken.length < 24) throw new Error('REGISTRY_ADMIN_TOKEN must contain at least 24 characters');
   const port = Number(env.REGISTRY_PORT ?? env.PORT ?? '8792');
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid registry port');
+  const dbPath = env.REGISTRY_DB_PATH ?? 'data/registry.db';
+  if (env.RAILWAY_ENVIRONMENT_ID) {
+    const mount = env.RAILWAY_VOLUME_MOUNT_PATH;
+    if (!mount) throw new Error('Attach a persistent Railway volume at /data before starting the registry');
+    const inside = relative(resolve(mount), resolve(dbPath));
+    if (dbPath === ':memory:' || !inside || inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) {
+      throw new Error('REGISTRY_DB_PATH must be a file inside the mounted Railway volume');
+    }
+  }
   return {
-    dbPath: env.REGISTRY_DB_PATH ?? 'data/registry.db', port,
+    dbPath, port,
     host: env.REGISTRY_HOST ?? (env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1'),
     adminToken, publicUrl: env.PUBLIC_URL,
   };
