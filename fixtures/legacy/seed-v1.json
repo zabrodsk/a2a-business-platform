@@ -1,0 +1,318 @@
+{
+  "source_id": "legacy-seed-v1",
+  "version": 1,
+  "synthetic": true,
+  "customers": [
+    {
+      "id": "customer-001",
+      "name": "Testovací zákazník 01",
+      "email": "customer01@example.com",
+      "phone": "+420 000 000 001",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-002",
+      "name": "Testovací zákazník 02",
+      "email": "customer02@example.com",
+      "phone": "+420 000 000 002",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-003",
+      "name": "Testovací zákazník 03",
+      "email": "customer03@example.com",
+      "phone": "+420 000 000 003",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-004",
+      "name": "Testovací zákazník 04",
+      "email": "customer04@example.com",
+      "phone": "+420 000 000 004",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-005",
+      "name": "Testovací zákazník 05",
+      "email": "customer05@example.com",
+      "phone": "+420 000 000 005",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-006",
+      "name": "Testovací zákazník 06",
+      "email": "customer06@example.com",
+      "phone": "+420 000 000 006",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-007",
+      "name": "Testovací zákazník 07",
+      "email": "customer07@example.com",
+      "phone": "+420 000 000 007",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-008",
+      "name": "Testovací zákazník 08",
+      "email": "customer08@example.com",
+      "phone": "+420 000 000 008",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-009",
+      "name": "Testovací zákazník 09",
+      "email": "customer09@example.com",
+      "phone": "+420 000 000 009",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-010",
+      "name": "Testovací zákazník 10",
+      "email": "customer10@example.com",
+      "phone": "+420 000 000 010",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-011",
+      "name": "Testovací zákazník 11",
+      "email": "customer11@example.com",
+      "phone": "+420 000 000 011",
+      "origin": "fixture"
+    },
+    {
+      "id": "customer-012",
+      "name": "Testovací zákazník 12",
+      "email": "customer12@example.com",
+      "phone": "+420 000 000 012",
+      "origin": "fixture"
+    }
+  ],
+  "vehicles": [
+    {
+      "id": "vehicle-001",
+      "customer_id": "customer-001",
+      "make": "Toyota",
+      "model": "Demo 1",
+      "plate": "DEMO-001",
+      "vehicle_type": "suv",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    },
+    {
+      "id": "vehicle-002",
+      "customer_id": "customer-002",
+      "make": "BMW",
+      "model": "Demo 2",
+      "plate": "DEMO-002",
+      "vehicle_type": "van",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    },
+    {
+      "id": "vehicle-003",
+      "customer_id": "customer-003",
+      "make": "Ford",
+      "model": "Demo 3",
+      "plate": "DEMO-003",
+      "vehicle_type": "personal",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    },
+    {
+      "id": "vehicle-004",
+      "customer_id": "customer-004",
+      "make": "Škoda",
+      "model": "Demo 4",
+      "plate": "DEMO-004",
+      "vehicle_type": "suv",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    },
+    {
+      "id": "vehicle-005",
+      "customer_id": "customer-005",
+      "make": "Toyota",
+      "model": "Demo 5",
+      "plate": "DEMO-005",
+      "vehicle_type": "van",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    },
+    {
+      "id": "vehicle-006",
+      "customer_id": "customer-006",
+      "make": "BMW",
+      "model": "Demo 6",
+      "plate": "DEMO-006",
+      "vehicle_type": "personal",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    },
+    {
+      "id": "vehicle-007",
+      "customer_id": "customer-007",
+      "make": "Ford",
+      "model": "Demo 7",
+      "plate": "DEMO-007",
+      "vehicle_type": "suv",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    },
+    {
+      "id": "vehicle-008",
+      "customer_id": "customer-008",
+      "make": "Škoda",
+      "model": "Demo 8",
+      "plate": "DEMO-008",
+      "vehicle_type": "van",
+      "wheel_size_inches": 18,
+      "rim_type": "alu"
+    }
+  ],
+  "staff": [
+    {
+      "id": "staff-owner",
+      "name": "Demo majitel",
+      "role": "owner"
+    },
+    {
+      "id": "staff-manager",
+      "name": "Demo vedoucí",
+      "role": "manager"
+    },
+    {
+      "id": "staff-tech",
+      "name": "Demo technik",
+      "role": "technician"
+    }
+  ],
+  "resources": [
+    {
+      "id": "resource-box-1",
+      "name": "Servisní box 1",
+      "location_id": "location-007",
+      "capacity": 1
+    }
+  ],
+  "suppliers": [
+    {
+      "id": "supplier-pneu",
+      "name": "Pneu Partner Demo",
+      "role": "tyres",
+      "contact": "sales@pneu-partner.example.com",
+      "document_eta_days": 2,
+      "origin": "fixture"
+    },
+    {
+      "id": "supplier-parts",
+      "name": "Servis Parts Demo",
+      "role": "workshop-consumables",
+      "contact": "sales@parts.example.com",
+      "document_eta_days": 1,
+      "origin": "fixture"
+    }
+  ],
+  "inventory": [
+    {
+      "id": "item-001",
+      "supplier_id": "supplier-pneu",
+      "sku": "DEMO-SKU-001",
+      "name": "Pneumatika 225/40 R18",
+      "stock_quantity": 11,
+      "unit_price_minor": 122500,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-002",
+      "supplier_id": "supplier-pneu",
+      "sku": "DEMO-SKU-002",
+      "name": "Ventil TPMS",
+      "stock_quantity": 0,
+      "unit_price_minor": 125000,
+      "eta_days": 5,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-003",
+      "supplier_id": "supplier-pneu",
+      "sku": "DEMO-SKU-003",
+      "name": "Ventil gumový",
+      "stock_quantity": 13,
+      "unit_price_minor": 127500,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-004",
+      "supplier_id": "supplier-pneu",
+      "sku": "DEMO-SKU-004",
+      "name": "Závaží 50g",
+      "stock_quantity": 14,
+      "unit_price_minor": 130000,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-005",
+      "supplier_id": "supplier-pneu",
+      "sku": "DEMO-SKU-005",
+      "name": "Pneumatika 205/55 R16",
+      "stock_quantity": 15,
+      "unit_price_minor": 132500,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-006",
+      "supplier_id": "supplier-parts",
+      "sku": "DEMO-SKU-006",
+      "name": "Pneumatika 225/40 R18",
+      "stock_quantity": 16,
+      "unit_price_minor": 135000,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-007",
+      "supplier_id": "supplier-parts",
+      "sku": "DEMO-SKU-007",
+      "name": "Ventil TPMS",
+      "stock_quantity": 17,
+      "unit_price_minor": 137500,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-008",
+      "supplier_id": "supplier-parts",
+      "sku": "DEMO-SKU-008",
+      "name": "Ventil gumový",
+      "stock_quantity": 18,
+      "unit_price_minor": 140000,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-009",
+      "supplier_id": "supplier-parts",
+      "sku": "DEMO-SKU-009",
+      "name": "Závaží 50g",
+      "stock_quantity": 19,
+      "unit_price_minor": 142500,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    },
+    {
+      "id": "item-010",
+      "supplier_id": "supplier-parts",
+      "sku": "DEMO-SKU-010",
+      "name": "Pneumatika 205/55 R16",
+      "stock_quantity": 20,
+      "unit_price_minor": 145000,
+      "eta_days": 1,
+      "updated_at": "2026-10-08T07:00:00.000Z"
+    }
+  ]
+}

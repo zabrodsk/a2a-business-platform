@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/masumi-network/masumi-payment-service",
+  "commit": "5fccf58b0f30873085b59ee540c67b4ae8433cd0",
+  "files": {
+    "Dockerfile": "3e569f2b709c60b9646eeec5694e1e316feee3bc8b70e4982457baead56efe0e",
+    "package.json": "7f15a3b4685ae9c9c944c72c84e8dedbd89aa3bf6581c11ad86ed8ae26e4e3fa",
+    ".env.example": "d24637332d3e225cc0e24a6e6d19262c3dae3cd08aff08924ffe85fa09e14ed6",
+    "src/utils/generator/swagger-generator/openapi-docs.json": "4e1372584ae025b9b83cecf5253a028bbe5bbd2018489ac66f735386f565e950"
+  }
+}

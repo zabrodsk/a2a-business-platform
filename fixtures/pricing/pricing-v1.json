@@ -1,0 +1,8 @@
+{
+  "source_id":"legacy-pricing-v1","version":"pricing-v1","currency":"CZK","unit":"minor","wheel_count":4,
+  "services":{"wheel_swap":148000,"tyre_change":180000},
+  "vehicle_surcharge":{"personal":0,"suv":52000,"van":52000},
+  "rim_surcharge":{"steel":0,"alu":21200},
+  "tyre_change_diameter":{"13":-36000,"14":-18000,"15":0,"16":26000,"17":26000,"18":46000,"19":46000,"20":72000,"21":72000,"22":92000},
+  "runflat":64000,"tpms":40000
+}

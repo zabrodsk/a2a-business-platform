@@ -1,0 +1,63 @@
+name: pneu007-masumi-preprod
+
+x-node: &node
+  image: pneu007-masumi:5fccf58b0f30873085b59ee540c67b4ae8433cd0
+  build:
+    context: https://github.com/masumi-network/masumi-payment-service.git#5fccf58b0f30873085b59ee540c67b4ae8433cd0
+    dockerfile: Dockerfile
+  restart: "no"
+
+services:
+  seller-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: masumi
+      POSTGRES_DB: masumi
+      POSTGRES_PASSWORD: ${SELLER_DB_PASSWORD:?Set SELLER_DB_PASSWORD in local .env}
+    volumes:
+      - seller-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U masumi -d masumi"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  buyer-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: masumi
+      POSTGRES_DB: masumi
+      POSTGRES_PASSWORD: ${BUYER_DB_PASSWORD:?Set BUYER_DB_PASSWORD in local .env}
+    volumes:
+      - buyer-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U masumi -d masumi"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  seller:
+    <<: *node
+    env_file: seller.env
+    environment:
+      DATABASE_URL: postgresql://masumi:${SELLER_DB_PASSWORD:?Set SELLER_DB_PASSWORD}@seller-db:5432/masumi?schema=public
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      seller-db:
+        condition: service_healthy
+
+  buyer:
+    <<: *node
+    env_file: buyer.env
+    environment:
+      DATABASE_URL: postgresql://masumi:${BUYER_DB_PASSWORD:?Set BUYER_DB_PASSWORD}@buyer-db:5432/masumi?schema=public
+    ports:
+      - "127.0.0.1:3002:3001"
+    depends_on:
+      buyer-db:
+        condition: service_healthy
+
+volumes:
+  seller-postgres:
+  buyer-postgres:

@@ -1,0 +1,1 @@
+{"source_id":"legacy-booking-v1","version":"booking-v1","timezone":"Europe/Prague","location_id":"location-007","weekdays":[1,2,3,4,5],"opening_hour":9,"closing_hour":18,"durations_minutes":{"tyre_change":60,"wheel_swap":45},"quote_ttl_seconds":600,"checkout_hold_seconds":1200,"deposit_minor":50000,"main_slot":{"start":"2026-10-16T14:00:00.000Z","end":"2026-10-16T15:00:00.000Z"}}

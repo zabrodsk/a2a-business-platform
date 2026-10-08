@@ -1,0 +1,36 @@
+{
+  "source_id": "internal-systems", "version": "2026-10-08.1", "owner": "owner-007", "visibility": "internal", "effective_from": "2026-10-08",
+  "business": {"name": "Pneu 007", "location": "Praha, fiktivní provozovna", "timezone": "Europe/Prague", "physical_fulfilment": "fictional_demo"},
+  "systems": [
+    {"id": "legacy-catalog", "owner": "service-manager", "authority": "service scope, price calculation and price versions", "audit_api": "/api/audit/export/catalog", "config": "fixtures/pricing/pricing-v1.json"},
+    {"id": "legacy-calendar", "owner": "service-manager", "authority": "live slot availability, staff and bay capacity", "audit_api": "/api/audit/export/calendar", "config": "fixtures/booking/booking-v1.json"},
+    {"id": "legacy-orders", "owner": "service-manager", "authority": "order lifecycle, quote versions, accepted quote and booking identity", "audit_api": "/api/audit/export/orders"},
+    {"id": "legacy-ledger", "owner": "finance-manager", "authority": "local receipts, payment processing and reconciliation records", "audit_api": "/api/audit/export/payments"},
+    {"id": "masumi-payment-service", "owner": "payment-broker", "authority": "verified external payment state and transaction references", "audit_api": "/api/payments/:id", "secret_access": false},
+    {"id": "legacy-supply", "owner": "service-manager", "authority": "live mock inventory, supplier ETA, RFQ and purchase history", "audit_api": "/api/audit/export/supply"}
+  ],
+  "roles": {
+    "owner": ["rulebook.activate", "approval.decide", "supplier.mock_purchase", "human_checkout"],
+    "staff": ["catalog.read", "calendar.read", "orders.manage", "supplier.rfq_draft"],
+    "human_customer": ["own_order.read", "human_checkout"],
+    "business_agent": ["audit.read", "rulebook.propose", "negotiation", "authorized_agent_checkout"],
+    "customer_agent": ["discovery.read", "negotiation", "approved_mandate_checkout"]
+  },
+  "facts": {
+    "allowed_services": ["tyre_change", "wheel_swap"],
+    "currency": "CZK",
+    "allow_extras": false,
+    "provider": "masumi",
+    "network": "Preprod",
+    "asset": "lovelace"
+  },
+  "payment_configuration": {
+    "live_provider": "masumi", "network": "Preprod", "asset": "lovelace",
+    "development_provider": "local_demo", "development_label": "Lokální simulace, nejde o Masumi on-chain platbu",
+    "quote_currency_is_not_chain_asset": true, "mapping": "immutable server-issued mapping version, testnet quantity and fee cap shown before authorization",
+    "mainnet_enabled": false, "master_credentials_exposed": false,
+    "confirmation_authority": "verified Masumi escrow funding plus persisted booking; seller payout tracked separately",
+    "fixture_imports": "origin=fixture, provider=legacy_import; never invent blockchain identifiers"
+  },
+  "audit_access": {"sql_write": false, "credentials": false, "pseudonymized_customers": true, "external_hosts": [], "allowed_paths": ["/", "/kalkulator", "/kontakt", "/podminky", "/api/audit/sources", "/api/audit/export/:sourceId", "/api/suppliers/:id/catalog", "/api/suppliers/:id/availability"]}
+}
