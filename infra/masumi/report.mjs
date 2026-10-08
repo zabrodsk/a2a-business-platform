@@ -11,6 +11,7 @@ const funding = read('masumi-funding-proof.json');
 const result = read('masumi-result-proof.json');
 const recovery = read('masumi-recovery-proof.json');
 const counts = read('masumi-persistence-counts.json');
+const finalRecovery = existsSync(resolve(root, 'data/masumi-final-recovery-proof.json')) ? read('masumi-final-recovery-proof.json') : null;
 const settlement = existsSync(resolve(root, 'data/masumi-settlement-proof.json')) ? read('masumi-settlement-proof.json') : null;
 const observed = smoke.latest?.payment?.observation;
 const completed = smoke.phase === 'seller_paid' && smoke.result_hash_verified && settlement?.confirmed
@@ -36,6 +37,7 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
 <h2>Reservation and integrity</h2><p>Order: <code>${esc(smoke.order_id)}</code><br>Booking: <code>${esc(smoke.latest.booking.id)}</code><br>Receipt hash: <code>${esc(smoke.expected_output_hash)}</code></p>
 <p>The digital receipt's purchaser-bound SHA-256 matches the result recorded on-chain. A confirmed reservation is the delivered digital result; physical tyre service remains fictional.</p>
 <h2>Recovery and access checks</h2><p>The application and payment nodes were restarted after result submission. ${recovery.identities_unchanged ? 'Order, booking, intent, buyer/seller provider IDs and hashes remained unchanged.' : 'Identity verification is pending.'} The persistent application database contains ${counts.bookings} booking, ${counts.payments} payment and ${counts.intents} intent for this order. Another customer identity received HTTP 403 when requesting it.</p>
+${finalRecovery?.state === 'seller_paid' && finalRecovery.identities_unchanged && finalRecovery.receipt_unchanged ? '<p>The application was restarted again after settlement. It retained seller_paid, the same order, booking, payment intent and withdrawal hash, with the receipt unchanged and no workflow error.</p>' : ''}
 <h2>Test method and cost</h2><p>The driver used scripted customer/business agent API clients and an operator-controlled seeded customer session to approve a bounded test mandate. Independent GrokBot account interoperability remains a separate validation.</p>
 <p>The registered deposit is 5 test-ADA. The additional 15 test-ADA amount shown at authorization is a maximum budget, not an actual fee. Observed transaction fees: buyer funding ${Number(funding.fees_lovelace) / 1000000} test-ADA; result submission ${Number(result.fees_lovelace) / 1000000} test-ADA.${settlement ? ` Seller collection fee: ${Number(settlement.fees_lovelace) / 1000000} test-ADA.` : ''} All are test tokens; CZK is a demo accounting mapping.</p>
 ${settlement ? `<p>The seller collection output is ${Number(settlement.gross_payout_lovelace) / 1000000} test-ADA. The protocol fee output is ${Number(settlement.protocol_fee_lovelace) / 1000000} test-ADA; its minimum output amount exceeds 5% for this small deposit. After the collection transaction fee, the seller wallet's net increase is ${Number(settlement.seller_net_increase_lovelace) / 1000000} test-ADA. Collateral and change are excluded from the payout calculation.</p>` : ''}
