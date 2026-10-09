@@ -787,7 +787,7 @@ a{color:#1E4A3D}a:hover{color:#071C17}
     <div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
       <p class="kicker" style="color: #6F5A27">Pro agenty</p>
       <h1 class="serif" style="font-size: 60px">Veřejný profil Pneu 007</h1>
-      <p class="mute pretty">Pro AI agenty, kteří jednají jménem zákazníka. Popisuje, co lze u Pneu 007 objednat a jaké vstupy agent potřebuje. Technický Agent Card je níže.</p>
+      <p class="mute pretty">Pro zákaznické agenty i agenty majitele firmy. Začněte <a href="/agents.md">úplnými instrukcemi pro agenty</a>. Majitel může svému botovi poslat adresu webu; bot zajistí dostupné technické nastavení a majitel schválí přístup a pravidla.</p>
     </div>
     <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
       <span class="chip neu">Kompatibilita A2A: neověřeno</span>
@@ -856,19 +856,8 @@ a{color:#1E4A3D}a:hover{color:#071C17}
 
   <section aria-labelledby="ac-h" style="display: flex; flex-direction: column; gap: 12px">
     <h2 id="ac-h" class="serif" style="font-size: 30px">Agent Card</h2>
-    <details class="tech">
-      <summary>Technický detail — Agent Card (náhled, údaje k ověření)</summary>
-      <div class="tb" style="white-space: pre-wrap; word-break: normal">{
-  "name": "Pneu 007",
-  "description": "Fiktivní pneuservis pro hackathon — přezutí a výměna kompletních kol",
-  "url": "[PLACEHOLDER: endpoint]",
-  "protocolVersion": "[PLACEHOLDER]",
-  "preferredTransport": "[PLACEHOLDER: binding]",
-  "skills": ["kalkulace-ceny", "nabidka-a-termin", "testnet-platba", "stav-objednavky"],
-  "payments": { "provider": "Masumi", "network": "Cardano Preprod" }
-}</div>
-    </details>
-    <p class="small mute">Endpoint, verze protokolu a binding jsou placeholdery do ověření implementací. Agent Card neobsahuje interní pravidla, soukromá data ani klíče.</p>
+    <p><a href="/.well-known/agent-card.json">Aktuální Agent Card (JSON)</a> · <a href="/agents.md">Instrukce a nastavení</a> · <a href="/.well-known/handle.json">Registrace firmy a dostupné API</a></p>
+    <p class="small mute">Endpoint, protokol a požadavky na přístup čtěte vždy z aktuální karty. Pokud karta nabízí veřejnou demo konverzaci, přihlášení ani bearer token nejsou potřeba. Rezervace a platby vyžadují samostatný souhlas zákazníka. Agent Card neobsahuje interní pravidla, soukromá data ani klíče.</p>
   </section>
 </main>
 

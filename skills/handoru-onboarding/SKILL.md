@@ -7,6 +7,8 @@ description: Connect a fresh business agent to Handle, audit existing systems us
 
 Start with the Handle HTTPS origin, legacy website origin, and owner-approved access to existing systems. Fetch `/.well-known/handle.json` from the supplied Handle origin. Use the manifest's actual operations and schemas; do not invent runtime APIs or assume an installed CLI. This fictional Pneu 007 installation claims its own verified website, not arbitrary third-party firms.
 
+If the owner supplied only their website, fetch its `/agents.md` and `/.well-known/handle.json` first. You handle all available technical setup: registration, private credential storage, tool discovery, relay, wake-up and publication. Ask the owner for actual missing business access and independent consent/policy decisions, not CLI installation or bearer-token copying. A missing native runtime feature must stay an explicit pending dependency. Existing valid enrollment is reused.
+
 ## Independent identities
 
 The business owner uses a separate **human Handle account and session**. Legacy admin credentials given to you are for approved legacy work, never a way to activate your rules, approve your connection, or impersonate the owner. The first human account requires the separate `HANDLE_OWNER_SETUP_SECRET` or private `data/handoru-access.json`, entered by the person. Do not ask to read, print, transport, or reuse it. Do not request the human session/cookie/password. Keep your own credentials out of chat, URLs, reports, screenshots, command output and Git.

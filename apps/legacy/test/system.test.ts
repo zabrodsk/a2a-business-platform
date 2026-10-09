@@ -111,7 +111,7 @@ test('compatibility transport preserves SDK tasks while adopting scoped identiti
     assert.equal(cardJson.supportedInterfaces[0].url, `${base}/a2a/jsonrpc`);
     assert.equal(cardJson.supportedInterfaces[0].protocolVersion, '1.0');
     assert.equal(cardJson.securitySchemes.bearer.httpAuthSecurityScheme.scheme, 'Bearer');
-    assert.equal(cardJson.documentationUrl, `${base}/auth.md`);
+    assert.equal(cardJson.documentationUrl, `${base}/agents.md`);
     assert.match(cardJson.securitySchemes.bearer.httpAuthSecurityScheme.description, /signed-in customer/);
     const publicCard = JSON.stringify(cardJson);
     assert.ok(!publicCard.includes('$case'));
@@ -361,4 +361,89 @@ test('private-tool CLI confines bearer tokens to the explicit origin and refuses
     await assert.rejects(cli(['--url', base, '--allow-http-localhost', 'call', 'GET', '/redirect']), /fetch failed/);
     assert.ok(!received.some(request => request.url === '/must-not-follow'));
   } finally { await closeServer(server); rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('site-only bootstrap and token-free demo conversations preserve private business and customer authority', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pneu-public-demo-'));
+  const probe = createServer();
+  await new Promise<void>(done => probe.listen(0, '127.0.0.1', done));
+  const port = (probe.address() as AddressInfo).port;
+  await closeServer(probe);
+  const base = `http://127.0.0.1:${port}`;
+  const cfg = config(dir, base);
+  cfg.env.DEMO_PUBLIC_A2A = 'true';
+  const system = await createUnifiedSystem(cfg);
+  const server = system.app.listen(port, '127.0.0.1');
+  await new Promise<void>(done => server.once('listening', done));
+  try {
+    // Bootstrap remains discoverable before a business is activated or published.
+    const home = await fetch(base);
+    assert.match(home.headers.get('link') ?? '', /agents.md/);
+    const guide = await (await fetch(`${base}/agents.md`)).text();
+    for (const phrase of ['agent-registrations', 'setup-wakeup', 'ready:true', 'X-Demo-Session', 'independent approval', 'database', 'registry']) assert.ok(guide.includes(phrase), phrase);
+    const manifest = await (await fetch(`${base}/.well-known/handle.json`)).json();
+    assert.equal(manifest.instructions_url, `${base}/agents.md`);
+    assert.equal(manifest.agent_entry_points.customer.demo_public_a2a, true);
+    for (const path of ['/skills/handle-onboarding/SKILL.md', '/skills/pneu007-business/SKILL.md', '/skills/business-registry/SKILL.md', '/cli/inbox.mjs', '/cli/a2a.mjs']) assert.equal((await fetch(`${base}${path}`)).status, 200, path);
+    const rpc = (method: string, params: unknown, headers: Record<string, string> = {}) => fetch(`${base}/a2a/jsonrpc`, {
+      method: 'POST', headers: { 'content-type': 'application/json', 'A2A-Version': '1.0', ...headers },
+      body: JSON.stringify({ jsonrpc: '2.0', id: crypto.randomUUID(), method, params }),
+    });
+    assert.equal((await rpc('SendMessage', {})).status, 503, 'public mode must not bypass inactive policy');
+    const rules = system.policy.rulebooks;
+    const proposed = rules.propose({ id: 'garage-demo', role: 'business_agent' }, fixtureProposal(rules.sources));
+    rules.activate({ id: 'staff-owner', role: 'owner' }, proposed.version);
+    system.handoru.db.prepare("UPDATE handoru_connections SET state='active',scopes_json=? WHERE id='compatibility-pneu007'").run(JSON.stringify(ALL_SCOPES));
+    system.handoru.db.prepare("UPDATE handoru_businesses SET active_connection_id='compatibility-pneu007',execution_epoch=1 WHERE id='pneu007'").run();
+    const card = await (await fetch(`${base}/.well-known/agent-card.json`)).json();
+    assert.deepEqual(card.securityRequirements ?? [], []);
+    assert.deepEqual(card.securitySchemes ?? {}, {});
+    assert.equal(card.documentationUrl, `${base}/agents.md`);
+    assert.equal(card.capabilities.extensions[0].params.customer.demo_public_a2a, true);
+    assert.match(await (await fetch(`${base}/llms.txt`)).text(), /No bearer token/);
+    const sent = await rpc('SendMessage', { message: { messageId: crypto.randomUUID(), role: 'ROLE_USER', parts: [{ text: 'Synthetic public demo: wheel swap estimate?' }] }, configuration: { returnImmediately: true } });
+    assert.equal(sent.status, 200);
+    const session = sent.headers.get('x-demo-session')!;
+    assert.match(session, /^[a-f0-9-]{36}$/);
+    const task = (await sent.json()).result.task;
+    assert.ok(task.id, JSON.stringify(task));
+    const same = await rpc('GetTask', { id: task.id }, { 'X-Demo-Session': session });
+    assert.equal((await same.json()).result.id, task.id);
+    const other = await rpc('GetTask', { id: task.id }, { 'X-Demo-Session': crypto.randomUUID() });
+    assert.ok((await other.json()).error, 'a different demo session cannot read this task');
+    assert.equal((await rpc('GetTask', { id: task.id }, { 'X-Demo-Session': 'customer-agent-a' })).status, 400);
+    assert.equal((await rpc('GetTask', { id: task.id }, { authorization: 'Bearer invalid-token', 'X-Demo-Session': session })).status, 401);
+    for (const path of ['/bot/inbox', '/bot/doorbell', '/api/agent/cases', '/api/audit/sources']) assert.equal((await fetch(`${base}${path}`, { headers: { 'X-Demo-Session': session } })).status, 401, path);
+    let work: { owner: string; message_json: string } | undefined;
+    for (let attempt = 0; attempt < 30 && !work; attempt++) {
+      work = system.relay.db.sqlite.prepare('SELECT owner,message_json FROM work_items WHERE task_id=?').get(task.id) as typeof work;
+      if (!work) await new Promise(done => setTimeout(done, 20));
+    }
+    assert.equal(work?.owner, `demo:${session}`);
+    assert.equal(JSON.parse(work!.message_json).authenticated_sender.acting_for, null);
+    // The generic client needs no login and persists its session across invocations.
+    // A stale saved bearer credential must not be sent to the public endpoint.
+    const credentials = join(dir, 'public-client.json');
+    writeFileSync(credentials, JSON.stringify({ [base]: 'invalid-unused-private-credential' }));
+    const env = { ...process.env, A2A_CREDENTIALS_FILE: credentials };
+    const cli = resolve(root, 'packages/agent-client/dist/a2a.mjs');
+    const output = await run(process.execPath, [cli, 'send', base, 'Synthetic public CLI request', '--no-wait', '--json'], { env, timeout: 15_000 });
+    const cliTask = JSON.parse(output.stdout);
+    assert.ok(cliTask.id, output.stdout);
+    const reread = await run(process.execPath, [cli, 'get', base, cliTask.id, '--json'], { env, timeout: 15_000 });
+    assert.equal(JSON.parse(reread.stdout).id, cliTask.id);
+    assert.ok(!output.stdout.includes('invalid-unused-private-credential'));
+    writeFileSync(credentials, JSON.stringify({ [base]: tokens.a }));
+    const authenticated = await run(process.execPath, [cli, 'send', base, 'Synthetic linked customer request', '--no-wait', '--authenticated', '--json'], { env, timeout: 15_000 });
+    const linkedTask = JSON.parse(authenticated.stdout);
+    const linkedRead = await run(process.execPath, [cli, 'get', base, linkedTask.id, '--authenticated', '--json'], { env, timeout: 15_000 });
+    assert.equal(JSON.parse(linkedRead.stdout).id, linkedTask.id);
+    let linkedWork: { owner: string; message_json: string } | undefined;
+    for (let attempt = 0; attempt < 30 && !linkedWork; attempt++) {
+      linkedWork = system.relay.db.sqlite.prepare('SELECT owner,message_json FROM work_items WHERE task_id=?').get(linkedTask.id) as typeof linkedWork;
+      if (!linkedWork) await new Promise(done => setTimeout(done, 20));
+    }
+    assert.equal(linkedWork?.owner, 'customer-agent-a');
+    assert.equal(JSON.parse(linkedWork!.message_json).authenticated_sender.acting_for.id, 'customer-001');
+  } finally { await closeServer(server); await system.close(); rmSync(dir, { recursive: true, force: true }); }
 });

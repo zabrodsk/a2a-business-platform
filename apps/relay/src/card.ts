@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { A2A_PROTOCOL_VERSION, type AgentCard } from '@a2a-js/sdk';
 import type { Config } from './config.js';
+import { agentEntryPoints } from './agent-guide.js';
 
 export interface BusinessProfile {
   name: string;
@@ -26,15 +27,15 @@ export function buildAgentCard(cfg: Config): AgentCard {
   const authDocs = cfg.authResourceMetadataUrl ? new URL('/auth.md', cfg.authResourceMetadataUrl).toString() : undefined;
   return {
     name: p.name,
-    description: p.description,
+    description: `${p.description} ${cfg.demoPublicA2a ? 'Demo conversations need no login or bearer token; reuse a random UUID v4 in X-Demo-Session. ' : ''}Business owners: send your agent the website URL and follow documentationUrl for business registration, backend tools, registry publication and automatic wake-up.`,
     supportedInterfaces: [
       { url: cfg.a2aEndpointUrl, protocolBinding: 'JSONRPC', tenant: '', protocolVersion: A2A_PROTOCOL_VERSION },
     ],
     provider: { organization: p.organization, url: cfg.publicUrl },
-    version: '0.1.0',
-    documentationUrl: authDocs,
-    capabilities: { streaming: false, pushNotifications: false, extensions: [], extendedAgentCard: false },
-    securitySchemes: {
+    version: '0.2.0',
+    documentationUrl: new URL('/agents.md', cfg.publicUrl).toString(),
+    capabilities: { streaming: false, pushNotifications: false, extensions: [{ uri: new URL('/agents.md', cfg.publicUrl).toString(), description: 'Customer conversation and business-owner onboarding instructions, including tools, registry and automatic wake-up.', required: false, params: agentEntryPoints(cfg.publicUrl, cfg.demoPublicA2a) }], extendedAgentCard: false },
+    securitySchemes: cfg.demoPublicA2a ? {} : {
       bearer: {
         scheme: {
           $case: 'httpAuthSecurityScheme',
@@ -48,7 +49,7 @@ export function buildAgentCard(cfg: Config): AgentCard {
         },
       },
     },
-    securityRequirements: [{ schemes: { bearer: { list: [] } } }],
+    securityRequirements: cfg.demoPublicA2a ? [] : [{ schemes: { bearer: { list: [] } } }],
     defaultInputModes: ['text/plain', 'application/json'],
     defaultOutputModes: ['text/plain', 'application/json'],
     skills: [

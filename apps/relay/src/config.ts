@@ -50,6 +50,8 @@ export interface Config {
   /** Credentials managed by the business adapter, shared by tools and A2A. */
   lookupAgentToken?: (token: string) => Identity | undefined;
   authResourceMetadataUrl?: string;
+  /** Explicit sandbox opt-in: unauthenticated A2A conversations, never business tools. */
+  demoPublicA2a?: boolean;
   /** One isolated transport DB per managed resource. Absent for the legacy standalone relay. */
   businessId?: string;
   /** Authoritative resolver: when supplied no environment/enrollment token fallback is permitted. */
@@ -108,5 +110,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     leaseMs: Number(env.LEASE_MS ?? 5 * 60_000),
     reringMs: Number(env.RERING_MS ?? 60_000),
     businessProfile: env.BUSINESS_PROFILE ?? 'pneu007',
+    demoPublicA2a: env.DEMO_PUBLIC_A2A === 'true',
   };
 }

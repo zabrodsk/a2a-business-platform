@@ -13,6 +13,7 @@ import { LegacyAuth } from './auth.js';
 import { AgentAuth } from './agent-auth.js';
 import { HandoruStore } from './handoru/store.js';
 import { importCompatibility } from './handoru/onboarding.js';
+import { renderAgentGuide } from '../../relay/src/agent-guide.js';
 import { handoruRoutes } from './handoru/routes.js';
 import { assertCapabilities } from './handoru/capabilities.js';
 import { handoruManifest } from './handoru/manifest.js';
@@ -93,8 +94,10 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.disable('x-powered-by');
   app.use((_req, res, next) => {
     res.set('X-Content-Type-Options', 'nosniff').set('Referrer-Policy', 'same-origin').set('X-Frame-Options', 'SAMEORIGIN');
+    res.set('Link', `</agents.md>; rel="describedby"; type="text/markdown", </.well-known/handle.json>; rel="service-desc"; type="application/json", </.well-known/agent-card.json>; rel="agent-card"; type="application/json"`);
     next();
   });
+  app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true')));
   const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now: () => now().getTime() });
   const discoveryJson = express.json({ limit: '32kb' });
   app.post('/discovery/websites', (req, res, next) => {
@@ -118,7 +121,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.use('/api', (_req,_res,next)=>{const b=handoru.installation();if(b)rulebooks.useBusiness(b.id,{genericEvidence:b.id!=='pneu007'});next();});
   app.use(['/api/handle/v1','/api/handoru/v1'],handoruApi.router);
   app.use('/mcp',pneuMcp(auth,handoru));
-  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl)));
+  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true')));
   app.get(['/handle/onboarding','/handoru/onboarding'],(_req,res)=>res.sendFile(join(repoRoot,'docs/handoru-onboarding.html')));
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});
@@ -584,6 +587,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/skills/pneu007-business/SKILL.md', (_req, res) => {
     res.type('text/markdown').sendFile(join(repoRoot, 'skills/pneu007-business/SKILL.md'));
   });
+  app.get('/skills/business-registry/SKILL.md', (_req, res) => res.type('text/markdown').sendFile(join(repoRoot, 'skills/business-registry/SKILL.md')));
   app.use('/api', (_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Neznámá operace API.' } }));
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof BusinessError) {

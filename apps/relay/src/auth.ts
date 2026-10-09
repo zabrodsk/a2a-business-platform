@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import type { User } from '@a2a-js/sdk/server';
 import type { Config, Identity, RelayOperation } from './config.js';
@@ -43,7 +43,18 @@ export function identityAllowed(cfg: Config, identity: Identity, operation?: Rel
 
 export function requireRole(cfg: Config, ...roles: Identity['role'][]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const identity = identify(cfg, req.header('authorization'));
+    let identity = identify(cfg, req.header('authorization'));
+    // Public sandbox sessions carry no account or payment authority. Never let this
+    // fallback satisfy a business/admin route or hide an invalid supplied credential.
+    if (!identity && !req.header('authorization') && cfg.demoPublicA2a && roles.length === 1 && roles[0] === 'customer') {
+      const session = req.header('x-demo-session');
+      if (session && !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(session)) {
+        res.status(400).json({ error: 'X-Demo-Session must be a random UUID v4' });
+        return;
+      }
+      identity = req.identity?.id.startsWith('demo:') ? req.identity : { id: `demo:${session ?? randomUUID()}`, role: 'customer' };
+      res.set('X-Demo-Session', identity.id.slice(5)).set('Cache-Control', 'no-store');
+    }
     if (!identity) {
       const challenge = cfg.authResourceMetadataUrl ? `Bearer resource_metadata="${cfg.authResourceMetadataUrl}"` : 'Bearer';
       res.status(401).set('WWW-Authenticate', challenge).json({ error: 'missing or invalid bearer token' });

@@ -26,8 +26,8 @@ test('website card requires separate owner publication scope, bounded native wri
   const response=await f.publicCall('/.well-known/agent-card.json'),card=await json(response),etag=response.headers.get('etag');
   assert.equal(response.headers.get('cache-control'),'no-cache, max-age=0, must-revalidate');assert.ok(etag);
   assert.equal(card.supportedInterfaces[0].url,relay.endpoint);assert.equal(card.supportedInterfaces[0].protocolVersion,'1.0');assert.equal(card.supportedInterfaces[0].protocolBinding,'JSONRPC');
-  assert.equal(card.documentationUrl,`${f.base}/auth.md`);assert.equal(card.securitySchemes.bearer.httpAuthSecurityScheme.scheme,'Bearer');assert.match(card.securitySchemes.bearer.httpAuthSecurityScheme.description,/signed-in customer/);assert.deepEqual(card.securityRequirements,[{schemes:{bearer:{list:[]}}}]);
-  assert.deepEqual(card.capabilities,{streaming:false,pushNotifications:false});assert.match(card.description,/Fictional/);
+  assert.equal(card.documentationUrl,`${f.base}/agents.md`);assert.equal(card.securitySchemes.bearer.httpAuthSecurityScheme.scheme,'Bearer');assert.match(card.securitySchemes.bearer.httpAuthSecurityScheme.description,/signed-in customer/);assert.deepEqual(card.securityRequirements,[{schemes:{bearer:{list:[]}}}]);
+  assert.equal(card.capabilities.streaming,false);assert.equal(card.capabilities.pushNotifications,false);assert.equal(card.capabilities.extensions[0].params.business.bootstrap_url,`${f.base}/.well-known/handle.json`);assert.match(card.description,/Fictional/);
   const serialized=JSON.stringify(card);for(const privateValue of [c.token,'auto_discount_bps','deposit_minor','source_authority'])assert.ok(!serialized.includes(privateValue));
   const home=await(await f.publicCall('/')).text();assert.match(home,/<a[^>]*href="\/\.well-known\/agent-card\.json"[^>]*>Pro agenty/);
   assert.equal((await f.publicCall('/.well-known/agent-card.json',undefined,{'if-none-match':etag!,'cache-control':'max-age=0'})).status,304);

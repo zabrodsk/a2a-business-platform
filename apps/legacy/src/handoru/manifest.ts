@@ -1,8 +1,9 @@
 import { evidenceSchema, reportSchema, proposalSchema } from './schemas.js';
+import { agentEntryPoints } from '../../../relay/src/agent-guide.js';
 /** Public bootstrap describes only implemented routes; no firm data or credentials. */
-export function handoruManifest(base:string) {
+export function handoruManifest(base:string,demo=false) {
   const api=`${base}/api/handle/v1`;
-  return {version:'1.0',fictional_demo:true,api_base:api,credential_audience:new URL(base).origin,instructions_url:`${base}/handle/onboarding`,skill_url:`${base}/skills/handle-onboarding/SKILL.md`,human_console:`${base}/handle`,mcp:{url:`${base}/mcp`,transport:'streamable_http_stateless',protocol_version:'2025-06-18',runtime_support:'verify_with_actual_client'},pairing:{expires_in:900,credential_delivery:'POST authenticated provisional credential; never a URL',owner_auth:'separate Handle human account and website ownership challenge'},operations:[
+  return {version:'1.1',fictional_demo:true,agent_entry_points:agentEntryPoints(base,demo),setup_responsibility:'Agent performs discovery, registration, private credential exchange, relay configuration, native wake-up and publication. Human supplies authorized system access and independent consent/policy decisions; never manual bearer-token copying.',api_base:api,credential_audience:new URL(base).origin,instructions_url:`${base}/agents.md`,skill_url:`${base}/skills/handle-onboarding/SKILL.md`,human_console:`${base}/handle`,mcp:{url:`${base}/mcp`,transport:'streamable_http_stateless',protocol_version:'2025-06-18',runtime_support:'verify_with_actual_client'},pairing:{expires_in:900,credential_delivery:'POST authenticated provisional credential; never a URL',owner_auth:'separate Handle human account and website ownership challenge'},operations:[
     {method:'POST',path:'/agent-registrations',scope:'public',input:{runtime:'string',legacy_url:'website origin'}},
     {method:'GET',path:'/onboarding/:requestId',scope:'own_provisional'},
     {method:'POST',path:'/onboarding/:requestId/credentials',scope:'own_provisional'},

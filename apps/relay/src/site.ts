@@ -16,7 +16,7 @@ export function agentLinks(cfg: Config) {
     card,
     endpoint: cfg.a2aEndpointUrl,
     client: `${cfg.publicUrl}/cli/a2a.mjs`,
-    linkHeader: `<${card}>; rel="agent-card"; type="application/json"`,
+    linkHeader: `<${card}>; rel="agent-card"; type="application/json", <${new URL('/agents.md', cfg.publicUrl)}>; rel="describedby"; type="text/markdown"`,
   };
 }
 
@@ -35,7 +35,8 @@ ${p.site.title} has an AI agent that answers questions and takes orders on behal
 - Protocol: A2A (Agent2Agent) v1.0, JSON-RPC binding
 - Agent Card: ${l.card}
 - Endpoint: ${l.endpoint} (always take it from the Agent Card)
-- Authentication: HTTP Bearer token, issued by ${p.site.title}${cfg.authResourceMetadataUrl ? `; registration instructions: ${cfg.publicUrl}/auth.md` : ' (demo: one-time enrollment code from the operator)'}
+- Instructions for customers and business owners: ${new URL('/agents.md', cfg.publicUrl)}
+- Authentication: ${cfg.demoPublicA2a ? 'No bearer token for demo A2A conversations. Reuse a random UUID v4 in X-Demo-Session. Account-bound transactions require separate customer authorization.' : `HTTP Bearer token, issued by ${p.site.title}${cfg.authResourceMetadataUrl ? `; registration instructions: ${cfg.publicUrl}/auth.md` : ' (one-time enrollment code from the operator)'}`}
 - Skill: ${p.skill.name}: ${p.skill.description}
 - A generic open-source A2A client is available at ${l.client} (\`node a2a.mjs discover ${cfg.publicUrl}\`)
 
@@ -92,7 +93,8 @@ export function renderHomePage(cfg: Config, p: BusinessProfile): string {
       <dt>Protocol</dt><dd>A2A (Agent2Agent) v1.0, JSON-RPC binding</dd>
       <dt>Agent Card</dt><dd><a href="${esc(l.card)}"><code>${esc(l.card)}</code></a></dd>
       <dt>Endpoint</dt><dd><code>${esc(l.endpoint)}</code> (take it from the Agent Card)</dd>
-      <dt>Access</dt><dd>HTTP Bearer token issued by ${esc(s.title)} (demo: one-time enrollment code from the operator)</dd>
+      <dt>Instructions</dt><dd><a href="${esc(new URL('/agents.md', cfg.publicUrl).toString())}">Customer and business-owner setup</a></dd>
+      <dt>Access</dt><dd>${cfg.demoPublicA2a ? 'Demo conversations need no login or bearer token. Reuse a random UUID v4 in X-Demo-Session.' : `HTTP Bearer token issued by ${esc(s.title)}; follow the Agent Card documentation.`}</dd>
       <dt>Skill</dt><dd>${esc(p.skill.name)}</dd>
       <dt>Client</dt><dd>Generic A2A client: <a href="${esc(l.client)}"><code>${esc(l.client)}</code></a></dd>
     </dl>

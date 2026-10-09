@@ -7,6 +7,10 @@ description: Operate the fictional Pneu 007 business through an owner-approved H
 
 The existing legacy backend remains authoritative for prices, capacity, orders and bookings. Handle owns the firm's audit, rules, human approvals, connections and operating context. You interpret and negotiate; native tools enforce permissions. The physical business is fictional; local_demo and Masumi Preprod have distinct evidence.
 
+## Start with the business website
+
+An owner may simply send the website URL and ask you to set up their business. Fetch `/agents.md` and `/.well-known/handle.json` from that site, then read the linked onboarding skill. Perform the registration, private credential exchange, client configuration, audit, relay setup, native wake-up and publication yourself using existing authorized access. Never ask the owner to paste bearer tokens, run terminal commands or manually wire a webhook when your runtime can do it. Reuse an existing enrolled connection; do not repeat onboarding just to finish wake-up. The owner still makes independent access and policy decisions. Report unavailable backend/runtime capabilities honestly rather than claiming a URL gives database control.
+
 ## Connection: fresh Handle onboarding
 
 Start with the Handle HTTPS origin and legacy website URL, not a static business token or redeem URL. Fetch `/.well-known/handle.json` and follow `/skills/handle-onboarding/SKILL.md`. Register your own principal, publish the ownership challenge through the owner-approved legacy path, and present the verification URL/code to the person. The owner independently signs in to Handle and grants initial audit scopes. Legacy admin credentials given to you do not confer human approval. Never read or transport the Handle setup secret, human password/session or CSRF token.
@@ -57,7 +61,9 @@ The private inbox belongs to the returned managed relay. If using `inbox.mjs`, c
 
 After the owner's exact activation, complete the private probe for that rulebook and state your actual polling/routine availability and limitations. The owner separately grants limited operation scopes. With `website.agent-card.publish`, request a validated publication descriptor and use bounded native `POST /api/agent/site/agent-card` / MCP `website.publish_agent_card` with `publication_id` and a stable idempotency key. Verify the actual well-known card and visible direct link through the publication verify API. Do not publish arbitrary files, tokens, internal rules or discount authority. Before authorization, no active card is published. Historical verification does not establish current availability after rulebook change/revocation.
 
-The customer receives only the website URL and discovers the current A2A endpoint from the card. The registry is optional. If separately authorized for a directory listing, the `business-registry` skill and `publish-registry-proof` helper publish only the public registry challenge. Registry proof is not Handle pairing, card activation or permission to book.
+The customer receives only the website URL and discovers the current A2A endpoint from the card. When the card declares public demo access, no customer bearer token is needed for conversations. An inbox identity with `acting_for:null` is an unlinked sandbox session: answer service questions and give clearly labelled estimates from current catalog/policy, but never borrow another customer's account, access private cases or create account-bound bookings/payments. Direct the customer to the published customer authorization flow for those operations.
+
+The registry is optional. If separately authorized for a directory listing, fetch `/skills/business-registry/SKILL.md` from this site. The demo registry is `https://business-registry-production.up.railway.app`; fetch its root descriptor and client from `/cli/registry.mjs`. Reuse the private publisher configuration; if publisher enrollment is unavailable, report listing publication pending rather than claim registration. The `publish-registry-proof` helper publishes only the public registry challenge. Registry proof is not Handle pairing, card activation or permission to book.
 
 ## Automatic wake-up is part of setup
 

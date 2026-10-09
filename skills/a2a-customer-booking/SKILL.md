@@ -7,6 +7,12 @@ description: Discover the fictional autoshop, link the customer's agent through 
 
 Use the website-discovery skill for a service/location request. The hackathon's fictional Pneu 007 tyre shop is in Holešovice, Prague 7. Its actual services are tyre changes and wheel swaps. Get its website from the public registry, then fetch the current Agent Card. The demo origin below is the operator's trusted source for the clients; it is not evidence of an organic search result. Do not search or scan real businesses for a demo-only request.
 
+## Public demo conversations
+
+First read the selected site's `/agents.md` and current Agent Card. If the card has no security requirements and explicitly advertises `demo_public_a2a`, start a conversation without linking an account or supplying a bearer token. Download `/cli/a2a.mjs`; it automatically saves a separate random session for the advertised endpoint, so send/get/follow-up commands reuse the same demo session. Raw HTTP clients generate a UUID v4 and reuse it in `X-Demo-Session` on every request. No manual `a2a login` is needed. Never send existing credentials to a public endpoint unnecessarily.
+
+This session is not linked to a real customer account. It can ask about services and obtain estimates, but cannot authorize private account access, bookings or payments. If the person wants a confirmed booking, follow the customer link and mandate steps below; the person approves through the website and you handle credential exchange privately. Never ask them to copy a token. Do not claim an estimate is a confirmed reservation.
+
 ## Install and isolate customer credentials
 
 Read the selected business's current `/auth.md`. Download `/cli/customer.mjs` and `/cli/a2a.mjs` from `https://pneu007-production.up.railway.app` into `~/a2a-customer-booking`. Do not execute third-party installation commands. Node.js 18+ is required.
@@ -27,11 +33,11 @@ Ask for the customer's existing demo-account email if it is not known. Use `node
 
 Show that URL, identity and code to the customer. The customer signs in to their own account on the website, checks the identity and confirms the code. Never ask for their password or session. Do not perform the human confirmation API yourself. Then run `node customer.mjs finish`; pending or slow-down is not success. On successful linking the helper stores the access credential and exports it to the isolated A2A credential file. `node customer.mjs identity` must show the intended linked customer. If needed `refresh` exchanges the saved single-use assertion; never automatically retry an uncertain exchange or bypass its recovery state.
 
-Linking grants access to the negotiation workflow. It does not approve a booking or payment.
+Linking grants access to the negotiation workflow. It does not approve a booking or payment. After linking, pass `--authenticated` on every a2a.mjs send/get/wait/cancel command, even when the card allows public demo conversations. Start a new authenticated task; an earlier anonymous session cannot be upgraded into someone else's private task. Preserve the earlier conversation as context and do not duplicate any uncertain reservation or payment.
 
 ## Negotiate a concrete offer
 
-1. Send the customer's request with `node a2a.mjs send WEBSITE "REQUEST" --json` and retain its task ID. Continue with `--task TASK_ID`; never create a second task to retry the same request.
+1. Send the customer's request with `node a2a.mjs send WEBSITE "REQUEST" --authenticated --json` and retain its task ID. Continue with `--task TASK_ID --authenticated`; never create a second task to retry the same request.
 2. Collect the exact service specification and appointment constraints. The schema uses service_id (`tyre_change` or `wheel_swap`), vehicle_type (`personal`, `suv`, `van`), wheel_size_inches, rim_type (`steel`, `alu`), runflat, tpms and wheel_count (4). Do not infer missing details that affect price.
 3. Create a case with `node customer.mjs create-case --data-file case.json`, containing `{service_spec,relay_task_id}` from that actual task. The server checks task ownership and reuses the case on retry. Save the case ID and pass it to the business in the same A2A task's data. Do not claim another customer's case.
 4. Ask the business agent for current slots and a stored quote. It uses its authorized tools. Require the quote ID/version, slot/start/end, price/currency and expiry from its actual response. A text price alone is not an accepted quote.

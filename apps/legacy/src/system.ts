@@ -52,6 +52,7 @@ export function unifiedRelayConfig(cfg: LegacyConfig): Config {
     authResourceMetadataUrl: `${cfg.publicUrl}/.well-known/oauth-protected-resource`,
     a2aEndpointUrl: `${cfg.publicUrl}/a2a/jsonrpc`, dbPath, tokens,
     businessProfile: 'pneu007',
+    demoPublicA2a: cfg.env.DEMO_PUBLIC_A2A === 'true',
     ...(cfg.env.HANDORU_FRESH==='true'?{}:{businessId:'pneu007'}),
     businessWebhook: webhookUrl && webhookKey ? { url: webhookUrl, key: webhookKey } : undefined,
     pushHostAllowlist: (cfg.env.LEGACY_PUSH_HOST_ALLOWLIST ?? 'api2.cursor.sh')
@@ -141,7 +142,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     if(!resource)throw new BusinessError('RELAY_NOT_FOUND','Unknown relay.',404);
     pending=(async()=>{
       const dbPath=resolve(dirname(cfg.dbPath),`${resource.id}.db`);await migrateRelayDatabase(dbPath);
-      const resourceConfig:Config={...relayConfig,dbPath,publicUrl:resource.endpoint.replace(/\/a2a$/,''),a2aPath:'/a2a',a2aEndpointUrl:resource.endpoint,businessId:resource.business_id,tokens:new Map(),lookupToken:token=>resolveIdentity(token,resource.business_id),checkIdentity,isActive:()=>active(resource.business_id),
+      const resourceConfig:Config={...relayConfig,demoPublicA2a:relayConfig.demoPublicA2a && resource.business_id==='pneu007',dbPath,publicUrl:resource.endpoint.replace(/\/a2a$/,''),a2aPath:'/a2a',a2aEndpointUrl:resource.endpoint,businessId:resource.business_id,tokens:new Map(),lookupToken:token=>resolveIdentity(token,resource.business_id),checkIdentity,isActive:()=>active(resource.business_id),
         ...authorityHooks(resource.business_id),
       };
       return createRelay(resourceConfig);

@@ -30,6 +30,7 @@ Usage:
 
 Options:
   --json                 Machine-readable output
+  --authenticated        Use a linked customer credential even when demo conversations are public
   --push-url URL         Ask the agent to POST task updates to this webhook (with --no-wait)
   --push-key-env VAR     Env var holding the webhook's bearer key
 Credentials: ${credentialsPath()} (or A2A_CREDENTIALS_FILE). Tokens are never printed.`;
@@ -112,18 +113,34 @@ async function discover(websiteUrl: string) {
   return { card, cardUrl, foundVia, iface, endpointOrigin: new URL(iface.url).origin };
 }
 
-async function connect(websiteUrl: string): Promise<{ client: Client; card: AgentCard; endpoint: string }> {
+async function connect(websiteUrl: string, authenticated = false): Promise<{ client: Client; card: AgentCard; endpoint: string }> {
   const d = await discover(websiteUrl);
-  const token = loadCredentials()[d.endpointOrigin];
-  if (!token) {
+  const requiresAuth = authenticated || (d.card.securityRequirements ?? []).some(requirement => Object.keys(requirement.schemes ?? {}).length > 0);
+  const token = requiresAuth ? loadCredentials()[d.endpointOrigin] : undefined;
+  if (requiresAuth && !token) {
     throw new CliError(
       `No credential for ${d.endpointOrigin} (endpoint from the agent card). Run: a2a login ${d.endpointOrigin}`,
     );
   }
+  const demo = d.card.capabilities?.extensions?.some(extension =>
+    (extension.params?.customer as { demo_public_a2a?: boolean } | undefined)?.demo_public_a2a === true);
+  let session: string | undefined;
+  if (demo && !requiresAuth) {
+    const path = `${credentialsPath()}.demo-sessions.json`;
+    const sessions: Record<string, string> = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
+    session = sessions[d.iface.url] ?? randomUUID();
+    sessions[d.iface.url] = session;
+    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+    writeFileSync(path, JSON.stringify(sessions), { mode: 0o600 });
+    chmodSync(path, 0o600);
+  }
   const authFetch: typeof fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
     const headers = new Headers(init?.headers);
-    if (url.origin === d.endpointOrigin) headers.set('authorization', `Bearer ${token}`);
+    if (url.origin === d.endpointOrigin) {
+      if (token) headers.set('authorization', `Bearer ${token}`);
+      if (session) headers.set('X-Demo-Session', session);
+    }
     return fetch(input, { ...init, headers });
   };
   const factory = new ClientFactory(
@@ -199,6 +216,7 @@ async function main() {
       'no-wait': { type: 'boolean', default: false },
       timeout: { type: 'string' },
       json: { type: 'boolean', default: false },
+      authenticated: { type: 'boolean', default: false },
       'push-url': { type: 'string' },
       'push-key-env': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
@@ -232,7 +250,7 @@ async function main() {
       const [url, ...words] = args;
       const text = words.join(' ').trim();
       if (!url || !text) throw new CliError('usage: a2a send <website-url> <text> [--task ID]');
-      const { client, card } = await connect(url);
+      const { client, card } = await connect(url, values.authenticated);
       const parts: Part[] = [{ content: { $case: 'text', value: text }, metadata: undefined, filename: '', mediaType: 'text/plain' }];
       if (values.data) {
         let data: unknown;
@@ -314,7 +332,7 @@ async function main() {
     case 'cancel': {
       const [url, taskId] = args;
       if (!url || !taskId) throw new CliError(`usage: a2a ${cmd} <website-url> <task-id>`);
-      const { client } = await connect(url);
+      const { client } = await connect(url, values.authenticated);
       const task =
         cmd === 'get'
           ? await client.getTask({ id: taskId, tenant: '', historyLength: undefined })

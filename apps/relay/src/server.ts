@@ -6,7 +6,7 @@ import { AGENT_CARD_PATH, AgentCard } from '@a2a-js/sdk';
 import { DefaultExecutionEventBusManager, DefaultPushNotificationSender } from '@a2a-js/sdk/server';
 import { jsonRpcHandler } from '@a2a-js/sdk/server/express';
 import { DatabasePushNotificationStore, DatabaseTaskStore } from '@a2a-js/sdk/server/database';
-import { identify, RelayUser } from './auth.js';
+import { RelayUser } from './auth.js';
 import { requireRole } from './auth.js';
 import { botRouter } from './bot-api.js';
 import { enrollRouter } from './enroll.js';
@@ -17,6 +17,7 @@ import { RelayDb } from './db.js';
 import { Doorbell } from './doorbell.js';
 import { RelayExecutor } from './executor.js';
 import { RelayRequestHandler } from './handler.js';
+import { renderAgentGuide } from './agent-guide.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const CLI_DIST = join(here, '../../../packages/agent-client/dist');
@@ -59,6 +60,7 @@ export function createRelay(cfg: Config) {
   app.set('trust proxy', true);
 
   app.get('/healthz', (_req, res) => void res.json({ ok: true }));
+  app.get('/agents.md', (_req, res) => res.type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.demoPublicA2a)));
 
   // The business's public website: every page tells visiting agents where the Agent Card is.
   const profile = loadProfile(cfg.businessProfile);
@@ -91,7 +93,7 @@ export function createRelay(cfg: Config) {
     requireRole(cfg, 'customer'),
     jsonRpcHandler({
       requestHandler,
-      userBuilder: async (req) => new RelayUser(identify(cfg, req.header('authorization'))!),
+      userBuilder: async (req) => new RelayUser(req.identity!),
     }),
   );
 
