@@ -16,6 +16,7 @@ Usage:
   inbox wait [--timeout SEC]          Block until work arrives (default 50 s, max 55), then show it
   inbox watch [--minutes N]           Repeat 'wait' for N minutes (default 20); prints items as they come
   inbox reply <work-item-id> <text> [--state input-required|completed|rejected] [--data JSON]
+                                      Managed replies include the lease saved by read/wait/watch.
   inbox show <task-id>                Show a task's full conversation
   inbox set-doorbell <webhook-url> --key KEY [--test]
                                       Register your wake-up webhook (e.g. a routine's webhook trigger).
@@ -107,6 +108,12 @@ interface Item {
   work_item_id: string;
   task_id: string;
   customer: string;
+  business_id?: string;
+  connection_id?: string;
+  execution_epoch?: number;
+  claim_generation?: number;
+  lease_until?: number;
+  lease_token?: string;
   customer_identity?: { agent_id: string; acting_for: { type: string; id: string } | null };
   turn: number;
   max_turns: number;
@@ -114,6 +121,21 @@ interface Item {
 }
 
 function printItems(items: Item[], json: boolean) {
+  const managed = items.filter((item) => item.lease_token);
+  if (managed.length) {
+    const file = `${configFile()}.leases.json`;
+    const saved = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+    const { url } = config();
+    for (const item of managed) saved[`${url}:${item.work_item_id}`] = {
+      lease_token: item.lease_token, claim_generation: item.claim_generation, lease_until: item.lease_until,
+    };
+    for (const [key, value] of Object.entries(saved)) {
+      if ((value as { lease_until?: number }).lease_until! < Date.now()) delete saved[key];
+    }
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify(saved), { mode: 0o600 });
+    chmodSync(file, 0o600);
+  }
   if (json) return void console.log(JSON.stringify(items, null, 2));
   if (!items.length) return void console.log('No pending work.');
   for (const it of items) {
@@ -135,6 +157,8 @@ export async function inboxMain(rawArgs = process.argv.slice(2)) {
     args: rawArgs, allowPositionals: true,
     options: {
       state: { type: 'string' },
+      'lease-token': { type: 'string' },
+      'claim-generation': { type: 'string' },
       key: { type: 'string' },
       test: { type: 'boolean', default: false },
       data: { type: 'string' },
@@ -210,9 +234,14 @@ export async function inboxMain(rawArgs = process.argv.slice(2)) {
           throw new CliError('--data must be valid JSON');
         }
       }
+      const leaseFile = `${configFile()}.leases.json`;
+      const leases = existsSync(leaseFile) ? JSON.parse(readFileSync(leaseFile, 'utf8')) : {};
+      const lease = leases[`${config().url}:${id}`] ?? {};
       const r = await call('/bot/reply', {
         method: 'POST',
-        body: JSON.stringify({ work_item_id: id, text, data, state: values.state ?? 'input-required' }),
+        body: JSON.stringify({ work_item_id: id, text, data, state: values.state ?? 'input-required',
+          lease_token: values['lease-token'] ?? lease.lease_token,
+          claim_generation: values['claim-generation'] ? Number(values['claim-generation']) : lease.claim_generation }),
       });
       if (json) return void console.log(JSON.stringify(r, null, 2));
       console.log(r.duplicate ? 'Already answered earlier; nothing sent.' : `Sent. Task ${r.task_id} is now ${r.state}.`);

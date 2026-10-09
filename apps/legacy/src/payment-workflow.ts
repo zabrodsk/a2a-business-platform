@@ -112,10 +112,17 @@ export class PaymentWorkflow {
     this.inFlight.set(intentId, work);
     return work;
   }
+  private acceptedForDispatch(intent:PaymentIntent):boolean {
+    // A restart may occur after native acceptance and before provider dispatch.
+    // Seller-only MIP jobs are not buyer-dispatch authorizations.
+    const tables=this.store.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('handoru_operations','human_checkout_authorizations')").all() as {name:string}[];
+    if(tables.some(t=>t.name==='handoru_operations')&&this.store.db.prepare("SELECT 1 FROM handoru_operations WHERE kind='orders.checkout' AND json_extract(result_json,'$.intent_id')=?").get(intent.intent_id))return true;
+    return tables.some(t=>t.name==='human_checkout_authorizations')&&Boolean(this.store.db.prepare('SELECT 1 FROM human_checkout_authorizations WHERE order_id=?').get(intent.order_id));
+  }
   start(intervalMs: number) {
     if (this.timer || intervalMs <= 0) return;
     this.timer = setInterval(() => {
-      for (const intent of this.store.listPaymentIntents()) if (!['created', 'failed', 'refunded', 'seller_paid'].includes(intent.state)) {
+      for (const intent of this.store.listPaymentIntents()) if (!['failed', 'refunded', 'seller_paid'].includes(intent.state) && (intent.state!=='created'||this.acceptedForDispatch(intent))) {
         void this.reconcile(intent.intent_id).catch(() => undefined);
       }
     }, intervalMs);

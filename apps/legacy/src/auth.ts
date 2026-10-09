@@ -30,10 +30,12 @@ export class LegacyAuth {
   constructor(readonly db: Database.Database, readonly options: AuthOptions) {
     this.now = options.now ?? (() => new Date());
     db.exec(`CREATE TABLE IF NOT EXISTS legacy_users(username TEXT PRIMARY KEY, password_hash TEXT NOT NULL, salt TEXT NOT NULL, actor_json TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS legacy_credential_rotations(username TEXT PRIMARY KEY,rotated_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS legacy_sessions(token_hash TEXT PRIMARY KEY, actor_json TEXT NOT NULL, csrf TEXT NOT NULL, expires_at TEXT NOT NULL);`);
     for (const user of options.users) {
       if (!user.password || user.password.length < 12) throw new Error(`Password required for ${user.username} (at least 12 characters)`);
       if (!['owner', 'staff', 'human_customer'].includes(user.actor.role)) throw new Error('Human users cannot have agent roles');
+      if(db.prepare('SELECT 1 FROM legacy_credential_rotations WHERE username=?').get(user.username))continue;
       const salt = randomBytes(16).toString('hex');
       db.prepare('INSERT INTO legacy_users VALUES(?,?,?,?) ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash,salt=excluded.salt,actor_json=excluded.actor_json')
         .run(user.username, scryptSync(user.password, salt, 64).toString('hex'), salt, JSON.stringify(user.actor));

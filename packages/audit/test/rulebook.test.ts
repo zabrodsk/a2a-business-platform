@@ -123,3 +123,31 @@ test('JSON evidence accepts pretty multiline facts while preserving key, exact v
     assert.throws(()=>t.manager.propose(bot,misleading),{code:'UNSUPPORTED_CITATION'});
   }finally{t.cleanup();}
 });
+
+
+test('additive scoping migration preserves legacy rulebook ID, exact payload and owner activation',()=>{
+  const t=setup(),legacy=new Database(':memory:');try {
+    const p=proposal(t.registry),payload=JSON.stringify(p);
+    const source_manifest=[...new Map([...p.profile.citations,...Object.values(p.evidence).flat(),...p.findings.flatMap(f=>f.citations)].map(c=>[c.source_id,{source_id:c.source_id,version:c.version,hash:c.hash}])).values()];
+    legacy.exec(`CREATE TABLE audit_rulebook_versions(version INTEGER PRIMARY KEY AUTOINCREMENT,status TEXT NOT NULL,proposed_by TEXT NOT NULL,created_at TEXT NOT NULL,activated_by TEXT,activated_at TEXT,payload_json TEXT NOT NULL,manifest_json TEXT NOT NULL);
+      CREATE UNIQUE INDEX audit_one_active_rulebook ON audit_rulebook_versions(status) WHERE status='active';
+      CREATE TABLE audit_source_snapshots(source_id TEXT PRIMARY KEY,source_json TEXT NOT NULL);`);
+    legacy.prepare('INSERT INTO audit_rulebook_versions VALUES(?,?,?,?,?,?,?,?)').run(42,'active',bot.id,'2026-01-01T00:00:00.000Z',owner.id,'2026-01-01T01:00:00.000Z',payload,JSON.stringify(source_manifest));
+    const upgraded=new RulebookManager(legacy,t.registry);
+    assert.equal(upgraded.getActive().version,42);assert.equal(upgraded.getActive().activated_by,owner.id);
+    assert.equal((legacy.prepare('SELECT payload_json FROM audit_rulebook_versions WHERE version=42').get() as {payload_json:string}).payload_json,payload);
+    assert.equal(upgraded.get(42).business_id,'pneu007');
+    upgraded.useBusiness('another-firm');assert.throws(()=>upgraded.get(42),{code:'RULEBOOK_NOT_FOUND'});assert.throws(()=>upgraded.getActive(),{code:'RULEBOOK_INACTIVE'});
+    upgraded.useBusiness('pneu007');assert.equal(upgraded.getActive().version,42);
+  }finally{legacy.close();t.cleanup();}
+});
+test('registered observation snapshots do not leak across dynamically selected business scopes',()=>{
+  const t=setup();try {
+    const a=t.registry.registerSnapshot('orders',{orders:['A']});
+    t.manager.useBusiness('firm-B');const b=t.registry.registerSnapshot('orders',{orders:['B']});
+    assert.throws(()=>t.registry.get(a.source_id),{code:'SOURCE_NOT_FOUND'});
+    assert.equal(t.registry.get(b.source_id).business_id,'firm-B');
+    t.manager.useBusiness('pneu007');assert.equal(t.registry.get(a.source_id).hash,a.hash);
+    assert.throws(()=>t.registry.get(b.source_id),{code:'SOURCE_NOT_FOUND'});
+  }finally{t.cleanup();}
+});

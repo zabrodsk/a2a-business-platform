@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { freshFixture,ready,onboard,probe,json,service,clock } from './handoru-fixture.js';
+
+test('human cutover preserves accepted case, quote, exception and mandate while fencing A after restart',async t=>{
+  const f=await freshFixture(t,{unified:true}),a=await ready(f),human=await f.login('customer-a');
+  const c=(await json(await f.customer('/api/agent/cases',{service_spec:service}),201)).case;
+  const offer=await json(await a.agent(`/api/agent/cases/${c.id}/quotes`,{slot_id:'slot-main',discount_bps:1000},{'idempotency-key':'handover-offer'}),201);
+  await json(await a.owner.call(`${a.path}/owner/approvals/${offer.approval.id}/decide`,{decision:'approved'}));
+  const mandate=(await json(await f.customer('/api/agent/mandates',{case_id:c.id,mode:'book',service_spec:service,max_total_minor:230000,max_deposit_minor:50000,payment_mode:'deposit',latest_service_end:'2026-10-20T22:00:00Z',expires_at:new Date(clock().getTime()+3600000).toISOString(),allow_extras:false,currency:'CZK',network:'local',asset:'lovelace',max_asset_quantity:'5000000',max_network_fee:'2000000',mapping_version:'demo-map-v1',seller_id:'pneu007-demo'}),201)).mandate;
+  await json(await human.call(`/api/admin/mandates/${mandate.id}/approve`,{}));
+  const accepted=await json(await f.customer(`/api/agent/cases/${c.id}/accept`,{quote_id:offer.quote.id,mandate_id:mandate.id}));
+  const before=JSON.stringify(f.system.store.db.prepare('SELECT payload_json FROM agent_cases WHERE id=?').get(c.id));
+  const b=await onboard(f,{owner:a.owner,runtime:'scripted-successor-B'});await probe(b,a.audit.proposal.payload_hash);
+  const context=await json(await b.agent(`${b.path}/context`));assert.equal(context.cases[0].quote_id,offer.quote.id);assert.equal(context.rulebooks[0].payload_hash,a.audit.proposal.payload_hash);
+  assert.equal((await b.agent(`/api/agent/orders/${accepted.order.id}/checkout`,{})).status,403,'Candidate cannot transact');
+  const handoff={source_connection_id:a.connectionId,target_connection_id:b.connectionId,expected_epoch:1,rulebook_hash:a.audit.proposal.payload_hash,external_access:[]};
+  const pending=await json(await a.owner.call(`${a.path}/owner/handoffs`,handoff),201);assert.equal(pending.state,'external_access_revocation_pending');
+  assert.equal((await a.owner.call(`${a.path}/owner/handoffs/${pending.id}/commit`,{})).status,409);
+  const stillLive=await a.legacyOwner.call('/api/admin/orders');assert.equal(stillLive.status,200,'Handle preparation has not silently revoked independent admin access');
+  const revoked=await json(await a.owner.call(`${a.path}/owner/legacy-access/revoke`,{username:'owner'}));
+  assert.equal((await a.legacyOwner.call('/api/admin/orders')).status,401,'Actual native rotation invalidates old admin cookie');
+  const reviewed={...handoff,external_access:[{system_id:'native_pneu',state:'verified_revoked',evidence:revoked.evidence},{system_id:'independent_legacy',state:'verified_revoked',evidence:'Synthetic browser-only fixture has no persistent credential. Owner reviewed the test-only external access inventory.'}]};
+  const prepared=await json(await a.owner.call(`${a.path}/owner/handoffs`,reviewed),201);assert.equal(prepared.state,'prepared');
+  const commit=await json(await a.owner.call(`${a.path}/owner/handoffs/${prepared.id}/commit`,{}));assert.equal(commit.execution_epoch,2);
+  assert.equal((await a.agent('/api/agent/cases')).status,401);
+  assert.equal((await a.agent(`/relay/${a.relay.id}/bot/inbox`)).status,401);
+  assert.equal((await a.agent(`${a.path}/connections/${a.connectionId}/credentials/rotate`,{})).status,401);
+  assert.equal(JSON.stringify(f.system.store.db.prepare('SELECT payload_json FROM agent_cases WHERE id=?').get(c.id)),before,'Cutover does not rewrite customer acceptance');
+  const purchased=await json(await b.agent(`/api/agent/orders/${accepted.order.id}/checkout`,{},{'idempotency-key':'same-native-purchase'}));
+  assert.equal(purchased.intent.authorization.mandate_id,mandate.id);assert.equal(purchased.intent.authorization.actor_id,accepted.case.accepted_by);assert.equal(purchased.quote.id,offer.quote.id);
+  assert.equal(purchased.quote.approved_by,a.owner.actor.id);assert.equal(purchased.booking.status,'confirmed');assert.equal(purchased.quote.price.total_minor,222480);assert.equal(purchased.order.balance_minor,172480);
+  await f.restart();
+  const repeated=await json(await b.agent(`/api/agent/orders/${accepted.order.id}/checkout`,{},{'idempotency-key':'same-native-purchase'}));
+  assert.equal(repeated.intent.intent_id,purchased.intent.intent_id);assert.equal(repeated.booking.id,purchased.booking.id);
+  assert.equal(f.system.store.listPaymentIntents().length,1);
+  assert.equal((await a.agent('/api/agent/cases')).status,401);
+  assert.equal((await a.owner.call(`${a.path}/owner/handoffs/${prepared.id}/commit`,{})).status,200,'Commit replay preserves result');
+});
+
+test('current service credential rotates once without resurrecting prior tokens or exposing them in context',async t=>{
+  const f=await freshFixture(t),a=await ready(f);
+  const path=`${a.path}/connections/${a.connectionId}/credentials/rotate`;
+  const [first,second]=await Promise.all([a.agent(path,{}),a.agent(path,{})]);
+  assert.deepEqual([first.status,second.status].sort(),[200,401]);
+  const success=first.status===200?first:second,issued=await success.json();
+  const replacement=f.client({authorization:`Bearer ${issued.access_token}`});
+  assert.equal((await a.agent('/api/agent/cases')).status,401);assert.equal((await replacement('/api/agent/cases')).status,200);
+  const context=await json(await replacement(`${a.path}/context`));assert.ok(!JSON.stringify(context).includes(issued.access_token));
+  await f.restart();assert.equal((await a.agent('/api/agent/cases')).status,401);assert.equal((await replacement('/api/agent/cases')).status,200);
+});

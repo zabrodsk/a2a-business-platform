@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
-import type { Config } from './config.js';
+import { identityAllowed } from './auth.js';
+import type { Config, Identity } from './config.js';
 import type { RelayDb } from './db.js';
 
 // Wakes the Business GrokBot. The body never carries customer text or secrets:
@@ -20,7 +21,14 @@ export class Doorbell {
   /** The webhook the Business bot registered itself (`inbox set-doorbell`) wins over env config. */
   webhook(): { url: string; key: string } | undefined {
     const stored = this.db.getSetting('business_webhook');
-    return stored ? JSON.parse(stored) : this.cfg.businessWebhook;
+    if (stored) {
+      const hook = JSON.parse(stored) as { url: string; key: string; identity?: Identity };
+      if (hook.identity && !identityAllowed(this.cfg, hook.identity, 'doorbell.write')) return undefined;
+      // Managed resources may never reuse a webhook lacking its authorizing connection.
+      if (this.cfg.businessId && !hook.identity) return undefined;
+      return hook;
+    }
+    return this.cfg.businessId ? undefined : this.cfg.businessWebhook;
   }
 
   /** Rings once right now and reports the HTTP status (used to verify a newly registered webhook). */
@@ -66,8 +74,8 @@ export class Doorbell {
         body: JSON.stringify({ event: 'work_pending', pending, reason }),
         signal: AbortSignal.timeout(15_000),
       });
-      const body = (await res.text()).slice(0, 300);
-      this.db.logEvent({ actor: 'relay', kind: 'doorbell_rung', detail: { reason, pending, status: res.status, body } });
+      await res.body?.cancel();
+      this.db.logEvent({ actor: 'relay', kind: 'doorbell_rung', detail: { reason, pending, status: res.status } });
       return { status: res.status };
     } catch (err) {
       this.db.logEvent({ actor: 'relay', kind: 'doorbell_failed', detail: { reason, pending, error: String(err) } });

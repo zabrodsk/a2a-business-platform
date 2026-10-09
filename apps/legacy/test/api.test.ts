@@ -11,10 +11,12 @@ import { SourceRegistry, type Citation, type RulebookProposal } from '../../../p
 import { LocalDemoProvider, paymentProviderStatus } from '../../../packages/payments/index.js';
 import { createLegacy, type LegacyOptions } from '../src/server.js';
 import { loadLegacyConfig } from '../src/config.js';
+import { ALL_SCOPES } from '../src/handoru/store.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const clock = () => new Date('2026-10-08T08:00:00.000Z');
 const password = 'test-human-password-0123456789';
+const ownerSetup = 'test-separate-handoru-owner-setup-0123456789';
 const tokens = { business: 'test-business-secret-012345678901', a: 'test-customer-a-secret-012345678901', b: 'test-customer-b-secret-012345678901' };
 const service: ServiceSpec = { service_id: 'tyre_change', vehicle_type: 'personal', wheel_size_inches: 18, rim_type: 'alu', runflat: false, tpms: false, wheel_count: 4 };
 type Client = (path: string, body?: unknown, headers?: Record<string, string>) => Promise<Response>;
@@ -34,6 +36,7 @@ async function fixture(t: TestContext, extraEnv: NodeJS.ProcessEnv = {}, options
     NODE_ENV: 'production', LEGACY_PORT: '0', LEGACY_PUBLIC_URL: 'http://localhost:8790',
     LEGACY_DB_PATH: join(dir, 'test.sqlite'), LEGACY_RECONCILIATION_MS: '0',
     LEGACY_OWNER_PASSWORD: password, LEGACY_STAFF_PASSWORD: password,
+    HANDORU_OWNER_SETUP_SECRET: ownerSetup,
     LEGACY_CUSTOMER_A_PASSWORD: password, LEGACY_CUSTOMER_B_PASSWORD: password,
     LEGACY_BUSINESS_AGENT_TOKEN: tokens.business, LEGACY_CUSTOMER_AGENT_A_TOKEN: tokens.a,
     LEGACY_CUSTOMER_AGENT_B_TOKEN: tokens.b, LEGACY_RELAY_ADMIN_TOKEN: 'test-relay-secret-012345678901',
@@ -92,10 +95,41 @@ function proposal(registry: SourceRegistry): RulebookProposal {
 async function activate(f: Awaited<ReturnType<typeof fixture>>) {
   const proposed = await f.business('/api/agent/rulebook/proposals', proposal(f.registry));
   assert.equal(proposed.status, 201, await proposed.clone().text());
-  const version = (await proposed.json()).rulebook.version as number;
-  const owner = await f.login('owner');
-  const response = await owner.call(`/api/admin/rulebooks/${version}/activate`, {});
+  const rulebook = (await proposed.json()).rulebook;
+  const version = rulebook.version as number;
+  const legacyOwner = await f.login('owner');
+  const signup = await f.publicCall('/api/handoru/v1/owner/signup', {
+    email: 'handoru-owner@example.test', password, setup_secret: ownerSetup,
+  });
+  assert.equal(signup.status, 201, await signup.clone().text());
+  const human = await signup.json();
+  const cookie = `${legacyOwner.cookie}; ${signup.headers.get('set-cookie')!.split(';')[0]!}`;
+  // Adopt the pre-upgrade compatibility installation in this trusted test fixture.
+  // The separate onboarding integration suite verifies website proof and human binding.
+  f.store.db.prepare('INSERT INTO handoru_memberships(owner_id,business_id) VALUES(?,?)').run(human.owner.id, 'pneu007');
+  const owner = { ...legacyOwner, cookie, handoruOwner: human.owner as { id: string; email: string }, call: ((path, body, headers = {}) => {
+    const handoruOperation = path.startsWith('/api/handoru/v1/') || /^\/api\/admin\/(rulebooks\/[^/]+\/activate|approvals\/[^/]+\/decide)$/.test(path);
+    return f.client({ cookie, 'x-csrf-token': handoruOperation ? human.csrf_token : legacyOwner.csrf })(path, body, headers);
+  }) as Client };
+  const response = await owner.call(`/api/admin/rulebooks/${version}/activate`, { payload_hash: rulebook.payload_hash });
   assert.equal(response.status, 200, await response.clone().text());
+  const hash = (await response.json()).rulebook.payload_hash as string;
+  const base = '/api/handoru/v1/businesses/pneu007';
+  const provisioned = await f.business(`${base}/relay`, {}, { 'idempotency-key': 'test-compatibility-relay' });
+  assert.equal(provisioned.status, 201, await provisioned.clone().text());
+  const probe = await f.business(`${base}/relay/probe`, {});
+  assert.equal(probe.status, 201, await probe.clone().text());
+  const inbox = await f.business(`${base}/relay/probe/inbox`);
+  assert.equal(inbox.status, 200, await inbox.clone().text());
+  const nonce = (await inbox.json()).items[0].nonce as string;
+  const answered = await f.business(`${base}/relay/probe/answer`, {
+    nonce, rulebook_hash: hash, method: 'polling', evidence: 'Scripted API test; does not prove a specific GrokBot runtime.',
+  });
+  assert.equal(answered.status, 200, await answered.clone().text());
+  const authorized = await owner.call(`${base}/owner/connections/compatibility-pneu007/authorize-operation`, {
+    expected_epoch: f.handoru.business('pneu007').execution_epoch, scopes: ALL_SCOPES,
+  });
+  assert.equal(authorized.status, 200, await authorized.clone().text());
   return owner;
 }
 
@@ -104,7 +138,7 @@ test('fresh business has no active rulebook and refuses autonomous availability'
   const state = await (await owner.call('/api/admin/rulebooks')).json();
   assert.deepEqual(state.rulebooks, []); assert.equal(state.active, null);
   const response = await f.business('/api/agent/availability');
-  assert.equal(response.status, 409); assert.equal((await response.json()).error.code, 'RULEBOOK_INACTIVE');
+  assert.equal(response.status, 403); assert.equal((await response.json()).error.code, 'FORBIDDEN');
 });
 
 test('public calculator returns the authoritative price', async t => {
@@ -172,8 +206,22 @@ test('agent credentials cannot impersonate human checkout, mandate approval or o
 
 test('staff cannot activate a rulebook or decide owner approvals', async t => {
   const f = await fixture(t), staff = await f.login('staff');
-  assert.equal((await staff.call('/api/admin/rulebooks/1/activate', {})).status, 403);
-  assert.equal((await staff.call('/api/admin/approvals/unknown/decide', { decision: 'approved' })).status, 403);
+  for (const path of ['/api/admin/rulebooks/1/activate', '/api/admin/approvals/unknown/decide']) {
+    const response = await staff.call(path, { decision: 'approved' });
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).error.code, 'HUMAN_REQUIRED');
+  }
+});
+
+test('legacy owner admin credentials cannot activate rules or decide Handle owner exceptions', async t => {
+  const f = await fixture(t), legacyOwner = await f.login('owner');
+  for (const path of ['/api/admin/rulebooks/1/activate', '/api/admin/approvals/unknown/decide']) {
+    const response = await legacyOwner.call(path, { decision: 'approved' });
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).error.code, 'HUMAN_REQUIRED');
+  }
+  assert.equal((f.handoru.db.prepare('SELECT count(*) AS n FROM handoru_owners').get() as { n: number }).n, 0);
+  assert.deepEqual(f.rulebooks.list(), []);
 });
 
 test('unsupported structured inputs fail as client errors without server exceptions', async t => {
@@ -248,7 +296,10 @@ test('agent purchase requires human mandate and owner discount approval and exec
   const input = { quote_id: quote.id, mandate_id: mandateId };
   const rejected = await f.agentA(`/api/agent/cases/${caseId}/accept`, input);
   assert.equal(rejected.status, 403); assert.equal((await rejected.json()).error.code, 'OWNER_APPROVAL_REQUIRED');
-  assert.equal((await owner.call(`/api/admin/approvals/${approval.id}/decide`, { decision: 'approved' })).status, 200);
+  const ownerDecision = await owner.call(`/api/admin/approvals/${approval.id}/decide`, { decision: 'approved' });
+  assert.equal(ownerDecision.status, 200, await ownerDecision.clone().text());
+  assert.equal((await ownerDecision.json()).approval.decided_by, owner.handoruOwner.id);
+  assert.equal(f.store.getQuote(quote.id).approved_by, owner.handoruOwner.id);
   const accepted = await f.agentA(`/api/agent/cases/${caseId}/accept`, input);
   assert.equal(accepted.status, 200, await accepted.clone().text());
   const orderId = (await accepted.json()).order.id as string;

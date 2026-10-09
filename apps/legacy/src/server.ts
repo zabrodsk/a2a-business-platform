@@ -1,7 +1,7 @@
 import { createHostedDiscovery } from '../../../packages/agent-client/src/hosted-discovery.js';
 import type { DocumentFetcher } from '../../../packages/agent-client/src/website-discovery.js';
 import express, { type Request, type Response, type NextFunction } from 'express';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +11,12 @@ import { SourceRegistry, RulebookManager } from '../../../packages/audit/index.j
 import { createPaymentProvider, paymentProviderStatus, selectPaymentSku, DEMO_SELLER } from '../../../packages/payments/index.js';
 import { LegacyAuth } from './auth.js';
 import { AgentAuth } from './agent-auth.js';
+import { HandoruStore } from './handoru/store.js';
+import { importCompatibility } from './handoru/onboarding.js';
+import { handoruRoutes } from './handoru/routes.js';
+import { assertCapabilities } from './handoru/capabilities.js';
+import { handoruManifest } from './handoru/manifest.js';
+import { pneuMcp } from './mcp.js';
 import { AgentPolicy } from './agent-policy.js';
 import { PaymentWorkflow } from './payment-workflow.js';
 import { StripeCheckoutWorkflow } from './stripe-checkout.js';
@@ -53,11 +59,24 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   const now = options.now ?? (() => new Date());
   const store = new LegacyStore(cfg.dbPath, { now });
   const agentAuth = new AgentAuth(store.db, { publicUrl: cfg.publicUrl, now });
-  const auth = new LegacyAuth(store.db, { ...cfg.auth, now, lookupAgentToken: token => agentAuth.identify(token) });
+  const handoru = new HandoruStore(store.db,cfg.publicUrl,now);
+  importCompatibility(handoru,cfg.auth.agentTokens,cfg.env.HANDORU_FRESH==='true');
+  const auth = new LegacyAuth(store.db, { ...cfg.auth, now, agentTokens:new Map([...cfg.auth.agentTokens].filter(([,a])=>a.role!=='business_agent')), lookupAgentToken: token => handoru.identify(token) ?? agentAuth.identify(token) });
   const registry = options.registry ?? new SourceRegistry(repoRoot);
   const rulebooks = new RulebookManager(store.db, registry);
   const businessIdentity = [...cfg.auth.agentTokens.values()].find(value => value.role === 'business_agent');
-  const policy = new AgentPolicy(store, rulebooks, { now, businessActorId: businessIdentity?.id ?? 'garage-demo' });
+  const policy = new AgentPolicy(store, rulebooks, { now, businessActorId: businessIdentity?.id ?? 'garage-demo', businessId:()=>handoru.installation()?.id??'pneu007', authorizeBusiness: a=>handoru.authorize(a,handoru.installation()?.id??'pneu007','inbox.claim',true),onEvent:(entity,entityId,kind,a,data)=>{const b=handoru.installation();if(b)handoru.event(b.id,`native.${entity}.${kind}`,a.id,{entity_id:entityId,detail:data});} });
+  handoru.validateActive=(a,b,c,scope)=>{
+    const active=new RulebookManager(store.db,new SourceRegistry(registry.rootDir,registry.webSources,registry.includeFixtures),{businessId:b.id,genericEvidence:b.id!=='pneu007'}).getActive();
+    assertCapabilities(active.governance?.required_capabilities??[],Boolean(store.db.prepare('SELECT 1 FROM handoru_meta WHERE key=?').get(`mcp_verified:${c.id}`)));
+    if(c.id!=='compatibility-pneu007'&&JSON.parse(c.ready_json??'{}').rulebook_hash!==active.payload_hash)fail('CAPABILITY_PROBE_REQUIRED','Acknowledge the exact active rulebook before operating.',409);
+    if(scope==='orders.checkout'&&active.params.deposit_minor!==BOOKING_CONFIG.deposit_minor)fail('UNSUPPORTED_NATIVE_POLICY','Approved deposit differs from native checkout configuration; human reconciliation required.',409);
+  };
+  const handoruApi=handoruRoutes(handoru,rulebooks,policy,cfg.env);
+  const currentBusinessIdentity = ():Actor|undefined => {
+    const b=handoru.installation();if(!b?.active_connection_id)return;
+    const c=handoru.connection(b.active_connection_id);return {id:c.principal_id,role:'business_agent',business_id:b.id,connection_id:c.id,execution_epoch:b.execution_epoch,scopes:JSON.parse(c.scopes_json)};
+  };
   const provider = options.paymentProvider ?? createPaymentProvider(cfg.env, { now });
   const processor = new PaymentWorkflow(store, provider);
   const stripe = new StripeCheckoutWorkflow(store, { env: cfg.env, publicUrl: cfg.publicUrl, fetch: options.stripeFetch, now });
@@ -95,7 +114,36 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     await stripe.webhook(req.body, req.get('stripe-signature'));
     res.json({ received: true });
   });
-  app.use('/api', express.json({ limit: '512kb' }), auth.middleware, auth.protect);
+  app.use('/api', express.json({ limit: '3mb' }), auth.middleware, (req,res,next)=>{if(/^\/(?:handle|handoru)\/v1(?:\/|$)/.test(req.path)||/^\/admin\/(rulebooks\/[^/]+\/activate|approvals\/[^/]+\/decide)$/.test(req.path))return next();auth.protect(req,res,next);});
+  app.use('/api', (_req,_res,next)=>{const b=handoru.installation();if(b)rulebooks.useBusiness(b.id,{genericEvidence:b.id!=='pneu007'});next();});
+  app.use(['/api/handle/v1','/api/handoru/v1'],handoruApi.router);
+  app.use('/mcp',pneuMcp(auth,handoru));
+  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl)));
+  app.get(['/handle/onboarding','/handoru/onboarding'],(_req,res)=>res.sendFile(join(repoRoot,'docs/handoru-onboarding.html')));
+  app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
+  app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});
+  app.post(['/api/admin/handle-ownership-proof','/api/admin/handoru-ownership-proof'],auth.require('owner'),(req,res)=>{const challenge=req.body?.challenge;if(typeof challenge!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(challenge))fail('INVALID_CHALLENGE','Use the challenge from your registration.');store.db.prepare("INSERT INTO handoru_meta VALUES('ownership_proof',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify({challenge}));res.json({ok:true,path:'/.well-known/handle-ownership.json'});});
+  app.use(['/api/audit','/api/suppliers'],(req,_res,next)=>{try{if(req.legacyActor?.role==='business_agent')handoru.authorize(req.legacyActor,handoru.installation()?.id??'pneu007','audit.read');next();}catch(error){next(error);}});
+  app.use('/api/agent',(req,_res,next)=>{
+    try{const a=req.legacyActor;if(a?.role==='business_agent'){
+      const scope=req.path.includes('rulebook/proposals')?'audit.propose':req.path.includes('/site/')?'website.agent-card.publish':req.path.includes('registry-proof')?'registry.publish':req.path.endsWith('/checkout')?'orders.checkout':req.path.endsWith('/quotes')?'cases.quote':req.path.includes('rulebook')||req.path==='/skill'?'audit.read':'inbox.claim';
+      const c=handoru.authorize(a,handoru.installation()?.id??'pneu007',scope,!['audit.read','audit.propose'].includes(scope));
+      if(!['audit.read','audit.propose'].includes(scope)&&c.id!=='compatibility-pneu007'&&JSON.parse(c.ready_json??'{}').rulebook_hash!==rulebooks.getActive().payload_hash)fail('CAPABILITY_PROBE_REQUIRED','Connection must acknowledge the active rulebook.',409);
+    }next();}catch(error){next(error);}
+  });
+  app.use(['/api/admin/rulebooks/:version/activate','/api/admin/approvals/:id/decide'],handoruApi.human,(req,_res,next)=>{const b=handoru.installation();if(!b)return next(new BusinessError('BUSINESS_REQUIRED','Complete onboarding first.',409));handoru.bindNativeOwner(req.handoruHuman!.owner,b.id);req.legacyActor={id:req.handoruHuman!.owner.id,role:'owner'};next();});
+  app.post('/api/agent/site/agent-card',auth.require('business_agent'),(req,res)=>{
+    const a=actor(req),publicationId=req.body?.publication_id;
+    if(typeof publicationId!=='string'||!publicationId||publicationId.length>200)fail('INVALID_PUBLICATION_ID','Supply the prepared publication ID.');
+    const result=handoru.operation(a,req.header('idempotency-key')??'','website.publish',{publication_id:publicationId},'website.agent-card.publish',()=>{
+      rulebooks.getActive();
+      const p=store.db.prepare('SELECT id,descriptor_json,rulebook_hash FROM handoru_publications WHERE id=? AND business_id=?').get(publicationId,a.business_id!) as {id:string;descriptor_json:string;rulebook_hash:string}|undefined;
+      if(!p)fail('PUBLICATION_NOT_FOUND','Create a scoped publication first.',404);
+      if(p.rulebook_hash!==rulebooks.getActive().payload_hash)fail('PUBLICATION_STALE','Create a new publication for the active reviewed rulebook.',409);
+      store.db.prepare("INSERT INTO handoru_meta VALUES('site_agent_card',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify({business_id:a.business_id,publication_id:p.id,rulebook_hash:p.rulebook_hash,descriptor:JSON.parse(p.descriptor_json)}));
+      store.db.prepare("UPDATE handoru_publications SET state='written' WHERE id=?").run(p.id);return {id:p.id,state:'written',card_url:'/.well-known/agent-card.json',visible_link:true};
+    });res.json(result);
+  });
   app.use('/masumi', express.json({ limit: '64kb' }), auth.middleware, auth.protect);
   app.use(agentAuth.router(auth));
   const human = auth.require('human_customer');
@@ -105,36 +153,11 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   const agents = auth.require('business_agent', 'customer_agent');
   const business = auth.require('business_agent');
 
-  app.post('/api/admin/agent-enrollments', owner, (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    if (!req.legacySession) fail('FORBIDDEN', 'A human owner session is required.', 403);
-    if (!businessIdentity) fail('BUSINESS_AGENT_UNAVAILABLE', 'No business agent credential is configured.', 503);
-    const body: unknown = req.body;
-    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.getPrototypeOf(body) !== Object.prototype
-      || Object.keys(body).some(key => key !== 'ttl_minutes')) fail('INVALID_ENROLLMENT', 'Supply only optional ttl_minutes.');
-    const ttl = (body as Record<string, unknown>).ttl_minutes ?? 5;
-    if (!Number.isSafeInteger(ttl) || Number(ttl) < 1 || Number(ttl) > 15) fail('INVALID_ENROLLMENT', 'ttl_minutes must be an integer from 1 to 15.');
-    const code = randomBytes(32).toString('base64url');
-    const expires_at = new Date(now().getTime() + Number(ttl) * 60_000).toISOString();
-    store.db.prepare('DELETE FROM business_agent_enrollments WHERE expires_at<=?').run(now().toISOString());
-    store.db.prepare('INSERT INTO business_agent_enrollments VALUES(?,?,?)').run(createHash('sha256').update(code).digest('hex'), expires_at, actor(req).id);
-    event('business_agent', businessIdentity.id, 'enrollment_created', actor(req).id, { expires_at });
-    res.status(201).json({ redeem_url: `${cfg.publicUrl}/agent-enrollments/${code}`, expires_at });
-  });
+  app.post('/api/admin/agent-enrollments',(_req,res)=>res.set('Cache-Control','no-store').status(410).json({error:'ENROLLMENT_REPLACED',bootstrap:'/.well-known/handle.json'}));
   app.get('/agent-enrollments/:code', (_req, res) => {
     res.set('Cache-Control', 'no-store').set('Allow', 'POST').status(405).json({ error: 'Use the business CLI to redeem this link.' });
   });
-  app.post('/agent-enrollments/:code', (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    const code = param(req, 'code');
-    const credential = [...cfg.auth.agentTokens.entries()].find(([, identity]) => identity.role === 'business_agent' && identity.id === businessIdentity?.id);
-    if (!credential || code.length !== 43 || /[^A-Za-z0-9_-]/.test(code)) fail('ENROLLMENT_UNAVAILABLE', 'Enrollment is unknown, expired or already used.', 404);
-    const redeemed = store.db.prepare('DELETE FROM business_agent_enrollments WHERE code_hash=? AND expires_at>? RETURNING code_hash')
-      .get(createHash('sha256').update(code).digest('hex'), now().toISOString());
-    if (!redeemed) fail('ENROLLMENT_UNAVAILABLE', 'Enrollment is unknown, expired or already used.', 404);
-    event('business_agent', businessIdentity!.id, 'enrollment_redeemed', businessIdentity!.id, {});
-    res.json({ role: 'business_agent', url: cfg.publicUrl, token: credential[0] });
-  });
+  app.post('/agent-enrollments/:code', (_req,res)=>res.set('Cache-Control','no-store').status(410).json({error:'ENROLLMENT_REPLACED',bootstrap:'/.well-known/handle.json'}));
 
   function event(entity: string, id: string, kind: string, by: string, detail: unknown) {
     store.db.prepare('INSERT INTO audit_events(entity_type,entity_id,event_type,actor_id,data_json,created_at) VALUES(?,?,?,?,?,?)')
@@ -338,6 +361,10 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   }) }));
   app.post('/api/admin/reset', owner, (_req, res) => {
     store.resetLocal(() => {
+      for(const table of ['handoru_operations','handoru_reply_outbox','handoru_publications','handoru_handoffs'])store.db.prepare(`DELETE FROM ${table}`).run();
+      store.db.prepare('UPDATE handoru_connections SET ready_json=NULL').run();
+      store.db.prepare('UPDATE handoru_relays SET probe_passed=0,probe_nonce=NULL,probe_connection=NULL,probe_at=NULL').run();
+      store.db.prepare("DELETE FROM handoru_meta WHERE key='site_agent_card' OR key LIKE 'probe:%'").run();
       for (const table of ['agent_auth_access_tokens', 'agent_auth_claim_attempts', 'agent_auth_registrations', 'agent_auth_assertion_uses', 'masumi_jobs', 'agent_approvals', 'agent_mandates', 'agent_cases', 'human_checkout_authorizations', 'order_contact_snapshots', 'legacy_receipts', 'payment_workflow_errors', 'audit_rulebook_versions', 'audit_source_snapshots']) {
         if (store.db.prepare('SELECT name FROM sqlite_master WHERE type=? AND name=?').get('table', table)) store.db.prepare(`DELETE FROM ${table}`).run();
       }
@@ -359,7 +386,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/api/suppliers/:id/catalog', auditReaders, (req, res) => res.json({ supplier_id: param(req, 'id'), items: store.inventory(param(req, 'id')), simulation: true }));
   app.get('/api/suppliers/:id/availability', auditReaders, (req, res) => res.json({ supplier_id: param(req, 'id'), inventory: store.inventory(param(req, 'id')), simulation: true }));
   app.post('/api/agent/rulebook/proposals', business, (req, res) => {
-    const proposal = rulebooks.propose(actor(req), req.body);
+    const proposal = actor(req).business_id!=='pneu007'?handoruApi.audits(actor(req).business_id!).proposeRulebook(actor(req),req.body):rulebooks.propose(actor(req), req.body);
     event('rulebook', String(proposal.version), 'agent_proposed', actor(req).id, { version: proposal.version, status: proposal.status });
     res.status(201).json({ rulebook: proposal });
   });
@@ -374,7 +401,8 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     if (store.listPaymentIntents().some(value => value.authorization.kind === 'agent_mandate' && !['failed', 'refunded', 'seller_paid'].includes(value.state))) {
       fail('AGENT_PAYMENT_PENDING', 'Pravidla nelze změnit během nedokončeného agentického nákupu.', 409);
     }
-    const active = rulebooks.activate(actor(req), integer(Number(param(req, 'version')), 'Verze'));
+    if(typeof req.body?.payload_hash!=='string'||req.body.payload_hash.length!==64)fail('RULEBOOK_HASH_REQUIRED','Approve the exact reviewed payload hash.',409);
+    const active = rulebooks.activate(actor(req), integer(Number(param(req, 'version')), 'Verze'),req.body?.payload_hash);
     event('rulebook', String(active.version), 'human_activated', actor(req).id, { version: active.version });
     res.json({ rulebook: active });
   });
@@ -387,7 +415,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/api/agent/tools', business, (_req, res) => res.json({ tools: GARAGE_TOOLS }));
   app.post('/api/agent/registry-proof', business, (req, res) => {
     const principal = actor(req);
-    if (principal.id !== businessIdentity?.id) fail('FORBIDDEN', 'Only this website\'s configured business agent can publish registry proof.', 403);
+    if (!principal.connection_id && principal.id !== businessIdentity?.id) fail('FORBIDDEN', 'Only this website\'s configured business agent can publish registry proof.', 403);
     const body: unknown = req.body;
     if (!body || typeof body !== 'object' || Array.isArray(body) || Object.getPrototypeOf(body) !== Object.prototype
       || Object.keys(body).length !== 2 || !Object.hasOwn(body, 'business_id') || !Object.hasOwn(body, 'challenge')) {
@@ -434,20 +462,22 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     }
     res.status(201).json({ case: policy.createCase(actor(req), req.body) });
   });
-  app.get('/api/agent/cases/:id', agents, (req, res) => res.json({ case: policy.getCase(actor(req), param(req, 'id')) }));
+  app.get('/api/agent/cases/:id', agents, (req, res) => {const c=policy.getCase(actor(req),param(req,'id'));const approval=store.db.prepare('SELECT payload_json FROM agent_approvals WHERE case_id=? AND quote_id=?').get(c.id,c.quote_id??'') as {payload_json:string}|undefined;res.json({case:c,quote:c.quote_id?store.getQuote(c.quote_id):null,approval:approval?JSON.parse(approval.payload_json):null});});
   app.post('/api/agent/mandates', auth.require('customer_agent'), (req, res) => res.status(201).json({ mandate: policy.proposeMandate(actor(req), req.body) }));
   app.get('/api/agent/mandates/:id', auth.require('customer_agent'), (req, res) => res.json({ mandate: policy.getMandate(actor(req), param(req, 'id')) }));
   app.get('/api/agent/availability', business, (req, res) => {
     rulebooks.getActive();
     res.json({ slots: store.availability({ service_id: query(req, 'service_id'), from: query(req, 'from'), to: query(req, 'to') }), timezone: 'Europe/Prague' });
   });
-  app.post('/api/agent/cases/:id/quotes', business, (req, res) => res.status(201).json(policy.quote(actor(req), param(req, 'id'), req.body)));
+  app.post('/api/agent/cases/:id/quotes', business, (req, res) => {const a=actor(req),caseId=param(req,'id');const result=a.connection_id&&a.connection_id!=='compatibility-pneu007'?handoru.operation(a,req.header('idempotency-key')??'','quote.create',{case_id:caseId,...req.body},'cases.quote',()=>policy.quote(a,caseId,req.body)):policy.quote(a,caseId,req.body);res.status(201).json(result);});
   app.post('/api/agent/cases/:id/accept', auth.require('customer_agent'), (req, res) => res.json(policy.accept(actor(req), param(req, 'id'), req.body)));
   app.get('/api/agent/orders/:id', agents, (req, res) => res.json(orderView(ownOrder(req, param(req, 'id')))));
   app.post('/api/agent/orders/:id/checkout', business, async (req, res) => {
     const order = ownOrder(req, param(req, 'id'));
-    const intent = prepareAgentCheckout(actor(req), order);
+    const a=actor(req);
+    const intent = a.connection_id?handoru.operation(a,req.header('idempotency-key')??`checkout:${order.id}`,'orders.checkout',{order_id:order.id},'orders.checkout',()=>prepareAgentCheckout(a,order)):prepareAgentCheckout(a,order);
     await processor.reconcile(intent.intent_id);
+    if(a.connection_id){if(!auth.identify(req))fail('UNAUTHENTICATED','Credential was revoked during the accepted operation.',401);handoru.authorize(a,a.business_id!,'orders.checkout',true);}
     res.json({ ...orderView(store.getOrder(order.id)), intent: store.getPaymentIntent(intent.intent_id) });
   });
   app.get('/masumi/availability', (_req, res) => {
@@ -462,14 +492,14 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     { id: 'order_id', type: 'string', name: 'Previously accepted order, already within a human-approved customer mandate' },
   ], identifier_constraint: 'This payment-service version accepts even-length lowercase hexadecimal purchaser identifiers of 14–26 characters.' }));
   app.post('/masumi/start_job', auth.require('customer_agent'), async (req, res) => {
-    if (provider.name !== 'masumi' || !provider.prepareJob || !businessIdentity) fail('MASUMI_JOB_UNAVAILABLE', 'Skutečný Masumi seller job provider není připojen.', 503);
+    if (provider.name !== 'masumi' || !provider.prepareJob || !currentBusinessIdentity()) fail('MASUMI_JOB_UNAVAILABLE', 'Skutečný Masumi seller job provider není připojen.', 503);
     const input = req.body?.input_data, identifier = req.body?.identifier_from_purchaser;
     if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length !== 1 || typeof input.order_id !== 'string'
       || typeof identifier !== 'string' || !/^(?:[a-f0-9]{2}){7,13}$/.test(identifier)) fail('INVALID_JOB_INPUT', 'Job vyžaduje přijatou order_id a platný purchaser identifier.');
     const order = ownOrder(req, input.order_id);
     // The schema permits exactly one string field, so this is its RFC 8785 representation.
     const canonical = JSON.stringify({ order_id: input.order_id });
-    const intent = prepareAgentCheckout(businessIdentity, order, { purchaser_identifier: identifier, input_hash: createHash('sha256').update(`${identifier};${canonical}`).digest('hex') });
+    const intent = prepareAgentCheckout(currentBusinessIdentity()??fail('BUSINESS_AGENT_UNAVAILABLE','No active connection.',409), order, { purchaser_identifier: identifier, input_hash: createHash('sha256').update(`${identifier};${canonical}`).digest('hex') });
     const oldJob = store.db.prepare('SELECT job_json FROM masumi_jobs WHERE id=?').get(intent.intent_id) as { job_json: string } | undefined;
     if (oldJob) return void res.json(JSON.parse(oldJob.job_json));
     // Fence before preparing the external seller request. Polling then only observes; it never charges the buyer.
@@ -527,10 +557,15 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.json(proof);
   });
   app.get('/.well-known/agent-card.json', (_req, res) => {
+    const b=handoru.installation();if(b)rulebooks.useBusiness(b.id,{genericEvidence:b.id!=='pneu007'});
+    const published=store.db.prepare("SELECT value FROM handoru_meta WHERE key='site_agent_card'").get() as {value:string}|undefined;
+    if(b&&(!b.active_connection_id||(!published&&b.id!=='pneu007')))return void res.set('Cache-Control','no-store').status(503).json({error:'AGENT_NOT_PUBLISHED'});
+    if(published){try{rulebooks.getActive();}catch{return void res.status(503).json({error:'AGENT_INACTIVE'});}const site=JSON.parse(published.value);if(site.rulebook_hash!==rulebooks.getActive().payload_hash)return void res.status(503).json({error:'PUBLICATION_STALE'});const card=site.descriptor;const etag='"'+createHash('sha256').update(JSON.stringify(card)).digest('hex')+'"';return void res.set('Cache-Control','no-cache, max-age=0, must-revalidate').set('ETag',etag).json(card);}
     try { rulebooks.getActive(); } catch (error) { if (!(error instanceof BusinessError)) throw error; return void res.status(503).json({ error: 'AGENT_INACTIVE', message: 'Majitel zatím neaktivoval aktuální auditovaný rulebook.' }); }
     if (!options.agentCard) return void res.status(503).json({ error: 'A2A_NOT_CONFIGURED', message: 'Spusťte sjednocený server pro A2A komunikaci.' });
     res.set('Cache-Control', 'no-store').json(options.agentCard());
   });
+  app.get(['/cli/handle.mjs','/cli/handoru.mjs'],(_req,res)=>res.type('text/javascript').sendFile(join(repoRoot,'packages/agent-client/dist/handle.mjs')));
   app.get('/cli/garage.mjs', (_req, res) => {
     const path = join(repoRoot, 'packages/agent-client/dist/garage.mjs');
     if (!existsSync(path)) return void res.status(404).json({ error: 'CLI_NOT_BUILT' });
@@ -559,16 +594,20 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.status(syntax ? 400 : 500).json({ error: { code: syntax ? 'INVALID_JSON' : 'INTERNAL_ERROR', message: syntax ? 'Neplatný JSON požadavku.' : 'Operaci se nepodařilo dokončit.' } });
   });
   const pages: Record<string, string> = { '/': 'index.html', '/kalkulator': 'kalkulator.html', '/kontakt': 'kontakt.html', '/podminky': 'podminky.html',
-    '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'console.html', '/handle': 'console.html', '/handoru': 'console.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
+    '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'console.html', '/handle': 'handoru.html', '/handoru': 'handoru.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
+  for (const extension of ['css','js']) app.get(`/handle.${extension}`,(_req,res)=>res.sendFile(join(publicDirectory,`handoru.${extension}`)));
   for (const [route, file] of Object.entries(pages)) app.get(route, (_req, res) => {
     if (route.startsWith('/agent/')) res.set('Cache-Control', 'no-store').set('Referrer-Policy', 'no-referrer');
+    if(route==='/'&&handoru.installation()?.active_connection_id&&store.db.prepare("SELECT 1 FROM handoru_meta WHERE key='site_agent_card'").get()) {
+      try{const pub=JSON.parse((store.db.prepare("SELECT value FROM handoru_meta WHERE key='site_agent_card'").get() as {value:string}).value);if(pub.rulebook_hash!==rulebooks.getActive().payload_hash)throw Error('stale');return void res.type('html').send(readFileSync(join(publicDirectory,file),'utf8').replace('</footer>','<a class="handoru-agent-card-link" href="/.well-known/agent-card.json">Pro agenty · Agent Card</a></footer>'));}catch{}
+    }
     res.sendFile(join(publicDirectory, file));
   });
   app.get('/objednavka/:id', (_req, res) => res.sendFile(join(publicDirectory, 'objednavka.html')));
   app.use(express.static(publicDirectory, { index: false, dotfiles: 'deny' }));
   processor.start(cfg.reconciliationMs);
   stripe.startBackground(cfg.reconciliationMs);
-  return { app, store, policy, rulebooks, registry, processor, stripe, auth, agentAuth,
+  return { app, store, policy, rulebooks, registry, processor, stripe, auth, agentAuth, handoru,
     close: async () => { await processor.close(); await stripe.close(); store.close(); } };
 }
 

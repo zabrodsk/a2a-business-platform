@@ -10,6 +10,7 @@ import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { AgentCard, Role, TaskState } from '@a2a-js/sdk';
 import { ClientFactory, ClientFactoryOptions, JsonRpcTransportFactory } from '@a2a-js/sdk/client';
+import { ALL_SCOPES } from '../src/handoru/store.js';
 import type { Actor } from '../../../packages/contracts/index.js';
 import type { Citation, RulebookProposal, SourceRegistry } from '../../../packages/audit/index.js';
 import { loadLegacyConfig } from '../src/config.js';
@@ -67,7 +68,7 @@ test('unified configuration keeps exactly the same actor identities and separate
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('fresh persistent unified system serves design, gates discovery, and exchanges genuine SDK A2A tasks', async () => {
+test('compatibility transport preserves SDK tasks while adopting scoped identities and fenced replies', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'pneu-system-'));
   // Reserve a port so the Agent Card has the real origin before system construction.
   const probe = createServer();
@@ -88,7 +89,7 @@ test('fresh persistent unified system serves design, gates discovery, and exchan
     for (const path of ['/handle', '/handoru']) {
       const console = await fetch(`${base}${path}`);
       assert.equal(console.status, 200, path);
-      assert.match(await console.text(), /href="\/handle">Handle<\/a>/);
+      assert.match(await console.text(), /href="\/handle">HANDLE<span>/);
     }
     const unpublished = await fetch(`${base}/.well-known/agent-card.json`);
     assert.notEqual(unpublished.status, 200);
@@ -101,6 +102,9 @@ test('fresh persistent unified system serves design, gates discovery, and exchan
     const business: Actor = { id: 'garage-demo', role: 'business_agent' };
     const proposed = rules.propose(business, fixtureProposal(rules.sources));
     rules.activate({ id: 'staff-owner', role: 'owner' }, proposed.version);
+    // Explicit trusted fixture setup; fresh human consent is covered in handoru-system.test.ts.
+    system.handoru.db.prepare("UPDATE handoru_connections SET state='active',scopes_json=? WHERE id='compatibility-pneu007'").run(JSON.stringify(ALL_SCOPES));
+    system.handoru.db.prepare("UPDATE handoru_businesses SET active_connection_id='compatibility-pneu007',execution_epoch=1 WHERE id='pneu007'").run();
     const response = await fetch(`${base}/.well-known/agent-card.json`);
     assert.equal(response.status, 200);
     const cardJson = await response.json();
@@ -154,7 +158,7 @@ test('fresh persistent unified system serves design, gates discovery, and exchan
     }
     assert.equal((await fetch(`${base}/api/agent/cases/${caseRecord.id}`, { headers: bearer(tokens.business) })).status, 200);
     assert.equal((await fetch(`${base}/api/agent/cases/${caseRecord.id}`, { headers: bearer(tokens.b) })).status, 403);
-    let items: Array<{ work_item_id: string; customer: string; task_id: string }> = [];
+    let items: Array<{ work_item_id: string; customer: string; task_id: string;lease_token:string;claim_generation:number }> = [];
     for (let attempt = 0; attempt < 30 && !items.length; attempt++) {
       const inbox = await fetch(`${base}/bot/inbox`, { headers: bearer(tokens.business) });
       assert.equal(inbox.status, 200);
@@ -166,7 +170,7 @@ test('fresh persistent unified system serves design, gates discovery, and exchan
     assert.equal(items[0]!.task_id, taskId);
     const reply = await fetch(`${base}/bot/reply`, {
       method: 'POST', headers: { ...bearer(tokens.business), 'content-type': 'application/json' },
-      body: JSON.stringify({ work_item_id: items[0]!.work_item_id, text: 'Synthetic transport fixture reply only.', state: 'completed' }),
+      body: JSON.stringify({ work_item_id: items[0]!.work_item_id,lease_token:items[0]!.lease_token,claim_generation:items[0]!.claim_generation, text: 'Synthetic transport fixture reply only.', state: 'completed' }),
     });
     assert.equal(reply.status, 200);
     let task = await client.getTask({ id: taskId, tenant: '', historyLength: undefined });
@@ -263,6 +267,8 @@ test('auth.md credentials bind A2A and tools to the confirming customer and revo
     const rules = system.policy.rulebooks;
     const proposed = rules.propose({id:'garage-demo',role:'business_agent'}, fixtureProposal(rules.sources));
     rules.activate({id:'staff-owner',role:'owner'}, proposed.version);
+    system.handoru.db.prepare("UPDATE handoru_connections SET state='active',scopes_json=? WHERE id='compatibility-pneu007'").run(JSON.stringify(ALL_SCOPES));
+    system.handoru.db.prepare("UPDATE handoru_businesses SET active_connection_id='compatibility-pneu007',execution_epoch=1 WHERE id='pneu007'").run();
     const card = AgentCard.fromJSON(await (await fetch(`${base}/.well-known/agent-card.json`)).json());
     const authenticatedFetch: typeof fetch = (input, init) => {
       const headers = new Headers(init?.headers); headers.set('authorization', `Bearer ${credential.access_token}`);
@@ -277,7 +283,7 @@ test('auth.md credentials bind A2A and tools to the confirming customer and revo
       taskId:'',contextId:'',extensions:[],metadata:{customer_id:'customer-002'},referenceTaskIds:[]},
       configuration:{acceptedOutputModes:['text/plain'],returnImmediately:true,historyLength:undefined,taskPushNotificationConfig:undefined}});
     assert.ok('id' in sent);
-    let items: Array<{work_item_id:string;task_id:string;customer_identity:unknown}> = [];
+    let items: Array<{work_item_id:string;task_id:string;customer_identity:unknown;lease_token:string;claim_generation:number}> = [];
     for (let attempt = 0; attempt < 30 && !items.length; attempt++) {
       items = (await (await fetch(`${base}/bot/inbox`, {headers:bearer(tokens.business)})).json()).items;
       if (!items.length) await new Promise(done => setTimeout(done, 30));
@@ -291,7 +297,7 @@ test('auth.md credentials bind A2A and tools to the confirming customer and revo
     assert.equal(record.customer_id, 'customer-001');
     assert.equal(record.customer_agent_id, registration.registration_id);
     assert.equal((await fetch(`${base}/api/agent/cases/${record.id}`, {headers:bearer(tokens.b)})).status, 403);
-    assert.equal((await jsonPost('/bot/reply', {work_item_id:items[0]!.work_item_id,text:'Identity verified for the signed-in customer.',state:'completed'}, bearer(tokens.business))).status, 200);
+    assert.equal((await jsonPost('/bot/reply', {work_item_id:items[0]!.work_item_id,lease_token:items[0]!.lease_token,claim_generation:items[0]!.claim_generation,text:'Identity verified for the signed-in customer.',state:'completed'}, bearer(tokens.business))).status, 200);
     let completed = await client.getTask({id:sent.id,tenant:'',historyLength:undefined});
     for (let attempt = 0; attempt < 30 && completed.status?.state !== TaskState.TASK_STATE_COMPLETED; attempt++) {
       await new Promise(done => setTimeout(done, 30));

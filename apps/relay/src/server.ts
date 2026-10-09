@@ -22,7 +22,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const CLI_DIST = join(here, '../../../packages/agent-client/dist');
 
 export function createRelay(cfg: Config) {
-  const db = new RelayDb(cfg.dbPath);
+  const db = new RelayDb(cfg.dbPath, cfg.businessId);
   db.assertA2aTables();
   cfg.lookupIssuedToken = (hash) => {
     const row = db.lookupIssuedToken(hash);
@@ -33,6 +33,16 @@ export function createRelay(cfg: Config) {
   const pushSender = new DefaultPushNotificationSender(pushStore);
   const doorbell = new Doorbell(cfg, db);
   const executor = new RelayExecutor(cfg, db, doorbell, taskStore, pushSender);
+  // SDK event processing and recovery share the same durable acceptance overlay.
+  const saveTask = taskStore.save.bind(taskStore);
+  taskStore.save = async (task, context) => {
+    const incomingMessageId = task.status?.message?.messageId;
+    executor.overlayAcceptedReplies(task);
+    await saveTask(task, context);
+    // An initial WORKING save may be overlaid while later events are still queued.
+    // Only acknowledge an event that already carried the accepted reply before the overlay.
+    executor.markPersistedReplies(task, incomingMessageId);
+  };
   const card = buildAgentCard(cfg);
   const requestHandler = new RelayRequestHandler(
     card,
@@ -55,18 +65,29 @@ export function createRelay(cfg: Config) {
   const homeHtml = renderHomePage(cfg, profile);
   const llmsTxt = renderLlmsTxt(cfg, profile);
   const { linkHeader } = agentLinks(cfg);
-  app.get('/', (_req, res) => void res.set('Link', linkHeader).type('html').send(homeHtml));
-  app.get('/llms.txt', (_req, res) => void res.set('Link', linkHeader).type('text/markdown').send(llmsTxt));
+  app.get('/', (_req, res) => {
+    if (cfg.isActive?.() === false) return void res.status(404).end();
+    res.set('Link', linkHeader).type('html').send(homeHtml);
+  });
+  app.get('/llms.txt', (_req, res) => {
+    if (cfg.isActive?.() === false) return void res.status(404).end();
+    res.set('Link', linkHeader).type('text/markdown').send(llmsTxt);
+  });
   // Served as ProtoJSON via AgentCard.toJSON: the SDK's agentCardHandler JSON.stringifies the
   // internal object, which leaks `$case` wrappers for oneof fields such as securitySchemes.
   const cardJson = AgentCard.toJSON(card);
   app.get(`/${AGENT_CARD_PATH}`, (_req, res) => {
+    if (cfg.isActive?.() === false) return void res.status(404).json({ error: 'business relay is not active' });
     res.set('Cache-Control', 'public, max-age=30').json(cardJson);
   });
 
   // Public A2A endpoint (JSON-RPC binding). Customers only; identity comes from the bearer token.
   app.use(
     cfg.a2aPath,
+    (_req, res, next) => {
+      if (cfg.isActive?.() === false) return void res.status(409).json({ error: 'business relay is not active' });
+      next();
+    },
     requireRole(cfg, 'customer'),
     jsonRpcHandler({
       requestHandler,
@@ -92,18 +113,22 @@ export function createRelay(cfg: Config) {
 
   // Single-file CLIs, so a bot can (re)install them with one curl after a VM reset.
   app.get('/cli/:name', (req, res) => {
-    const file = { 'a2a.mjs': 'a2a.mjs', 'inbox.mjs': 'inbox.mjs', 'discover-sites.mjs': 'discover-sites.mjs' }[req.params.name];
+    const file = { 'a2a.mjs': 'a2a.mjs', 'inbox.mjs': 'inbox.mjs', 'handle.mjs': 'handle.mjs', 'handoru.mjs': 'handoru.mjs', 'discover-sites.mjs': 'discover-sites.mjs' }[req.params.name];
     const path = file && join(CLI_DIST, file);
     if (!path || !existsSync(path)) return void res.status(404).send('not found');
     res.type('text/javascript').sendFile(path);
   });
 
   doorbell.startReringLoop();
+  executor.startRecovery();
   return {
     app,
     db,
+    executor,
+    doorbell,
     close: async () => {
       doorbell.stop();
+      await executor.stopRecovery();
       await db.kysely.destroy();
     },
   };

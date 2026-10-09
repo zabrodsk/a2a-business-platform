@@ -18,3 +18,6 @@ infra/masumi/buyer.env
 .omx
 tasks
 docs
+
+# Public Handle onboarding instructions are served by the legacy runtime.
+!docs/handoru-onboarding.html

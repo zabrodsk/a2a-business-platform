@@ -8,18 +8,19 @@ import { GARAGE_TOOLS, namedGarageRequest } from './garage-tools.js';
 
 const help = `Pneu 007 private HTTP tools
 Usage: garage tools
-       garage enroll REDEEM_URL
+       garage enroll --credential-file HANDLE_SERVICE.json
        garage --url https://your-business.example COMMAND [ID] [OPTIONS]
        garage --url https://your-business.example call METHOD /api/path [--data-file request.json]
 Commands: ${GARAGE_TOOLS.map(tool => tool.name).join(', ')}
 Run 'garage tools' for machine-readable command descriptions and arguments.
-Options: --allow-http-localhost permits HTTP only for localhost, 127.0.0.1 or [::1].
+Options: --idempotency-key KEY sends your stable operation key on mutating requests; reuse it on retry.
+         --allow-http-localhost permits HTTP only for localhost, 127.0.0.1 or [::1].
 Credentials: PNEU007_TOOL_TOKEN or locally enrolled ~/.a2a/garage.json (never printed).
 PNEU007_BUSINESS_URL sets the default origin. GARAGE_CONFIG overrides the local config path.
 This CLI does not send A2A messages, perform an audit, or generate a rulebook for the bot.
 `;
 
-type GarageConfig = { role: 'business_agent'; url: string; token: string };
+type GarageConfig = { role: 'business_agent'; url: string; token: string; business_id: string; connection_id: string; principal_id?: string };
 function origin(value: string, allowLocal: boolean): URL {
   const url = new URL(value);
   if (url.username || url.password || url.search || url.hash || url.pathname !== '/') {
@@ -40,28 +41,39 @@ function readConfig(env: NodeJS.ProcessEnv): GarageConfig | undefined {
     if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error();
     const value = config as Partial<GarageConfig>;
     if (value.role !== 'business_agent' || typeof value.url !== 'string' || typeof value.token !== 'string'
-      || value.token.length < 24 || /[\r\n]/.test(value.token)) throw new Error();
-    return { role: value.role, url: value.url, token: value.token };
+      || value.token.length < 24 || value.token.length > 4096 || /[\r\n]/.test(value.token)
+      || !binding(value.business_id) || !binding(value.connection_id)) throw new Error();
+    return { role: value.role, url: value.url, token: value.token, business_id: value.business_id, connection_id: value.connection_id,
+      ...(binding(value.principal_id) ? { principal_id: value.principal_id } : {}) };
   } catch { throw new Error('Invalid local garage configuration; enroll again.'); }
 }
-async function enroll(redeemUrl: string, env: NodeJS.ProcessEnv, allowLocal: boolean): Promise<void> {
-  let target: URL;
-  try { target = new URL(redeemUrl); } catch { throw new Error('Invalid enrollment URL'); }
-  origin(target.origin, allowLocal);
-  if (target.username || target.password || target.search || target.hash || !/^\/agent-enrollments\/[A-Za-z0-9_-]{43}$/.test(target.pathname)) {
-    throw new Error('Invalid enrollment URL');
-  }
-  let config: GarageConfig;
+function binding(value: unknown): value is string {
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(value);
+}
+async function enroll(credentialFile: string, env: NodeJS.ProcessEnv, allowLocal: boolean): Promise<void> {
+  let service: { url: string; token: string; business_id: string; connection_id: string };
   try {
-    const response = await fetch(target, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30_000), headers: { accept: 'application/json' } });
-    if (!response.ok) throw new Error();
-    const value: unknown = await response.json();
+    const value: unknown = JSON.parse(readFileSync(credentialFile, 'utf8'));
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
     const data = value as Partial<GarageConfig>;
-    if (data.role !== 'business_agent' || typeof data.url !== 'string' || origin(data.url, allowLocal).origin !== target.origin
-      || typeof data.token !== 'string' || data.token.length < 24 || data.token.length > 4096 || /[\r\n]/.test(data.token)) throw new Error();
-    config = { role: data.role, url: target.origin, token: data.token };
-  } catch { throw new Error('Enrollment failed; obtain a fresh one-time link from the business owner.'); }
+    if (typeof data.url !== 'string' || typeof data.token !== 'string' || data.token.length < 24
+      || data.token.length > 4096 || /[\r\n]/.test(data.token) || !binding(data.business_id) || !binding(data.connection_id)) throw new Error();
+    service = { url: origin(data.url, allowLocal).origin, token: data.token, business_id: data.business_id, connection_id: data.connection_id };
+  } catch { throw new Error('Invalid service credential file. Complete Handle onboarding and save its scoped credential first.'); }
+  let config: GarageConfig;
+  try {
+    const response = await fetch(`${service.url}/api/handoru/v1/me`, { redirect: 'error', signal: AbortSignal.timeout(30_000),
+      headers: { accept: 'application/json', authorization: `Bearer ${service.token}` } });
+    if (!response.ok) throw new Error();
+    const data: unknown = await response.json();
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error();
+    const identity = data as Record<string, unknown>;
+    if (identity.role !== 'business_agent' || identity.business_id !== service.business_id || identity.connection_id !== service.connection_id
+      || !binding(identity.principal_id) || !['audit_only', 'ready', 'active'].includes(String(identity.state))
+      || !Array.isArray(identity.scopes) || !identity.scopes.every(scope => typeof scope === 'string')
+      || !Number.isSafeInteger(identity.execution_epoch) || (identity.execution_epoch as number) < 0) throw new Error();
+    config = { role: 'business_agent', ...service, principal_id: identity.principal_id };
+  } catch { throw new Error('Enrollment failed. Verify the Handle service credential, connection and business binding.'); }
   const file = configFile(env);
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
   const temporary = `${file}.${randomBytes(8).toString('hex')}.tmp`;
@@ -83,7 +95,7 @@ export async function garageMain(args: string[], env: NodeJS.ProcessEnv = proces
   let base = '', dataFile: string | undefined, allowLocal = false;
   for (let index = 0; index < args.length; index++) {
     const arg = args[index]!;
-    if (['--url', '--data-file', '--datafile', '--service', '--from', '--to', '--status', '--job'].includes(arg)) {
+    if (['--url', '--credential-file', '--idempotency-key', '--data-file', '--datafile', '--service', '--from', '--to', '--status', '--job'].includes(arg)) {
       const value = args[++index];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
       if (arg === '--url') { if (base) throw new Error('Specify --url once'); base = value; }
@@ -103,10 +115,15 @@ export async function garageMain(args: string[], env: NodeJS.ProcessEnv = proces
     return;
   }
   if (positionals[0] === 'enroll') {
-    if (positionals.length !== 2 || options.size || base) throw new Error('Usage: garage enroll REDEEM_URL');
-    await enroll(positionals[1]!, env, allowLocal);
+    if (positionals.length > 1) throw new Error('Legacy redeem-URL enrollment was removed. Start with handle bootstrap and enroll --credential-file SERVICE.json.');
+    if (positionals.length !== 1 || options.size !== 1 || !options.has('--credential-file') || base) throw new Error('Usage: garage enroll --credential-file HANDLE_SERVICE.json');
+    await enroll(options.get('--credential-file')!, env, allowLocal);
     return;
   }
+  if (options.has('--credential-file')) throw new Error('--credential-file is only supported by enroll');
+  const idempotencyKey = options.get('--idempotency-key');
+  options.delete('--idempotency-key');
+  if (idempotencyKey !== undefined && (!idempotencyKey.trim() || idempotencyKey.length > 200 || /[\r\n]/.test(idempotencyKey))) throw new Error('Invalid --idempotency-key');
   base ||= env.PNEU007_BUSINESS_URL ?? '';
   const config = !base || !env.PNEU007_TOOL_TOKEN ? readConfig(env) : undefined;
   base ||= config?.url ?? '';
@@ -125,8 +142,9 @@ export async function garageMain(args: string[], env: NodeJS.ProcessEnv = proces
   }
   const target = new URL(path, url);
   if (target.origin !== url.origin) throw new Error('Cannot send credentials to another origin');
-  const token = env.PNEU007_TOOL_TOKEN ?? (config && origin(config.url, allowLocal).origin === url.origin ? config.token : undefined);
+  const token = env.PNEU007_TOOL_TOKEN || (config && origin(config.url, allowLocal).origin === url.origin ? config.token : undefined);
   if (!token || /[\r\n]/.test(token)) throw new Error('PNEU007_TOOL_TOKEN is required');
+  if (method === 'GET' && idempotencyKey !== undefined) throw new Error('--idempotency-key is only supported by mutating requests');
   if (method === 'GET' && dataFile) throw new Error('GET cannot have request data');
   const body = dataFile === undefined ? undefined : readFileSync(dataFile, 'utf8');
   if (body !== undefined) {
@@ -137,7 +155,7 @@ export async function garageMain(args: string[], env: NodeJS.ProcessEnv = proces
   }
   const response = await fetch(target, {
     method, redirect: 'error', signal: AbortSignal.timeout(30_000),
-    headers: { authorization: `Bearer ${token}`, accept: 'application/json', ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+    headers: { authorization: `Bearer ${token}`, accept: 'application/json', ...(idempotencyKey === undefined ? {} : { 'idempotency-key': idempotencyKey }), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
     body,
   });
   const output = (await response.text()).split(token).join('[REDACTED]');

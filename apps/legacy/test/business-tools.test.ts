@@ -7,13 +7,14 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { SourceRegistry, type Citation, type RulebookProposal } from '../../../packages/audit/index.js';
-import type { Actor, ServiceSpec } from '../../../packages/contracts/index.js';
+import type { ServiceSpec } from '../../../packages/contracts/index.js';
 import { loadLegacyConfig } from '../src/config.js';
 import { createLegacy } from '../src/server.js';
+import { ALL_SCOPES } from '../src/handoru/store.js';
 
 const run = promisify(execFile);
 const root = resolve(import.meta.dirname, '../../..');
-const business: Actor = { id: 'garage-demo', role: 'business_agent' };
+const ownerSetup = 'tools-separate-handoru-owner-setup-0123456789';
 const tokens = { business: 'tools-business-test-0123456789', a: 'tools-customer-a-test-0123456789', b: 'tools-customer-b-test-0123456789' };
 const service: ServiceSpec = { service_id: 'tyre_change', vehicle_type: 'personal', wheel_size_inches: 18, rim_type: 'alu', runflat: false, tpms: false, wheel_count: 4 };
 const from = '2026-10-16T00:00:00+02:00', to = '2026-10-17T00:00:00+02:00';
@@ -37,6 +38,7 @@ test('bundled business tools book persistently, filter assigned reservations and
   writeFileSync(systemsPath, JSON.stringify(systems));
   const registry = new SourceRegistry(dir, []);
   const cfg = loadLegacyConfig({ NODE_ENV: 'production', LEGACY_PORT: '0', LEGACY_PUBLIC_URL: 'http://127.0.0.1', LEGACY_DB_PATH: join(dir, 'business.sqlite'),
+    HANDORU_OWNER_SETUP_SECRET: ownerSetup,
     LEGACY_OWNER_PASSWORD: 'tools-owner-password-0123456789', LEGACY_STAFF_PASSWORD: 'tools-staff-password-0123456789',
     LEGACY_CUSTOMER_A_PASSWORD: 'tools-customer-a-password-0123456789', LEGACY_CUSTOMER_B_PASSWORD: 'tools-customer-b-password-0123456789',
     LEGACY_BUSINESS_AGENT_TOKEN: tokens.business, LEGACY_CUSTOMER_AGENT_A_TOKEN: tokens.a, LEGACY_CUSTOMER_AGENT_B_TOKEN: tokens.b,
@@ -46,8 +48,8 @@ test('bundled business tools book persistently, filter assigned reservations and
   const server = system.app.listen(0, '127.0.0.1');
   await new Promise<void>(done => server.once('listening', done));
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  const request = async (path: string, token: string, body?: unknown) => {
-    const response = await fetch(base + path, { method: body === undefined ? 'GET' : 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const request = async (path: string, token: string, body?: unknown, headers: Record<string, string> = {}) => {
+    const response = await fetch(base + path, { method: body === undefined ? 'GET' : 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
     const result = await response.json();
     assert.ok(response.ok, JSON.stringify({ status: response.status, result }));
     return result;
@@ -59,15 +61,41 @@ test('bundled business tools book persistently, filter assigned reservations and
   };
   let bookingId = '', orderId = '';
   try {
+    assert.equal((await fetch(base + '/api/agent/reservations')).status, 401);
+    assert.equal((await fetch(base + '/api/agent/reservations', { headers: { authorization: `Bearer ${tokens.a}` } })).status, 403);
+    await assert.rejects(cli('availability', '--service', 'tyre_change'), /FORBIDDEN/);
+    const proposalPath = join(dir, 'proposal.json'); writeFileSync(proposalPath, JSON.stringify(proposal(registry)));
+    const proposed = await cli('propose-rulebook', '--data-file', proposalPath);
+    const signup = await fetch(`${base}/api/handoru/v1/owner/signup`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'tools-human-owner@example.test', password: 'tools-human-owner-password-0123456789', setup_secret: ownerSetup }),
+    });
+    assert.equal(signup.status, 201, await signup.clone().text());
+    const human = await signup.json(), cookie = signup.headers.get('set-cookie')!.split(';')[0]!;
+    // Trusted migration test binding; the fresh onboarding suite tests real website ownership proof.
+    system.store.db.prepare('INSERT INTO handoru_memberships(owner_id,business_id) VALUES(?,?)').run(human.owner.id, 'pneu007');
+    const humanCall = async (path: string, body: unknown) => {
+      const response = await fetch(base + path, { method: 'POST', headers: {
+        cookie, 'x-csrf-token': human.csrf_token, 'content-type': 'application/json',
+      }, body: JSON.stringify(body) });
+      assert.ok(response.ok, await response.clone().text());
+      return response.json();
+    };
+    const activated = await humanCall(`/api/admin/rulebooks/${proposed.rulebook.version}/activate`, { payload_hash: proposed.rulebook.payload_hash });
+    const handoruBase = '/api/handoru/v1/businesses/pneu007';
+    await request(`${handoruBase}/relay`, tokens.business, {}, { 'idempotency-key': 'business-tools-relay' });
+    await request(`${handoruBase}/relay/probe`, tokens.business, {});
+    const probe = await request(`${handoruBase}/relay/probe/inbox`, tokens.business);
+    await request(`${handoruBase}/relay/probe/answer`, tokens.business, {
+      nonce: probe.items[0].nonce, rulebook_hash: activated.rulebook.payload_hash, method: 'polling',
+      evidence: 'Scripted CLI test; not a GrokBot runtime capability claim.',
+    });
+    await humanCall(`${handoruBase}/owner/connections/compatibility-pneu007/authorize-operation`, {
+      expected_epoch: system.handoru.business('pneu007').execution_epoch, scopes: ALL_SCOPES,
+    });
     const manifest = await request('/api/agent/tools', tokens.business);
     assert.ok(manifest.tools.some((tool: { name: string }) => tool.name === 'reservations'));
     assert.ok(!JSON.stringify(manifest).includes(tokens.business));
-    assert.equal((await fetch(base + '/api/agent/reservations')).status, 401);
-    assert.equal((await fetch(base + '/api/agent/reservations', { headers: { authorization: `Bearer ${tokens.a}` } })).status, 403);
-    await assert.rejects(cli('availability', '--service', 'tyre_change'), /RULEBOOK_INACTIVE/);
-    const proposalPath = join(dir, 'proposal.json'); writeFileSync(proposalPath, JSON.stringify(proposal(registry)));
-    const proposed = await cli('propose-rulebook', '--data-file', proposalPath);
-    system.rulebooks.activate({ id: 'staff-owner', role: 'owner' }, proposed.rulebook.version);
     const pricePath = join(dir, 'price.json'); writeFileSync(pricePath, JSON.stringify({ service_spec: service }));
     assert.equal((await cli('price', '--data-file', pricePath)).total_minor, 247200);
     const available = await cli('availability', '--service', 'tyre_change', '--from', from, '--to', to);
