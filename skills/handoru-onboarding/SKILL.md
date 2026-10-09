@@ -20,7 +20,7 @@ If the owner supplied only their website, fetch its `/agents.md` and `/.well-kno
 
 ## Independent identities
 
-The business owner uses a separate **human Handle account and session**. Legacy admin credentials given to you are for approved legacy work, never a way to activate your rules, approve your connection, or impersonate the owner. The first human account requires the separate `HANDLE_OWNER_SETUP_SECRET` or private `data/handoru-access.json`, entered by the person. Do not ask to read, print, transport, or reuse it. Do not request the human session/cookie/password. Keep your own credentials out of chat, URLs, reports, screenshots, command output and Git.
+The business owner uses a separate **human Handle account and session**. Legacy admin credentials given to you are for approved legacy work, never a way to activate your rules, approve your connection, or impersonate the owner. The owner signs in with their existing Handle account. Only if no human account exists, first account setup requires the separate `HANDLE_OWNER_SETUP_SECRET` or private `data/handoru-access.json`, entered by the person. Do not ask to read, print, transport, or reuse it. Do not request the human session/cookie/password. Keep your own credentials out of chat, URLs, reports, screenshots, command output and Git.
 
 ## Bootstrap and consent
 
@@ -31,6 +31,17 @@ The business owner uses a separate **human Handle account and session**. Legacy 
 5. Poll your own `/onboarding/:requestId` using the provisional bearer credential. After consent, call `POST /onboarding/:requestId/credentials` once and store your new connection credential privately. Expiry/reuse requires a new authorized onboarding; do not bypass pairing. Never send a credential to a different origin or across a redirect.
 6. Read `/me` to obtain the current business ID, connection ID, scopes and epoch. Use your own IDs from the server, not a name or ID copied from an example.
 7. `POST /businesses/:businessId/relay` with a stable `Idempotency-Key`. The existing relay engine assigns the firm's endpoint and inbox. Retry/restart must reuse this resource. No Railway/GitHub project or owner-hosted relay is needed.
+
+## G0: private bridge before the audit
+
+After approved audit access and stable relay provisioning, complete G0 before the observational audit. Let `B` be `/api/handle/v1/businesses/:businessId` using your server-returned business ID:
+
+1. `POST B/relay/probe` with `{"phase":"onboarding"}` using your own connection credential.
+2. `GET` the returned private `inbox_url`; read the actual nonce from its probe item. Keep it private.
+3. `POST B/relay/probe/answer` with `{nonce,method,evidence}` and **no rulebook hash**. Method is the actual `polling`, `routine` or `wake_up`; evidence describes the real test and its availability limits.
+4. Save the returned `phase:"onboarding"`, `operation_ready:false` receipt privately for restart-safe progress. It never activates rules, grants operation scopes or satisfies policy readiness.
+
+No active rulebook is needed for this isolated onboarding phase. A scripted HTTP result or client-reported receipt does not prove actual GrokBot background wake-up, secure callback configuration or MCP support. Record those real runtime tests separately. Do not publish an active card or make transactions to test G0.
 
 ## Observational audit, no bespoke audit connector
 
@@ -83,7 +94,7 @@ The backend adds governance and returns a version/hash. Ask the owner to inspect
 
 ## Readiness and operation
 
-After exact rulebook activation, run the private relay probe: `POST /businesses/:businessId/relay/probe`, read `/relay/probe/inbox`, then answer `/relay/probe/answer` with `{nonce,rulebook_hash,method,evidence}`. Method is actual `polling`, `routine` or `wake_up`; describe real availability and limitations. A client-reported probe is not independently verified product capability. A finite session must be labelled finite.
+After the real audit and exact human rulebook activation, run the separate policy-bound probe: `POST /businesses/:businessId/relay/probe` with `{"phase":"rulebook"}`, read the returned private `inbox_url`, then answer `/businesses/:businessId/relay/probe/answer` with `{nonce,rulebook_hash,method,evidence}` using the exact active rulebook hash. An empty start body remains backwards-compatible and selects this rulebook phase. The earlier onboarding receipt cannot replace this check. Method is actual `polling`, `routine` or `wake_up`; describe real availability and limitations. A client-reported probe is not independently verified product capability. A finite session must be labelled finite.
 
 The owner reviews and grants separate operation scopes. Use your own limited service credential with Pneu's thin `/mcp` interface or the same HTTP business path. Every transaction still checks current connection/epoch, rulebook, exact quote, customer-approved mandate, needed owner price approval, price/payment/capacity limits and idempotency. Tools never approve rules, human exceptions or customer mandates on your behalf. MCP `tools/list` and annotations do not grant permissions. Test the actual client's Streamable HTTP/auth support; HTTP fallback is not an MCP runtime proof.
 
@@ -91,7 +102,7 @@ The owner reviews and grants separate operation scopes. Use your own limited ser
 
 After rule activation and the owner's operation grant, create or update the actual runtime's native webhook routine as part of setup. Follow the current business skill's automatic wake-up instructions, using this firm's server-returned private inbox and your current connection credential. If using inbox.mjs, configure its base URL without the final `/bot`; do not replace a managed resource with the legacy root route.
 
-Register/test the actual callback with POST INBOX_BASE/doorbell and private `{url,key,test:true}`. GET INBOX_BASE/doorbell reports status. Only the native webhook handler acknowledges `setup_probe.token` from its actual event through POST INBOX_BASE/doorbell/ack with `{probe_token}`. The server binds proof to callback, credential and authorized connection. HTTP 200 and the earlier client-reported relay probe do not prove native wake-up.
+Register/test the actual callback with POST INBOX_BASE/doorbell and private `{url,key,test:true}`. GET INBOX_BASE/doorbell reports status. Only the native webhook handler acknowledges `setup_probe.token` from its actual event through POST INBOX_BASE/doorbell/ack with `{probe_token}`. The server binds proof to callback, credential and authorized connection. HTTP 200 and either client-reported relay probe receipt do not prove native wake-up, secure callback configuration or MCP support.
 
 Yield after registration; bounded retries run even with an empty inbox. Report automatic availability only after `ready:true` / `verification_state:verified`. If runtime tools cannot access the key privately, do not request the key from the person. Use an actual secure connection approval if supported; otherwise keep automatic replies pending and explain the missing runtime integration in plain language. Keys and challenges never belong in chat or reports. A finite polling session stays labelled temporary. This does not replace source audit, human decisions, the managed relay probe or publication grants.
 

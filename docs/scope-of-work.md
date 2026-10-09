@@ -117,6 +117,8 @@ G0 nejprve ověří dostupnost skutečného cloudového runtime a privátního b
 6. Fresh Customer dostane pouze kontakt s website URL. Objeví kartu/endpoint, získá vlastní povolený credential a odešle nově zvolený požadavek. Business odpoví a Customer výsledek načte bez lidského přepisování.
 7. Uložit IDs, časy, scope, zvolený binding/verzi a přesný způsob dostupnosti. Oficiální konformitu doloží samostatný TCK report.
 
+Soukromý probe má dvě oddělené fáze. `phase: onboarding` ověřuje příjem a odpověď před auditem bez rulebook hashe; jeho výsledek je pouze onboardingový důkaz a nedává provozní oprávnění. Po skutečném auditu a lidské aktivaci následuje `phase: rulebook` s potvrzením přesného aktivního hashe. Teprve tento druhý důkaz spolu s lidským provozním grantem umožňuje řízený provoz. Nový onboardingový probe nesmí změnit připravenost již aktivního připojení; obě fáze kontrolují vlastní připojení, expiraci, jednorázový nonce a odvolání. Serverem přijatá odpověď zůstává klientským tvrzením o runtime; skutečné GrokBot/MCP/wake-up důkazy se ověřují zvlášť.
+
 Izolovaný technický probe není skutečný firemní audit ani obchodní A2A úkol. Skriptované identity a fixture rulebooky v automatizovaných testech nejsou živý fresh walkthrough. Pokud funguje pouze předem spuštěná omezená relace, takto se také prezentuje. Ruční kopírování zpráv nebo náhradní běh dvou API modelů nesplňuje cíl dvou skutečných GrokBotů.
 
 ## 4. Testovací firma a její zdroje

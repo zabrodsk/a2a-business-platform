@@ -97,6 +97,18 @@ test('fresh unified HTTP onboarding provisions a stable managed relay and exchan
     assert.equal((await fetch(`${base}/relay/${relay.id}/.well-known/agent-card.json`)).status,404);
     assert.equal((await call(`/relay/${relay.id}/bot/inbox`,undefined,auth)).status,403);
 
+    // G0 happens before any audit or active rulebook; it grants no business authority.
+    await must(`${biz}/relay/probe`, {phase:'onboarding'}, auth);
+    const g0 = (await must(`${biz}/relay/probe/inbox`, undefined, auth)).data.items[0];
+    const received = (await must(`${biz}/relay/probe/answer`, {
+      nonce:g0.nonce,method:'polling',evidence:'Synthetic HTTP walkthrough: received and answered the isolated pre-audit probe.',
+    }, auth)).data;
+    assert.equal(received.phase, 'onboarding');
+    assert.equal(received.operation_ready, false);
+    assert.deepEqual(system.rulebooks.list(), []);
+    assert.equal((await call(`/relay/${relay.id}/bot/inbox`,undefined,auth)).status,403);
+    assert.notEqual((await fetch(`${base}/.well-known/agent-card.json`)).status,200);
+
     // Externally authored test report cites an actual ordinary legacy HTTP read.
     const native=(await must('/api/audit/export/internal-operations',undefined,auth)).data;
     const evidence=(await must(`${biz}/audit-evidence`,{system_id:'native_pneu',url:`${base}/api/audit/export/internal-operations`,
