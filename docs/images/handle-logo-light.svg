@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="72" viewBox="0 0 300 72" role="img" aria-label="Handle">
+  <g transform="translate(4 4)" fill="none" stroke-width="5" stroke-linejoin="miter" stroke-miterlimit="10">
+    <path d="M20 21.5V9l4-4h16l4 4v12.5" stroke="#6b6b6b"/>
+    <path d="M5 27l24.5-11.5M59 27L34.5 15.5" stroke="#6b6b6b"/>
+    <path d="M5 27l27 34 27-34" stroke="#0a0a0a"/>
+  </g>
+  <path transform="translate(4 4)" d="M29.5 23h5l1 20-3.5 4-3.5-4z" fill="#0a0a0a"/>
+  <text x="80" y="50" font-family="'Instrument Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="40" font-weight="600" letter-spacing="-1.2" fill="#0a0a0a">Handle</text>
+</svg>
