@@ -279,3 +279,37 @@ test('network failure also rearms a verified callback without exposing provider 
   const event = f.db.listEvents({}).find(event => event.kind === 'doorbell_failed');
   assert.deepEqual(event?.detail, { reason: 'customer_message', pending: 0, error: 'webhook request failed' });
 });
+
+test('key-free scheduled availability requires spaced contact, expires, and survives restart without claiming runtime proof', async t => {
+  const f = await fixture(t, true);
+  assert.equal((await f.request('/availability')).body.available, false);
+  for (const interval of [0, 59, 301, '60', 60.5]) assert.equal((await f.request('/scheduled-check-in', { interval_seconds: interval })).status, 400);
+  const first = await f.request('/scheduled-check-in', { interval_seconds: 60 });
+  assert.equal(first.status, 200); assert.equal(first.body.available, false);
+  assert.equal(first.body.runtime_schedule_verified, false);
+  assert.equal((await f.request('/scheduled-check-in', { interval_seconds: 60 })).body.available, false, 'installer retries are not spaced native executions');
+  const presence = JSON.parse(f.db.getSetting('business_scheduled_presence')!);
+  f.db.setSetting('business_scheduled_presence', JSON.stringify({ ...presence, first_at: Date.now() - 61_000 }));
+  const observed = await f.request('/scheduled-check-in', { interval_seconds: 60 });
+  assert.equal(observed.body.available, true); assert.equal(observed.body.mode, 'scheduled');
+  assert.equal(observed.body.runtime_schedule_verified, false); assert.match(observed.body.evidence, /client_reported/);
+  assert.equal((await f.request('/doorbell')).body.configured, false, 'scheduled contact must not manufacture webhook configuration');
+  for (const secret of [TOKEN, hashToken(TOKEN), 'credential_hash', 'garage-demo']) assert.ok(!JSON.stringify(observed.body).includes(secret));
+  assert.equal((await f.request('/availability', undefined, OTHER)).body.available, false, 'another credential cannot borrow this liveness');
+  await f.restart(); assert.equal((await f.request('/availability')).body.available, true);
+  const recent = JSON.parse(f.db.getSetting('business_scheduled_presence')!);
+  f.db.setSetting('business_scheduled_presence', JSON.stringify({ ...recent, last_at: Date.now() - 181_000 }));
+  assert.equal((await f.request('/availability')).body.available, false);
+  assert.equal((await f.request('/scheduled-check-in', { interval_seconds: 60 })).body.available, false, 'stale contact starts a fresh observation window');
+});
+
+test('scheduled check-ins preserve business scopes and revoked authority', async t => {
+  const f = await fixture(t);
+  assert.equal((await f.request('/scheduled-check-in', { interval_seconds: 60 }, 'invalid')).status, 401);
+  f.cfg.checkIdentity = (_identity, operation) => operation !== 'inbox.read';
+  assert.equal((await f.request('/scheduled-check-in', { interval_seconds: 60 })).status, 403);
+  assert.equal((await f.request('/availability')).status, 403);
+  f.cfg.checkIdentity = () => false;
+  assert.equal((await f.request('/scheduled-check-in', { interval_seconds: 60 })).status, 403);
+  assert.equal(f.db.getSetting('business_scheduled_presence'), undefined);
+});

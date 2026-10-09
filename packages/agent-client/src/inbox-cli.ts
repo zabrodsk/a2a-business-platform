@@ -21,6 +21,8 @@ Usage:
   inbox setup-wakeup --config-file PRIVATE_JSON
                                       Register the native routine's {url,key}; return pending and yield for its probe.
   inbox wakeup-status                 Read verified automatic wake-up status without sending a test.
+  inbox scheduled-check-in [--interval SEC] Native recurring routine only; defaults to 60 seconds.
+  inbox availability                  Read webhook or recent scheduled inbox availability.
   inbox acknowledge-wakeup --event-file PRIVATE_JSON
                                       Native routine only: acknowledge setup_probe.token from its actual webhook event.
   inbox set-doorbell <webhook-url> --key KEY [--test]
@@ -239,6 +241,7 @@ export async function inboxMain(rawArgs = process.argv.slice(2)) {
       test: { type: 'boolean', default: false },
       data: { type: 'string' },
       timeout: { type: 'string' },
+      interval: { type: 'string' },
       minutes: { type: 'string' },
       'config-file': { type: 'string' },
       'event-file': { type: 'string' },
@@ -251,6 +254,16 @@ export async function inboxMain(rawArgs = process.argv.slice(2)) {
   if (!cmd || values.help) return void console.log(HELP);
 
   switch (cmd) {
+    case 'scheduled-check-in': {
+      const interval = Number(values.interval ?? 60);
+      if (args.length || !Number.isSafeInteger(interval) || interval < 60 || interval > 300) throw new CliError('Use scheduled-check-in --interval 60..300 from the actual native recurring routine.');
+      const status = await call('/bot/scheduled-check-in', { method: 'POST', body: JSON.stringify({ interval_seconds: interval }) });
+      console.log(JSON.stringify(status, null, 2)); return;
+    }
+    case 'availability': {
+      if (args.length) throw new CliError('usage: inbox availability');
+      console.log(JSON.stringify(await call('/bot/availability'), null, 2)); return;
+    }
     case 'setup-wakeup': {
       if (args.length || !values['config-file'] || Object.entries(values).some(([name, value]) => !['config-file', 'json', 'help', 'test'].includes(name) || name === 'test' && value)) {
         throw new CliError('usage: inbox setup-wakeup --config-file PRIVATE_JSON');

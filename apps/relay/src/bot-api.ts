@@ -115,6 +115,39 @@ export function botRouter(cfg: Config, db: RelayDb, doorbell: Doorbell, executor
 
   const credentialHash = (req: express.Request) => hashToken(req.header('authorization')!.replace(/^Bearer\s+/i, '').trim());
 
+  const scheduledStatus = (req: express.Request) => {
+    const raw = db.getSetting('business_scheduled_presence');
+    const presence = raw ? JSON.parse(raw) as { credential_hash: string; identity: Identity; first_at: number; last_at: number; interval_seconds: number; observations: number } : undefined;
+    const current = presence && presence.credential_hash === credentialHash(req) && identityAllowed(cfg, presence.identity, 'inbox.read');
+    const recent = Boolean(current && presence.last_at + presence.interval_seconds * 3000 > Date.now());
+    const available = Boolean(recent && presence && presence.observations >= 2);
+    return { mode: 'scheduled', available, evidence: 'authenticated_check_ins; runtime_schedule_client_reported', runtime_schedule_verified: false,
+      ...(current && presence ? { interval_seconds: presence.interval_seconds, last_check_in: new Date(presence.last_at).toISOString(), expires_at: new Date(presence.last_at + presence.interval_seconds * 3000).toISOString() } : {}),
+      user_message: available ? 'Automatic inbox checks are active.' : recent ? 'I’m testing automatic inbox checks.' : 'Automatic inbox checks are not active.' };
+  };
+
+  r.post('/scheduled-check-in', (req, res) => {
+    allowed(req.identity!, 'inbox.read', req.header('authorization'));
+    const interval = req.body?.interval_seconds;
+    if (!req.body || Object.keys(req.body).some(k => k !== 'interval_seconds') || !Number.isSafeInteger(interval) || interval < 60 || interval > 300) {
+      return void res.status(400).json({ error: 'interval_seconds must be an integer from 60 to 300' });
+    }
+    const now = Date.now(), hash = credentialHash(req), raw = db.getSetting('business_scheduled_presence');
+    const prior = raw ? JSON.parse(raw) as { credential_hash: string; identity: Identity; first_at: number; last_at: number; interval_seconds: number; observations: number } : undefined;
+    const same = prior && prior.credential_hash === hash && prior.interval_seconds === interval && prior.last_at + interval * 3000 > now && identityAllowed(cfg, prior.identity, 'inbox.read');
+    const spaced = same && now - prior.first_at >= interval * 1000;
+    db.setSetting('business_scheduled_presence', JSON.stringify({ credential_hash: hash, identity: req.identity, first_at: same ? prior.first_at : now, last_at: now, interval_seconds: interval, observations: spaced ? 2 : 1 }));
+    res.set('Cache-Control', 'no-store').json(scheduledStatus(req));
+  });
+
+  r.get('/availability', (req, res) => {
+    allowed(req.identity!, 'inbox.read', req.header('authorization'));
+    const webhook = doorbell.status(credentialHash(req));
+    res.set('Cache-Control', 'no-store').json(webhook.ready
+      ? { mode: 'webhook', available: true, evidence: 'one_use_webhook_acknowledgment', user_message: 'Automatic replies are ready.' }
+      : scheduledStatus(req));
+  });
+
   r.get('/doorbell', (req, res) => {
     allowed(req.identity!, 'doorbell.write', req.header('authorization'));
     res.set('Cache-Control', 'no-store').json(doorbell.status(credentialHash(req)));
