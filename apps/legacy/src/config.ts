@@ -21,6 +21,17 @@ export function loadLegacyConfig(env: NodeJS.ProcessEnv = process.env): LegacyCo
   for (const suffix of ['FRESH', 'OWNER_SETUP_SECRET', 'RELAY_PUBLIC_URL']) {
     if (env[`HANDLE_${suffix}`] !== undefined) configured[`HANDORU_${suffix}`] = env[`HANDLE_${suffix}`];
   }
+  // This entry point is the prepared fictional shop. Open proof-of-concept setup
+  // is its default; fresh owner-managed installations keep their normal flow.
+  if (configured.HANDORU_FRESH === 'true') {
+    configured.DEMO_OPEN_BUSINESS = 'false';
+  } else {
+    configured.DEMO_OPEN_BUSINESS ??= 'true';
+    if (configured.DEMO_OPEN_BUSINESS === 'true') {
+      configured.DEMO_PUBLIC_A2A ??= 'true';
+      configured.DEMO_CHAT_APPROVAL ??= 'true';
+    }
+  }
   const accessPath = resolve(repoRoot, 'data/legacy-access.json');
   const development = configured.NODE_ENV !== 'production';
   let saved: Record<string, string> = {};

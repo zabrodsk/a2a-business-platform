@@ -27,6 +27,8 @@ const tokens = {
 function config(dir: string, publicUrl = 'http://localhost:8790') {
   return loadLegacyConfig({
     NODE_ENV: 'production', LEGACY_PUBLIC_URL: publicUrl, LEGACY_PORT: '0',
+    // These regression fixtures intentionally exercise the opt-in protected flow.
+    DEMO_OPEN_BUSINESS: 'false', DEMO_PUBLIC_A2A: 'false', DEMO_CHAT_APPROVAL: 'false',
     LEGACY_DB_PATH: join(dir, 'legacy.sqlite'), LEGACY_RELAY_DB_PATH: join(dir, 'relay.sqlite'),
     LEGACY_OWNER_PASSWORD: 'test-owner-password-0123456789',
     LEGACY_STAFF_PASSWORD: 'test-staff-password-0123456789',
@@ -575,4 +577,19 @@ test('open demo connects a fresh business bot with no login or proof and complet
     assert.equal((await call('/demo-business/connect',{})).status,404);assert.equal((await call('/demo-business/bot/inbox')).status,404);
     cfg.env.DEMO_OPEN_BUSINESS='true';cfg.env.HANDORU_FRESH='true';assert.equal((await call('/demo-business/connect',{})).status,404,'fresh production-style installations cannot use this facade');
   } finally { await closeServer(server); await system.close(); rmSync(dir,{recursive:true,force:true}); }
+});
+
+test('prepared shop defaults to open business, public customer conversations and chat approval', () => {
+  const dir=mkdtempSync(join(tmpdir(),'pneu-default-open-'));
+  try {
+    const env={...config(dir).env};
+    delete env.DEMO_OPEN_BUSINESS; delete env.DEMO_PUBLIC_A2A; delete env.DEMO_CHAT_APPROVAL;
+    const open=loadLegacyConfig(env);
+    assert.equal(open.env.DEMO_OPEN_BUSINESS,'true');assert.equal(open.env.DEMO_PUBLIC_A2A,'true');assert.equal(open.env.DEMO_CHAT_APPROVAL,'true');
+    assert.equal(unifiedRelayConfig(open).demoOpenBusiness,true);
+    const protectedShop=loadLegacyConfig({...env,DEMO_OPEN_BUSINESS:'false'});
+    assert.equal(protectedShop.env.DEMO_OPEN_BUSINESS,'false');assert.notEqual(protectedShop.env.DEMO_PUBLIC_A2A,'true');
+    const fresh=loadLegacyConfig({...env,HANDLE_FRESH:'true'});
+    assert.equal(fresh.env.DEMO_OPEN_BUSINESS,'false');assert.notEqual(fresh.env.DEMO_PUBLIC_A2A,'true');
+  } finally {rmSync(dir,{recursive:true,force:true});}
 });
