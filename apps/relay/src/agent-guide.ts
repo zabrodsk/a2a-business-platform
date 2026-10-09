@@ -110,7 +110,8 @@ export function renderManagedAgentGuide(base: string, demo = false, chat = false
   const origin = new URL(base).origin;
   const guide = renderAgentGuide(base, demo, chat, false)
     .replaceAll(`${origin}/.well-known/handle.json`, `${origin}/.well-known/handle-managed.json`)
-    .replaceAll(`${origin}/skills/handle-onboarding/SKILL.md`, `${origin}/skills/handle-onboarding/SKILL.md?setup_mode=managed`);
+    .replaceAll(`${origin}/skills/handle-onboarding/SKILL.md`, `${origin}/skills/handle-onboarding/SKILL.md?setup_mode=managed`)
+    .replaceAll(`${origin}/skills/pneu007-business/SKILL.md`, `${origin}/skills/pneu007-business/SKILL.md?setup_mode=managed`);
   return `# Explicit managed onboarding: real audit and human approval
 
 The person requested a real audit of existing systems, a cited rulebook proposal and independent human approval. Use ${origin}/.well-known/handle-managed.json (setup_mode:managed, contract 1.3). Do not switch this task to the prepared public open_demo, reuse its seeded rules as your audit, or drop ownership proof/consent. If the managed contract is unavailable or contradictory, report BLOCKED; do not silently fall back to public demo. Read ${origin}/skills/handle-onboarding/SKILL.md?setup_mode=managed and complete the protected onboarding flow below.

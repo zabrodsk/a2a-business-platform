@@ -39,5 +39,5 @@ export function managedHandoruManifest(base:string,demo=false,chat=false) {
   const manifest=handoruManifest(base,demo,chat,false);
   const instructions_url=`${base}/handle/agents.md`,skill_url=`${base}/skills/handle-onboarding/SKILL.md?setup_mode=managed`;
   return {...manifest,setup_mode:'managed',owner_approval_required:true,ownership_proof_required:true,fresh_audit_required:true,instructions_url,skill_url,
-    agent_entry_points:{...manifest.agent_entry_points,instructions_url,business:{...manifest.agent_entry_points.business,setup_mode:'managed',bootstrap_url:`${base}/.well-known/handle-managed.json`,onboarding_skill_url:skill_url}}};
+    agent_entry_points:{...manifest.agent_entry_points,instructions_url,business:{...manifest.agent_entry_points.business,setup_mode:'managed',bootstrap_url:`${base}/.well-known/handle-managed.json`,skill_url:`${base}/skills/pneu007-business/SKILL.md?setup_mode=managed`,onboarding_skill_url:skill_url}}};
 }
