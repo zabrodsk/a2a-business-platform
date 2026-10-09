@@ -97,10 +97,6 @@ body.admin-page .admin-menu button:hover { color: #071c17; background: #e5e8df; 
 body.admin-page .admin-menu button[aria-current='page'] { background: #12372b; color: #fff; box-shadow: 0 3px 8px #071c170a; }
 body.admin-page .admin-nav-icon { display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; font-size: 17px; line-height: 1; }
 body.admin-page .admin-nav-icon svg { width: 19px; height: 19px; }
-body.admin-page .admin-sidebar-note { margin-top: 32px; border-top: 1px solid #d6dbd0; padding: 22px 14px 0; color: var(--muted); font-size: 12px; }
-body.admin-page .admin-sidebar-note strong { display: block; margin-bottom: 6px; color: #244336; font-size: 13px; }
-body.admin-page .admin-sidebar-note p { margin-bottom: 10px; }
-body.admin-page .admin-sidebar-note a { font-weight: 650; color: #244336; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
 body.admin-page .admin-main, body.admin-page #admin-content { min-width: 0; }
 body.admin-page .admin-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 28px; }
 body.admin-page .admin-heading h1 { margin: 4px 0 8px; font: 400 clamp(38px, 3.8vw, 52px)/1.08 var(--admin-serif); letter-spacing: -.025em; }
@@ -208,7 +204,7 @@ body.admin-page #toast { background: #14352c; border: 1px solid #45614e; border-
 @media (max-width: 900px) {
   body.admin-page .admin-layout { grid-template-columns: 1fr; gap: 24px; }
   body.admin-page .admin-sidebar { position: static; padding: 0; }
-  body.admin-page .admin-nav-label, body.admin-page .admin-sidebar-note { display: none; }
+  body.admin-page .admin-nav-label { display: none; }
   body.admin-page .admin-menu { display: flex; gap: 5px; flex-wrap: wrap; padding: 6px; border: 1px solid #dce0d4; border-radius: 12px; background: #e8ebe2; }
   body.admin-page .admin-menu button { flex: 1 1 100px; width: auto; padding: 10px 12px; justify-content: center; font-size: 12px; gap: 7px; }
   body.admin-page .admin-nav-icon { width: 17px; height: 17px; font-size: 15px; }

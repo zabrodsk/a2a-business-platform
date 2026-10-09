@@ -139,6 +139,8 @@ Pevně připravené budou vstupní dokumenty, data a kontakt firmy pro zákazní
 
 Výsledná konverzace, auditní závěry a kompletní rulebook nesmějí být předem napsané. Obchodní vstupy a referenční ceník jsou připravené zdroje, ze kterých agent teprve vyvodí doložený návrh.
 
+Legacy web a jeho administrace představují samostatný, již existující provozní systém. Běžné objednávky, kalendář, zákazníci a sklad fungují před připojením Handle; provozní UI Pneu neobsahuje propagaci, navigaci ani přihlašovací nápovědu Handle. Připojení agenta a jeho schvalování se zahajuje ze samostatného Handle vstupu. Toto oddělení UI nemění oprávnění kontrolované agentické API/MCP cesty.
+
 ### 4.2 Vstupní balíček
 
 | Zdroj | Obsah | Přístup |
