@@ -1,12 +1,12 @@
 // Public tools for the prepared fictional shop. No login, enrollment or bearer credential.
-import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync, lstatSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 type LocalConfig = { url: string; leases: Record<string, { lease_token: string; claim_generation: number }> };
-const help = `Open business demo: no account, approval code, ownership proof or webhook key.
+const help = `Open business demo: no account, approval code or ownership proof.
 demo-business connect --url WEBSITE
 demo-business profile | catalog | rulebook | cases | reservations | inbox | availability
 demo-business schedule [--service tyre_change] [--from ISO --to ISO]
@@ -14,13 +14,18 @@ demo-business case CASE_ID | order ORDER_ID
 demo-business quote CASE_ID --data-file quote.json
 demo-business reply WORK_ITEM_ID --data-file reply.json
 demo-business scheduled-check-in [--interval 60]
+demo-business webhook-setup --callback-url ACTUAL_ROUTINE_URL [--key-settings-url ACTUAL_KEY_PAGE]
+demo-business set-webhook --callback-url ACTUAL_ROUTINE_URL --key-env ACTUAL_RUNTIME_SECRET_ENV
+demo-business wakeup-status
+demo-business acknowledge-wakeup --event-file PRIVATE_EVENT_JSON (native routine only)
 DEMO_BUSINESS_CONFIG selects the local demo configuration; all commands return private working JSON.
-The actual native recurring routine must call scheduled-check-in, process the inbox and exit.`;
+Webhook setup uses Grok’s native masked secret input. The actual native handler acknowledges its setup event, processes the inbox and exits.`;
 
 export async function demoBusinessMain(args = process.argv.slice(2)) {
   const { values, positionals } = parseArgs({ args, allowPositionals: true, options: {
     url: { type: 'string' }, 'data-file': { type: 'string' }, interval: { type: 'string' },
     service: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' },
+    'callback-url': { type: 'string' }, 'key-settings-url': { type: 'string' }, 'event-file': { type: 'string' }, 'key-env': { type: 'string' }, 'key-file': { type: 'string' },
     help: { type: 'boolean', short: 'h' },
   } });
   const [command, id] = positionals;
@@ -35,11 +40,14 @@ export async function demoBusinessMain(args = process.argv.slice(2)) {
   if (config.url && config.url !== origin.origin) throw new Error('Select a separate DEMO_BUSINESS_CONFIG for another site.');
   config = { url: origin.origin, leases: config.leases ?? {} };
   const save = () => { mkdirSync(dirname(path), { recursive: true, mode: 0o700 }); writeFileSync(path, JSON.stringify(config), { mode: 0o600 }); chmodSync(path, 0o600); };
+  const secrets: string[] = [];
+  const safe = (value: unknown) => JSON.stringify(value, (_name, value) => typeof value === 'string' ? secrets.reduce((text, secret) => text.split(secret).join('[redacted]'), value) : value, 2);
   const request = async (route: string, body?: unknown) => {
     const response = await fetch(config.url + '/demo-business' + route, { method: body === undefined ? 'GET' : 'POST',
       headers: { 'content-type': 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(60_000), ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(`Demo operation failed (${response.status}): ${JSON.stringify(data)}`);
+    let data: any;
+    try { data = await response.json(); } catch { throw new Error('The demo service returned an invalid response.'); }
+    if (!response.ok) throw new Error(`Demo operation failed (${response.status}): ${safe(data)}`);
     return data;
   };
   let body: any;
@@ -64,6 +72,54 @@ export async function demoBusinessMain(args = process.argv.slice(2)) {
       if (command === 'quote' && !body) throw new Error('Quote requires --data-file with slot_id and discount_bps.');
       result = await request(command === 'order' ? `/orders/${id}` : `/cases/${id}${command === 'quote' ? '/quotes' : ''}`, command === 'quote' ? body : undefined);
     }
+  } else if (command === 'webhook-setup') {
+    if (!values['callback-url']) throw new Error('Use the actual callback URL returned by the native routine tool.');
+    const callback = new URL(values['callback-url']);
+    if (callback.username || callback.password || callback.hash || (callback.protocol !== 'https:' && !(callback.protocol === 'http:' && ['localhost','127.0.0.1'].includes(callback.hostname)))) throw new Error('Invalid routine callback URL.');
+    let settings: string | undefined;
+    if (values['key-settings-url']) {
+      const link = new URL(values['key-settings-url']);
+      if (link.protocol !== 'https:' || link.username || link.password || link.hash) throw new Error('Use the actual HTTPS key-settings URL. Native deep links should be shown directly from the runtime tool.');
+      settings = link.href;
+    }
+    result = { callback_url: callback.href, ...(settings ? { key_settings_url: settings } : {}), key_entry: 'native_grok_masked_input',
+      user_message: 'Open the webhook key settings, copy the key, and paste it into the secure box below.',
+      instruction: 'Show the actual native key-settings link and create Grok’s masked secret input. Use the actual supported secret binding (environment/file or secret-aware HTTP tool) to send it to the backend. Do not invent a URL or secret binding, request the key in ordinary chat, or send the user to a separate website form.' };
+  } else if (command === 'set-webhook') {
+    if (!values['callback-url'] || Boolean(values['key-env']) === Boolean(values['key-file'])) throw new Error('Supply the real callback URL and exactly one runtime secret binding: --key-env NAME or --key-file PRIVATE_PATH.');
+    const callback = new URL(values['callback-url']);
+    if (callback.username || callback.password || callback.hash || (callback.protocol !== 'https:' && !(callback.protocol === 'http:' && ['localhost','127.0.0.1'].includes(callback.hostname)))) throw new Error('Invalid routine callback URL.');
+    let key: string;
+    try {
+      if (values['key-env']) {
+        if (!/^[A-Za-z_][A-Za-z0-9_]{0,100}$/.test(values['key-env'])) throw new Error();
+        key = process.env[values['key-env']] ?? '';
+      } else {
+        const stat = lstatSync(values['key-file']!);
+        if (!stat.isFile() || stat.size > 514 || stat.mode & 0o077) throw new Error();
+        key = readFileSync(values['key-file']!, 'utf8');
+      }
+      key = key.trim();
+      if (key.length < 8 || key.length > 512 || /[\r\n\0]/.test(key)) throw new Error();
+    } catch { throw new Error('The secure webhook key is unavailable. Use the actual secret binding returned by Grok’s masked input; never paste it into ordinary chat or command arguments.'); }
+    secrets.push(key);
+    result = await request('/bot/doorbell', { url: callback.href, key, test: true });
+  } else if (command === 'wakeup-status') {
+    result = await request('/bot/doorbell');
+  } else if (command === 'acknowledge-wakeup') {
+    if (!values['event-file']) throw new Error('The actual native routine must supply its private webhook event file.');
+    let token: unknown;
+    try {
+      const stat = lstatSync(values['event-file']);
+      if (!stat.isFile() || stat.size > 16384 || stat.mode & 0o077) throw new Error();
+      token = JSON.parse(readFileSync(values['event-file'], 'utf8'))?.setup_probe?.token;
+    } catch { throw new Error('Save the actual webhook body in a private regular JSON file (mode 0600, at most 16 KiB).'); }
+    if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{24,512}$/.test(token)) throw new Error('The actual webhook event has no valid setup challenge.');
+    secrets.push(token);
+    try { await request('/bot/doorbell/ack', { probe_token: token }); }
+    catch (error) { if (!(error instanceof Error) || !/^Demo operation failed \((400|409|410)\)/.test(error.message)) throw error; }
+    result = await request('/bot/doorbell');
+    if (result.ready !== true) throw new Error('The native wake-up test has not verified.');
   } else if (command === 'scheduled-check-in') {
     const interval = Number(values.interval ?? 60);
     if (!Number.isSafeInteger(interval) || interval < 60 || interval > 300) throw new Error('Use an actual native schedule interval from 60 to 300 seconds.');
@@ -79,7 +135,7 @@ export async function demoBusinessMain(args = process.argv.slice(2)) {
       save();
     }
   } else throw new Error('Unknown demo command. Use --help.');
-  console.log(JSON.stringify(result, null, 2));
+  console.log(safe(result));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) demoBusinessMain().catch(error => { console.error(error.message); process.exitCode = 1; });

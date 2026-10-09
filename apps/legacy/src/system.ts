@@ -164,8 +164,8 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
   legacy.app.use('/demo-business/bot', (req, res, next) => {
     if (cfg.env.DEMO_OPEN_BUSINESS !== 'true' || cfg.env.DEMO_CHAT_APPROVAL !== 'true' || cfg.env.DEMO_PUBLIC_A2A !== 'true'
       || cfg.env.HANDORU_FRESH === 'true' || legacy.handoru.installation()?.id !== 'pneu007' || legacy.handoru.isManagedContext()) return void res.status(404).json({ error: 'DEMO_DISABLED' });
-    const routes: Record<string, string> = { '/inbox': 'GET', '/wait': 'GET', '/reply': 'POST', '/scheduled-check-in': 'POST', '/availability': 'GET' };
-    if (routes[req.path] !== req.method) return void res.status(404).json({ error: 'Unknown open demo operation' });
+    const routes: Record<string, string[]> = { '/inbox': ['GET'], '/wait': ['GET'], '/reply': ['POST'], '/scheduled-check-in': ['POST'], '/availability': ['GET'], '/doorbell': ['GET','POST'], '/doorbell/ack': ['POST'] };
+    if (!routes[req.path]?.includes(req.method)) return void res.status(404).json({ error: 'Unknown open demo operation' });
     // Use the already configured fictional shop internally; never return its credential.
     const token = cfg.env.LEGACY_BUSINESS_AGENT_TOKEN;
     if (!token || !active('pneu007')) return void res.status(503).json({ error: 'DEMO_UNAVAILABLE' });

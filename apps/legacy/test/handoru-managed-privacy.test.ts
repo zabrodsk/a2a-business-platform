@@ -37,7 +37,7 @@ test('activating managed governance closes all anonymous business tools before r
   assert.equal(anonymousRulebook.status,404);
   const snapshot=()=>Object.fromEntries(['handoru_onboarding','handoru_connections','handoru_credentials','handoru_memberships','handoru_operations','handoru_meta','handoru_events','audit_rulebook_versions'].map(table=>[table,f.handoru.db.prepare(`SELECT * FROM ${table}`).all()]));
   const before=snapshot();
-  for(const [path,body] of [['/connect',{}],['/profile',undefined],['/catalog',undefined],['/rulebook',undefined],['/schedule',undefined],['/cases',undefined],['/cases/private/quotes',{}],['/orders/private',undefined],['/reservations',undefined],['/bot/inbox',undefined],['/bot/wait',undefined],['/bot/reply',{}],['/bot/scheduled-check-in',{}],['/bot/availability',undefined]] as const) {
+  for(const [path,body] of [['/connect',{}],['/profile',undefined],['/catalog',undefined],['/rulebook',undefined],['/schedule',undefined],['/cases',undefined],['/cases/private/quotes',{}],['/orders/private',undefined],['/reservations',undefined],['/bot/inbox',undefined],['/bot/wait',undefined],['/bot/reply',{}],['/bot/scheduled-check-in',{}],['/bot/availability',undefined],['/bot/doorbell',undefined],['/bot/doorbell',{}],['/bot/doorbell/ack',{}]] as const) {
     const response=await f.publicCall(`/demo-business${path}`,body);
     assert.equal(response.status,404,path);
     assert.ok(!(await response.text()).includes(privateMarker),path);

@@ -25,7 +25,7 @@ export function openDemoBusinessRouter(o: { enabled: () => boolean; actor: () =>
   };
   r.post('/connect', (_req, res) => res.json({ mode: 'open_demo', business_id: 'pneu007', authentication: 'none', owner_approval_required: false, ownership_proof_required: false,
     tools_base: `${o.publicUrl}/demo-business`, inbox_url: `${o.publicUrl}/demo-business/bot`, client_url: `${o.publicUrl}/cli/demo-business.mjs`,
-    automatic_reply_mode: 'scheduled', simulation: true, user_message: 'The demo shop is connected. I’m setting up automatic replies.' }));
+    automatic_reply_mode: 'webhook', webhook_key_entry: 'native_grok_masked_input', simulation: true, user_message: 'The demo shop is connected. I’m setting up automatic replies.' }));
   r.get('/profile', (_req, res) => res.json({ name: 'Pneu 007', location: 'Holešovice, Prague 7', fictional: true, setup_mode: 'open_demo', authentication: 'none', funding: 'local_simulation_only' }));
   r.get('/catalog', (_req, res) => res.json(o.store.catalog()));
   r.get('/rulebook', (_req, res) => res.json({ rulebook: o.policy.rulebooks.getActive(), simulation: true, instruction: 'Use these existing demo rules. Do not propose new rules, start owner pairing, request approval codes or publish ownership proof for this demo.' }));

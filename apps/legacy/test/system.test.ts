@@ -91,7 +91,7 @@ test('compatibility transport preserves SDK tasks while adopting scoped identiti
     for (const path of ['/handle', '/handoru']) {
       const console = await fetch(`${base}${path}`);
       assert.equal(console.status, 200, path);
-      assert.match(await console.text(), /href="\/handle">HANDLE<span>/);
+      assert.match(await console.text(), /<title>Handle · [\s\S]*src="\/handle\.js"/);
     }
     const unpublished = await fetch(`${base}/.well-known/agent-card.json`);
     assert.notEqual(unpublished.status, 200);
@@ -547,7 +547,7 @@ test('open demo connects a fresh business bot with no login or proof and complet
     assert.equal((await(await call('/demo-business/bot/inbox')).json()).items.length,0);
     assert.equal(system.relay.db.getWorkItem(privateWork.id)?.status,'pending');
     assert.equal((await call('/demo-business/bot/reply',{work_item_id:privateWork.id,text:'not allowed',state:'completed'})).status,404);
-    for(const path of ['/demo-business/bot/doorbell','/demo-business/bot/tasks/anything','/demo-business/orders/anything/checkout'])assert.equal((await call(path)).status,404);
+    for(const path of ['/demo-business/bot/tasks/anything','/demo-business/orders/anything/checkout'])assert.equal((await call(path)).status,404);
     const taskResponse=await call('/a2a/jsonrpc',{jsonrpc:'2.0',id:'open-demo-task',method:'SendMessage',params:{message:{messageId:crypto.randomUUID(),role:'ROLE_USER',parts:[{text:'Synthetic open demo request'}]},configuration:{returnImmediately:true}}},{'X-Demo-Session':session,'A2A-Version':'1.0'});
     const task=(await taskResponse.json()).result.task; assert.ok(task.id);
     for(let n=0;n<30&&!system.relay.db.sqlite.prepare('SELECT 1 FROM work_items WHERE task_id=?').get(task.id);n++)await new Promise(done=>setTimeout(done,20));
@@ -592,4 +592,39 @@ test('prepared shop defaults to open business, public customer conversations and
     const fresh=loadLegacyConfig({...env,HANDLE_FRESH:'true'});
     assert.equal(fresh.env.DEMO_OPEN_BUSINESS,'false');assert.notEqual(fresh.env.DEMO_PUBLIC_A2A,'true');
   } finally {rmSync(dir,{recursive:true,force:true});}
+});
+
+
+test('native masked-secret handoff supports actual key links and private runtime bindings without a website form', async () => {
+  const dir=mkdtempSync(join(tmpdir(),'pneu-native-key-'));
+  const probe=createServer();await new Promise<void>(done=>probe.listen(0,'127.0.0.1',done));const port=(probe.address() as AddressInfo).port;await closeServer(probe);
+  const base=`http://127.0.0.1:${port}`,cfg=config(dir,base);
+  cfg.env.DEMO_PUBLIC_A2A='true';cfg.env.DEMO_CHAT_APPROVAL='true';cfg.env.DEMO_OPEN_BUSINESS='true';cfg.env.LEGACY_PUSH_HOST_ALLOWLIST='127.0.0.1';
+  const calls:any[]=[];
+  const hook=createServer((req,res)=>{let raw='';req.on('data',chunk=>raw+=chunk);req.on('end',()=>{calls.push({body:JSON.parse(raw),authorization:req.headers.authorization});res.end(JSON.stringify({echo_key:req.headers.authorization}));});});
+  await new Promise<void>(done=>hook.listen(0,'127.0.0.1',done));
+  const callback=`http://127.0.0.1:${(hook.address() as AddressInfo).port}/native-webhook`;
+  const settings='https://grok.com/test-fixture/key-settings',key='private-native-sender-key-for-tests-1234';
+  const system=await createUnifiedSystem(cfg);const server=system.app.listen(port,'127.0.0.1');await new Promise<void>(done=>server.once('listening',done));
+  try {
+    const rules=system.policy.rulebooks,proposed=rules.propose({id:'garage-demo',role:'business_agent'},fixtureProposal(rules.sources));rules.activate({id:'staff-owner',role:'owner'},proposed.version);
+    system.handoru.db.prepare("UPDATE handoru_connections SET state='active',scopes_json=? WHERE id='compatibility-pneu007'").run(JSON.stringify(ALL_SCOPES));system.handoru.db.prepare("UPDATE handoru_businesses SET active_connection_id='compatibility-pneu007',execution_epoch=1 WHERE id='pneu007'").run();
+    const cli=resolve(root,'packages/agent-client/dist/demo-business.mjs'),file=join(dir,'business.json'),env={...process.env,DEMO_BUSINESS_CONFIG:file,PNEU_TEST_ROUTINE_SECRET:key};
+    const tool=async(args:string[])=>{const result=await run(process.execPath,[cli,...args],{env,timeout:15000});assert.ok(!result.stdout.includes(key));assert.ok(!result.stderr.includes(key));return JSON.parse(result.stdout);};
+    await tool(['connect','--url',base]);
+    const manifest=await(await fetch(base+'/.well-known/handle.json')).json();assert.equal(manifest.setup_mode,'open_demo');assert.equal(manifest.automatic_replies.mode,'webhook');assert.equal(manifest.automatic_replies.key_entry,'native_grok_masked_input');
+    const setup=await tool(['webhook-setup','--callback-url',callback,'--key-settings-url',settings]);
+    assert.equal(setup.key_settings_url,settings);assert.equal(setup.key_entry,'native_grok_masked_input');assert.equal(setup.setup_url,undefined);assert.equal(setup.callback_url,callback);
+    const installed=await tool(['set-webhook','--callback-url',callback,'--key-env','PNEU_TEST_ROUTINE_SECRET']);assert.equal(installed.test_ring.status,200);assert.equal(installed.wakeup.ready,false);
+    assert.equal(calls[0].authorization,'Bearer '+key);
+    await assert.rejects(run(process.execPath,[cli,'set-webhook','--callback-url',callback,'--key-env','MISSING_DEMO_SECRET'],{env,timeout:15000}),error=>{const e=error as {stdout:string;stderr:string};assert.ok(!e.stdout.includes(key));assert.ok(!e.stderr.includes(key));return /secure webhook key is unavailable/.test(e.stderr);});
+    const keyFile=join(dir,'key.private');writeFileSync(keyFile,key,{mode:0o600});
+    const fromFile=await tool(['set-webhook','--callback-url',callback,'--key-file',keyFile]);assert.equal(fromFile.test_ring.status,200);
+    const eventFile=join(dir,'actual-event.json');writeFileSync(eventFile,JSON.stringify(calls.at(-1).body),{mode:0o600});
+    assert.equal((await tool(['acknowledge-wakeup','--event-file',eventFile])).ready,true);
+    assert.equal((await tool(['acknowledge-wakeup','--event-file',eventFile])).ready,true);
+    assert.equal((await tool(['availability'])).mode,'webhook');
+    assert.ok(!readFileSync(file,'utf8').includes(key));
+    assert.ok(!JSON.stringify(system.relay.db.listEvents({})).includes(key));
+  } finally {await closeServer(server);await closeServer(hook);await system.close();rmSync(dir,{recursive:true,force:true});}
 });
