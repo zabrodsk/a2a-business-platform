@@ -22,11 +22,12 @@ const ownerPath = (value, path) => `/businesses/${encodeURIComponent(value.id)}/
 const datetime = value => { const date = new Date(typeof value === 'number' && value < 1e12 ? value * 1000 : value); return Number.isNaN(date.getTime()) ? 'Neuvedeno' : date.toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', dateStyle: 'medium', timeStyle: 'short' }); };
 function safeUrl(value) { try { const url = new URL(value, location.origin); if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return ''; for (const key of [...url.searchParams.keys()]) if (/token|secret|password|key|code|credential|session/i.test(key)) url.searchParams.set(key, '[skryto]'); return url.href; } catch { return ''; } }
 function link(value, label = value) { const url = safeUrl(value); return url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)} ↗</a>` : esc(label || 'Neuvedeno'); }
-const labels = { active: 'Aktivní', proposed: 'Návrh', superseded: 'Nahrazeno', audit_only: 'Pouze audit', pending: 'Čeká', approved: 'Schváleno', rejected: 'Zamítnuto', revoked: 'Odvoláno', suspended: 'Pozastaveno', ready: 'Připraveno', prepared: 'Připraveno k potvrzení', committed: 'Předáno', published: 'Veřejně ověřeno', verified: 'Ověření zaznamenáno', withdrawal_pending: 'Stažení čeká na ověření', external_access_revocation_pending: 'Čeká na externí odvolání', pending_external_revocation: 'Čeká na externí odvolání', pending_reconciliation: 'Čeká na dohledání zápisu', verified_revoked: 'Odvolání ověřeno', controlled_native: 'Nativně řízený přístup', revocation_pending: 'Odvolání neověřeno', uncertain_write: 'Nejistý zápis' };
+const labels = { active: 'Aktivní', proposed: 'Návrh', superseded: 'Nahrazeno', audit_only: 'Pouze audit', pending: 'Čeká', approved: 'Schváleno', rejected: 'Zamítnuto', revoked: 'Odvoláno', suspended: 'Pozastaveno', ready: 'Připraveno', expired: 'Vypršelo', prepared: 'Připraveno k potvrzení', committed: 'Předáno', published: 'Veřejně ověřeno', verified: 'Ověření zaznamenáno', withdrawal_pending: 'Stažení čeká na ověření', external_access_revocation_pending: 'Čeká na externí odvolání', pending_external_revocation: 'Čeká na externí odvolání', pending_reconciliation: 'Čeká na dohledání zápisu', verified_revoked: 'Odvolání ověřeno', controlled_native: 'Nativně řízený přístup', revocation_pending: 'Odvolání neověřeno', uncertain_write: 'Nejistý zápis' };
 function chip(value) { const good = ['active', 'approved', 'ready', 'published', 'verified', 'committed', 'verified_revoked'].includes(value); const bad = ['revoked', 'rejected', 'suspended', 'failed'].includes(value); return `<span class="chip ${good ? 'ok' : bad ? 'bad' : 'wait'}">${esc(labels[value] || value || 'Neověřeno')}</span>`; }
 function fields(entries) { return `<dl class="metadata">${entries.map(([key, value]) => `<dt>${esc(key)}</dt><dd>${value ?? 'Neuvedeno'}</dd>`).join('')}</dl>`; }
 function scopes(values) { return `<div class="scopes">${list(values).map(scope => `<span class="scope">${esc(scope)}</span>`).join('') || '<span class="small mute">Bez oprávnění</span>'}</div>`; }
-function scopeChoices(values, selected = []) { return `<div class="scope-choices">${values.map(scope => `<label class="check"><input type="checkbox" name="scopes" value="${esc(scope)}" ${selected.includes(scope) ? 'checked' : ''}><span class="code">${esc(scope)}</span></label>`).join('')}</div>`; }
+const scopeNames = { 'audit.read': 'Číst podklady firmy', 'audit.propose': 'Uložit audit a návrh pravidel', 'questions.create': 'Předkládat otázky majiteli', 'relay.provision': 'Připravit spojení agenta', 'context.read': 'Číst firemní kontext', 'cases.quote': 'Připravovat nabídky', 'orders.checkout': 'Provádět schválené rezervace a checkout', 'inbox.claim': 'Přebírat zákaznické požadavky', 'inbox.reply': 'Odpovídat zákazníkům', 'registry.publish': 'Zveřejnit záznam v registru', 'website.agent-card.publish': 'Zveřejnit schválenou kartu a odkaz' };
+function scopeChoices(values, selected = []) { return `<div class="scope-choices">${values.map(scope => `<label class="check"><input type="checkbox" name="scopes" value="${esc(scope)}" ${selected.includes(scope) ? 'checked' : ''}><span title="${esc(scope)}">${esc(scopeNames[scope] || scope)}</span></label>`).join('')}</div>`; }
 function feedback(message, error = false) { const target = document.querySelector('#feedback'); target.textContent = message; target.classList.toggle('error', error); target.hidden = false; if (error) { target.setAttribute('role', 'alert'); target.scrollIntoView({ block: 'nearest' }); } else target.setAttribute('role', 'status'); }
 async function api(path, body) {
   const response = await fetch(`${API}${path}`, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', redirect: 'error', headers: { Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json', 'x-csrf-token': state.csrf }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
@@ -38,9 +39,11 @@ async function api(path, body) {
       OWNER_EXISTS: 'První účet už byl založen. Přepněte na „Přihlásit se“.',
       INVALID_LOGIN: 'Nesprávný e-mail nebo heslo.',
       INVALID_ACCOUNT: 'Zadejte platný e-mail a heslo dlouhé alespoň 12 znaků.',
+      OWNERSHIP_PROOF_REQUIRED: 'Nejprve ověřte web Pneu. V žádosti použijte Ověřit web Pneu; potom můžete schválit připojení.',
+      ONBOARDING_UNAVAILABLE: 'Žádost už není platná. Agent musí obnovit připojení a poslat aktuální odkaz.',
     };
     const error = new Error(accountMessages[code] || `${code}: ${data.error?.message || data.message || (typeof data.error === 'string' ? data.error : 'Požadavek se nepodařil.')}`);
-    error.status = response.status;
+    error.status = response.status; error.code = code;
     throw error;
   }
   return data;
@@ -77,10 +80,64 @@ function renderAuth() {
   main.innerHTML = `<div class="auth-layout"><div class="auth-copy"><span class="eyebrow">Majitel má poslední slovo</span><h1>Váš business.<br>Vaše pravidla.</h1><p>GrokBot prozkoumá systémy a navrhne pravidla. Vy nezávisle potvrdíte připojení, posoudíte audit a povolíte přesný rozsah práce.</p><div class="note info">Přihlášení do Handle je oddělené od admin účtu Pneu, který jste předali agentovi.</div>${requestedId ? '<p class="small">Otevřeli jste žádost o připojení. Po přihlášení ji můžete zkontrolovat. Odkaz nic automaticky neschvaluje.</p>' : ''}</div><section class="surface auth-card" aria-label="Lidské přihlášení"><div class="auth-tabs"><button type="button" data-auth="login" aria-current="${!signup}">Přihlásit se</button><button type="button" data-auth="signup" aria-current="${signup}">První účet</button></div><form data-form="${signup ? 'signup' : 'login'}"><label class="field"><span class="lbl">E-mail</span><input class="input" name="email" type="email" autocomplete="username" required maxlength="200"></label><label class="field"><span class="lbl">${signup ? 'Nové heslo · nejméně 12 znaků' : 'Heslo'}</span><input class="input" name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" ${signup ? 'minlength="12"' : ''} maxlength="200" required></label>${signup ? '<label class="field"><span class="lbl">Aktivační kód pro první účet</span><input class="input" name="setup_secret" type="text" autocomplete="one-time-code" inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="200" aria-describedby="owner-activation-help" required><span class="hint" id="owner-activation-help">Soukromý kód od provozovatele Handle. Slouží pouze k založení prvního účtu; není to vaše heslo.</span></label>' : ''}<button class="btn btn-green" type="submit">${signup ? 'Vytvořit účet' : 'Přihlásit do Handle'} →</button></form><p class="form-note">Heslo ani aktivační kód nepředávejte svému agentovi.</p></section></div>`;
 }
 function emptyBusiness() { return '<section class="surface"><h2>Firma ještě není připojena</h2><p>Dejte fresh botovi URL Handle a přístupy k legacy systémům bezpečným kanálem. Bot zahájí žádost a ukáže vám ověřovací kód.</p><p class="small mute">Účet, relay, audit ani pravidla se nepředvyplňují.</p></section>'; }
+function consentReady(value) {
+  return value?.state === 'pending' && value.ownership_verification?.ready_for_consent === true && new Date(value.expires_at).getTime() > Date.now();
+}
 function pendingRequests() {
   const values = list(state.dashboard.requests).filter(value => value.state === 'pending' || value.id === requestedId);
   if (!values.length) return '';
-  return `<section class="surface"><h2>Žádosti o připojení</h2><ul class="list">${values.map(value => `<li><div class="section-head"><h3>${esc(value.runtime || 'Nový agent')}</h3>${chip(value.state)}</div>${fields([['Žádost', `<span class="code">${esc(value.id || value.request_id)}</span>`], ['Legacy web', link(value.legacy_url)], ['Platnost', esc(datetime(value.expires_at))]])}${value.state === 'pending' ? `<form data-form="consent" data-request="${esc(value.id || value.request_id)}"><div class="note info">Porovnejte web a runtime s vaším agentem. Bot musí předem zveřejnit jednorázovou ownership challenge přes legacy admin; samotný kód vlastnictví firmy nedokazuje.</div><label class="field"><span class="lbl">Kód od vašeho agenta</span><input class="input code-input" name="user_code" inputmode="numeric" autocomplete="off" pattern="[0-9]{6}" maxlength="6" required placeholder="6 číslic"></label><fieldset class="fs"><legend>Povolit auditní a onboarding účely</legend>${scopeChoices(AUDIT_SCOPES, AUDIT_SCOPES)}</fieldset><label class="check"><input name="reviewed" type="checkbox" required><span>Ověřil/a jsem firmu a tohoto agenta. Souhlasím s vybranými účely. Tento krok nepovoluje nákupy ani publikaci.</span></label><div class="actions"><button class="btn btn-green" name="decision" value="approved" type="submit">Schválit připojení</button><button class="btn btn-line" name="decision" value="rejected" type="submit" formnovalidate>Zamítnout</button></div></form>` : ''}</li>`).join('')}</ul></section>`;
+  return `<section class="surface"><h2>Žádosti o připojení</h2><ul class="list">${values.map(value => {
+    const requestId = value.id || value.request_id, expired = new Date(value.expires_at).getTime() <= Date.now();
+    const ready = consentReady(value), proof = value.ownership_verification?.state;
+    const notice = !ready && proof !== 'required' && proof !== undefined ? 'Tuto žádost už nelze schválit. Agent ji musí bezpečně obnovit a poslat aktuální odkaz.' : proof === 'not_required' ? 'Web už je ověřený pro váš účet. Porovnejte kód a povolte potřebný rozsah.' : proof === 'verified' ? 'Web je ověřený. Teď porovnejte kód od agenta a schvalte jeho přístup.' : 'Nejdřív ověřte web Pneu. Zde se bezpečně přihlásíte do jeho administrace a povolíte jednorázové ověření. Pak na této stránce schválíte přístup agenta. Heslo agentovi ani do chatu neposíláte.';
+    return `<li><div class="section-head"><h3>${esc(value.runtime || 'Nový agent')}</h3>${chip(expired && value.state === 'pending' ? 'expired' : value.state)}</div>${fields([['Žádost', `<span class="code">${esc(requestId)}</span>`], ['Legacy web', link(value.legacy_url)], ['Platnost', esc(datetime(value.expires_at))]])}${value.state === 'pending' && !expired ? `<div class="note ${ready ? 'info' : 'warn'}">${esc(notice)}</div>${!ready && proof === 'required' ? `<div class="actions"><button class="btn btn-green" type="button" data-action="verify-website" data-request="${esc(requestId)}">Ověřit web Pneu</button><button class="btn btn-line" type="button" data-action="refresh">Zkontrolovat ověření</button></div>` : ''}<form data-form="consent" data-request="${esc(requestId)}"><label class="field"><span class="lbl">Kód od vašeho agenta</span><input class="input code-input" name="user_code" inputmode="numeric" autocomplete="off" pattern="[0-9]{6}" maxlength="6" required placeholder="6 číslic"></label><fieldset class="fs"><legend>Povolit auditní a onboarding účely</legend>${scopeChoices(AUDIT_SCOPES, AUDIT_SCOPES)}</fieldset><label class="check"><input name="reviewed" type="checkbox" required><span>Ověřil/a jsem firmu a tohoto agenta. Souhlasím s vybranými účely. Tento krok nepovoluje nákupy ani publikaci.</span></label><div class="actions"><button class="btn btn-green" name="decision" value="approved" type="submit" ${ready ? '' : 'disabled data-ownership-blocked="true" aria-disabled="true"'}>Schválit připojení</button><button class="btn btn-line" name="decision" value="rejected" type="submit" formnovalidate>Zamítnout</button></div></form>` : value.state === 'pending' && expired ? '<div class="note warn">Žádost vypršela. Agent musí obnovit připojení a poslat nový odkaz; starý kód už nepoužívejte.</div>' : ''}</li>`;
+  }).join('')}</ul></section>`;
+}
+async function verifyWebsite(requestId) {
+  const requestPath = `/owner/onboarding/${encodeURIComponent(requestId)}/ownership-challenge`;
+  const challenge = await api(requestPath);
+  if (!challenge.challenge) { await load(); feedback('Web už je ověřený. Můžete zkontrolovat a schválit připojení.'); return; }
+  if (new URL(challenge.legacy_url).origin !== location.origin || challenge.publication_api !== '/api/admin/handle-ownership-proof' || challenge.public_path !== '/.well-known/handle-ownership.json') throw new Error('Tento web nelze ověřit nativním přihlášením Pneu.');
+  const legacyRequest = async (path, body, csrf) => {
+    const response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', redirect: 'error', headers: { Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...(csrf ? { 'x-csrf-token': csrf } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(path === '/api/login' ? 'Přihlášení do administrace Pneu se nepodařilo. Zkontrolujte její uživatelské jméno a heslo.' : 'Ověření potřebuje oprávněné přihlášení správce webu Pneu.');
+    return data;
+  };
+  const session = await legacyRequest('/api/session');
+  const needsLogin = session.actor?.role !== 'owner' || !session.csrf_token;
+  const dialog = document.createElement('dialog'); dialog.className = 'access-dialog'; dialog.setAttribute('aria-labelledby', 'website-proof-title');
+  dialog.innerHTML = `<h2 id="website-proof-title">Ověřit web Pneu</h2><p>Přihlašujete se k administraci webu Pneu, nikoli k Handle. Heslo se posílá pouze tomuto webu; agent je nedostane.</p><p class="small">Ověření platí jen pro tuto žádost o připojení. Přístup agenta schválíte zvlášť po návratu.</p><form data-website-proof>${needsLogin ? '<label class="field"><span class="lbl">Uživatelské jméno správce Pneu</span><input class="input" name="legacy_username" autocomplete="username" value="owner" required maxlength="200"></label><label class="field"><span class="lbl">Heslo do administrace Pneu</span><input class="input" name="legacy_password" type="password" autocomplete="current-password" required maxlength="200"></label>' : '<p>V prohlížeči už jste přihlášeni jako správce Pneu.</p>'}<label class="check"><input name="publish_allowed" type="checkbox" required><span>Povoluji zveřejnit jednorázové ověření tohoto webu pro tuto žádost.</span></label><p class="note error" data-website-proof-error role="alert" hidden></p><div class="actions"><button class="btn btn-green" type="submit">Ověřit web</button><button class="btn btn-line" type="button" data-cancel-proof>Zrušit</button></div></form>`;
+  const form = dialog.querySelector('form');
+  dialog.querySelector('[data-cancel-proof]').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => { form.querySelectorAll('input[type=password]').forEach(input => input.value = ''); dialog.remove(); });
+  form.addEventListener('submit', async event => {
+    event.preventDefault(); if (state.busy) return;
+    const data = new FormData(form), button = form.querySelector('[type=submit]'), error = form.querySelector('[data-website-proof-error]');
+    if (!data.get('publish_allowed')) return;
+    state.busy = true; button.disabled = true; error.hidden = true;
+    try {
+      if (needsLogin) {
+        const account = { username: String(data.get('legacy_username') || ''), password: String(data.get('legacy_password') || '') };
+        form.querySelector('[name=legacy_password]').value = '';
+        try { await legacyRequest('/api/login', account); } finally { account.password = ''; }
+      }
+      const current = await api(requestPath);
+      if (current.challenge) {
+        const native = await legacyRequest('/api/session');
+        if (native.actor?.role !== 'owner' || !native.csrf_token) throw new Error('Použijte účet správce webu Pneu. Účet Handle ani zaměstnance pro toto ověření nestačí.');
+        await legacyRequest('/api/admin/handle-ownership-proof', { challenge: current.challenge }, native.csrf_token);
+        const response = await fetch('/.well-known/handle-ownership.json', { credentials: 'omit', redirect: 'error', cache: 'no-store' });
+        const published = await response.json();
+        if (!response.ok || published.challenge !== current.challenge) throw new Error('Veřejné ověření zatím neodpovídá této žádosti. Zkuste zkontrolovat stav znovu.');
+      }
+      const review = await api(`/owner/onboarding/${encodeURIComponent(requestId)}`);
+      if (!consentReady(review)) throw new Error('Žádost už není připravena ke schválení. Obnovte její stav.');
+      dialog.close(); await load(); feedback('Web Pneu je ověřený. Teď porovnejte kód a schvalte připojení agenta.');
+    } catch (failure) { error.textContent = failure.message; error.hidden = false; }
+    finally { state.busy = false; button.disabled = false; }
+  });
+  document.body.append(dialog); dialog.showModal();
 }
 function renderOverview(value) {
   const pending = pendingRequests();
@@ -133,6 +190,7 @@ document.addEventListener('click', async event => {
   if (button.dataset.tab) { state.tab = button.dataset.tab; render(); main.focus(); }
   if (button.dataset.auth) { state.authMode = button.dataset.auth; render(); }
   if (button.dataset.action === 'refresh') await load();
+  if (button.dataset.action === 'verify-website') { state.busy = true; try { await verifyWebsite(button.dataset.request); } catch (error) { feedback(error.message, true); } finally { state.busy = false; } }
   if (button.dataset.action === 'logout') { state.busy = true; try { await api('/owner/logout', {}); state.owner = null; state.csrf = ''; state.dashboard = { businesses: [], requests: [] }; render(); feedback('Odhlášeno z lidské Handle session.'); } catch (error) { feedback(error.message, true); } finally { state.busy = false; } }
 });
 main.addEventListener('submit', async event => {
@@ -151,6 +209,7 @@ main.addEventListener('submit', async event => {
       await api(`/owner/${kind}`, account); account.password = ''; if ('setup_secret' in account) account.setup_secret = '';
       message = kind === 'signup' ? 'Lidský účet Handle byl vytvořen.' : 'Přihlášeno do Handle.';
     } else if (kind === 'consent') {
+      if (submitter?.value !== 'rejected' && !consentReady(list(state.dashboard.requests).find(value => (value.id || value.request_id) === form.dataset.request))) throw new Error('Nejprve na této stránce ověřte web Pneu. Potom můžete schválit připojení.');
       await api(`/owner/onboarding/${encodeURIComponent(form.dataset.request)}/decide`, { user_code: data.get('user_code'), decision: submitter?.value || 'approved', scopes: checkedScopes }); message = submitter?.value === 'rejected' ? 'Žádost byla zamítnuta.' : 'Auditní připojení schváleno. Agent může dokončit výměnu vlastního credentialu.';
     } else if (!currentBusiness) throw new Error('Firma již není dostupná. Obnovte přehled.');
     else if (kind === 'answer') { await api(ownerPath(currentBusiness, `questions/${encodeURIComponent(form.dataset.version)}/${encodeURIComponent(form.dataset.question)}/answer`), { answer: data.get('answer'), kind: data.get('kind'), scope: data.get('scope'), ...(data.get('valid_until') ? { valid_until: new Date(String(data.get('valid_until'))).toISOString() } : {}) }); message = 'Odpověď uložena jako lidský zdroj. Agent musí zpracovat dotčená pravidla.'; }
@@ -172,7 +231,7 @@ main.addEventListener('submit', async event => {
       dialog.querySelector('[data-show-password]').addEventListener('click', () => password.type = password.type === 'password' ? 'text' : 'password');
       dialog.addEventListener('close', () => { password.value = ''; dialog.remove(); }); document.body.append(dialog); dialog.showModal();
     }
-  } catch (error) { feedback(error.message, true); }
-  finally { state.busy = false; buttons.forEach(button => button.disabled = false); }
+  } catch (error) { if (['OWNERSHIP_PROOF_REQUIRED', 'ONBOARDING_UNAVAILABLE'].includes(error.code)) await load(); feedback(error.message, true); }
+  finally { state.busy = false; buttons.forEach(button => button.disabled = button.dataset.ownershipBlocked === 'true'); }
 });
 await load();

@@ -48,6 +48,8 @@ Zákazník zadá svému skutečnému GrokBotovi úkol pro známý fiktivní auto
 
 První den nevyžaduje ruční založení hostingového projektu nebo relay endpointu majitelem ani předem nainstalovaný Pneu-specific CLI. Bootstrap musí být použitelný podporovaným obecným HTTP klientem. Admin credentials mohou technicky umožňovat zápisy. Audit je chováním pozorovací, nikoli automaticky serverově read-only. Publikace potřebuje výslovně zaznamenanou autorizaci pro kartu/odkaz; může být součástí úvodního consentu, bez dalších potvrzení každého kliknutí. Handle lidský účet a schválení se nikdy neodvozují z admin účtu předaného botovi.
 
+Úvodní instrukce mají být jednorázové zadání celého průchodu. Zahrnují povolení pouze omezeného zápisu jednorázové ownership challenge dané žádosti; nejsou souhlasem k libovolným legacy mutacím ani lidskou aktivací. Agent tento zápis provede s již schváleným legacy přístupem, nebo nabídne vrácený bezpečný ověřovací odkaz. Na téže stránce Handle člověk nejprve ověří web Pneu přes jeho samostatné legacy přihlášení a výslovné povolení tohoto zápisu; teprve potom zvlášť schválí agentí připojení. Samotný Handle účet neprokazuje vlastnictví webu. Dokud server hlásí chybějící ověření, konzole nezpřístupní schválení a agent neříká, že už stačí pouze souhlas. Člověk nemá psát další technické instrukce nebo kopírovat hesla/tokeny do chatu; bezpečné přihlášení a skutečná lidská rozhodnutí zůstávají potřebná.
+
 ### 1.2 Požadované důkazy
 
 `Fresh GrokBot + legacy + instrukce → registrace → lidské ověření → automatický relay → skutečný audit → návrh pravidel → lidské schválení → agentem publikovaná karta a odkaz.`
