@@ -604,7 +604,7 @@ test('native masked-secret handoff supports actual key links and private runtime
   const hook=createServer((req,res)=>{let raw='';req.on('data',chunk=>raw+=chunk);req.on('end',()=>{calls.push({body:JSON.parse(raw),authorization:req.headers.authorization});res.end(JSON.stringify({echo_key:req.headers.authorization}));});});
   await new Promise<void>(done=>hook.listen(0,'127.0.0.1',done));
   const callback=`http://127.0.0.1:${(hook.address() as AddressInfo).port}/native-webhook`;
-  const settings='https://grok.com/test-fixture/key-settings',key='private-native-sender-key-for-tests-1234';
+  const settings='https://cursor.com/grok-bot/link/v1/sidebar?agent=test-agent&tab=routines&automation=pneu-test-routine&target=webhook-key',key='private-native-sender-key-for-tests-1234';
   const system=await createUnifiedSystem(cfg);const server=system.app.listen(port,'127.0.0.1');await new Promise<void>(done=>server.once('listening',done));
   try {
     const rules=system.policy.rulebooks,proposed=rules.propose({id:'garage-demo',role:'business_agent'},fixtureProposal(rules.sources));rules.activate({id:'staff-owner',role:'owner'},proposed.version);
@@ -615,6 +615,10 @@ test('native masked-secret handoff supports actual key links and private runtime
     const manifest=await(await fetch(base+'/.well-known/handle.json')).json();assert.equal(manifest.setup_mode,'open_demo');assert.equal(manifest.automatic_replies.mode,'webhook');assert.equal(manifest.automatic_replies.key_entry,'native_grok_masked_input');
     const setup=await tool(['webhook-setup','--callback-url',callback,'--key-settings-url',settings]);
     assert.equal(setup.key_settings_url,settings);assert.equal(setup.key_entry,'native_grok_masked_input');assert.equal(setup.setup_url,undefined);assert.equal(setup.callback_url,callback);
+    assert.equal(setup.handoff_ready,true);assert.equal(new URL(setup.key_settings_url).searchParams.get('target'),'webhook-key');
+    const derived=await tool(['webhook-setup','--callback-url',callback,'--agent-id','test-agent','--routine-id','pneu-test-routine']);assert.equal(derived.key_settings_url,setup.key_settings_url);assert.ok(derived.user_message.includes(derived.key_settings_url));
+    await assert.rejects(run(process.execPath,[cli,'webhook-setup','--callback-url',callback,'--key-settings-url','https://cursor.com/grok-bot/link/v1/sidebar?agent=test-agent&tab=routines'],{env,timeout:15000}),/general Routines page is insufficient/);
+    await assert.rejects(run(process.execPath,[cli,'webhook-setup','--agent-id','test-agent','--routine-id','pneu-test-routine'],{env,timeout:15000}),/actual callback URL/);
     const installed=await tool(['set-webhook','--callback-url',callback,'--key-env','PNEU_TEST_ROUTINE_SECRET']);assert.equal(installed.test_ring.status,200);assert.equal(installed.wakeup.ready,false);
     assert.equal(calls[0].authorization,'Bearer '+key);
     await assert.rejects(run(process.execPath,[cli,'set-webhook','--callback-url',callback,'--key-env','MISSING_DEMO_SECRET'],{env,timeout:15000}),error=>{const e=error as {stdout:string;stderr:string};assert.ok(!e.stdout.includes(key));assert.ok(!e.stderr.includes(key));return /secure webhook key is unavailable/.test(e.stderr);});
