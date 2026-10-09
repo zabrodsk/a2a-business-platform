@@ -19,7 +19,7 @@ export interface PriceResult {
   currency: 'CZK';
 }
 export type ActorRole = 'owner' | 'staff' | 'human_customer' | 'business_agent' | 'customer_agent' | 'owner_agent' | 'unclaimed_agent';
-export interface Actor { id: string; role: ActorRole; customer_id?: string }
+export interface Actor { id: string; role: ActorRole; customer_id?: string; business_id?: string; connection_id?: string; execution_epoch?: number; scopes?: string[] }
 export type PaymentMode = 'deposit' | 'full';
 export type PaymentProviderName = 'local_demo' | 'masumi';
 export interface PurchaseAuthorization {
