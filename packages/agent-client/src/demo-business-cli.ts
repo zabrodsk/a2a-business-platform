@@ -4,7 +4,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { grokRoutineLinks, parseGrokKeySettingsLink } from './grok-routine-links.js';
+import { grokRoutineLinks, parseGrokKeySettingsLink, grokWebhookHandoff } from './grok-routine-links.js';
 
 type LocalConfig = { url: string; leases: Record<string, { lease_token: string; claim_generation: number }> };
 const help = `Open business demo: no account, approval code or ownership proof.
@@ -15,8 +15,8 @@ demo-business case CASE_ID | order ORDER_ID
 demo-business quote CASE_ID --data-file quote.json
 demo-business reply WORK_ITEM_ID --data-file reply.json
 demo-business scheduled-check-in [--interval 60]
-demo-business routine-links --agent-id ACTUAL_BOT_ID --routine-id ACTUAL_LOCAL_ROUTINE_ID
-demo-business webhook-setup --callback-url ACTUAL_CALLBACK --agent-id ACTUAL_BOT_ID --routine-id ACTUAL_LOCAL_ROUTINE_ID
+demo-business routine-links --routine-id ACTUAL_LOCAL_ROUTINE_ID [--agent-id ACTUAL_BOT_ID]
+demo-business webhook-setup --routine-id ACTUAL_LOCAL_ROUTINE_ID [--agent-id ACTUAL_BOT_ID] [--callback-url ACTUAL_CALLBACK]
                              Or supply --key-settings-url ACTUAL_ROUTINE_SPECIFIC_KEY_LINK
 demo-business set-webhook --callback-url ACTUAL_ROUTINE_URL --key-env ACTUAL_RUNTIME_SECRET_ENV
 demo-business wakeup-status
@@ -77,21 +77,15 @@ export async function demoBusinessMain(args = process.argv.slice(2)) {
       result = await request(command === 'order' ? `/orders/${id}` : `/cases/${id}${command === 'quote' ? '/quotes' : ''}`, command === 'quote' ? body : undefined);
     }
   } else if (command === 'routine-links') {
-    if (!values['agent-id'] || !values['routine-id']) throw new Error('Obtain the actual bot ID and local routine ID from Grok.');
+    if (!values['routine-id']) throw new Error('Obtain the actual local routine ID from Grok.');
     result = grokRoutineLinks(values['agent-id'], values['routine-id']);
   } else if (command === 'webhook-setup') {
-    if (!values['callback-url']) throw new Error('Use the actual callback URL returned by the native routine tool.');
-    const callback = new URL(values['callback-url']);
-    if (callback.username || callback.password || callback.hash || (callback.protocol !== 'https:' && !(callback.protocol === 'http:' && ['localhost','127.0.0.1'].includes(callback.hostname)))) throw new Error('Invalid routine callback URL.');
-    if (Boolean(values['agent-id']) !== Boolean(values['routine-id'])) throw new Error('Supply both the actual bot ID and local routine ID.');
-    const fromIds = values['agent-id'] ? grokRoutineLinks(values['agent-id'], values['routine-id']!) : undefined;
+    if (values['agent-id'] && !values['routine-id']) throw new Error('Supply the actual local routine ID.');
+    const fromIds = values['routine-id'] ? grokRoutineLinks(values['agent-id'], values['routine-id']) : undefined;
     const suppliedLink = values['key-settings-url'] ? parseGrokKeySettingsLink(values['key-settings-url']) : undefined;
-    const links = fromIds ?? suppliedLink;
-    if (!links) throw new Error('Obtain the actual bot ID and local routine ID, or a routine-specific webhook-key link, before asking the owner for a key.');
-    if (fromIds && suppliedLink && (fromIds.agent_id !== suppliedLink.agent_id || fromIds.routine_id !== suppliedLink.routine_id)) throw new Error('The key link points to a different bot or routine.');
-    result = { callback_url: callback.href, ...links, handoff_ready: true, key_entry: 'native_grok_masked_input',
-      user_message: `Open [webhook key settings](${links.key_settings_url}), copy the key, and paste it into the secure box below. I’ll connect it automatically.`,
-      instruction: 'Render user_message with its exact key_settings_url, then create Grok’s masked secret input. Do not replace it with a general Routines link. The callback URL is already required here: do not ask the owner for it later. Use the actual supported secret binding to register/test; never invent IDs, URLs or bindings, or request the key in ordinary chat.' };
+    if (!fromIds && !suppliedLink) throw new Error('Obtain the local routine ID or a routine-specific webhook-key link.');
+    if (fromIds && suppliedLink && (fromIds.routine_id !== suppliedLink.routine_id || fromIds.agent_id && suppliedLink.agent_id && fromIds.agent_id !== suppliedLink.agent_id)) throw new Error('The key link points to a different bot or routine.');
+    result = grokWebhookHandoff({ routine_id: (fromIds ?? suppliedLink)!.routine_id, agent_id: fromIds?.agent_id ?? suppliedLink?.agent_id, callback_url: values['callback-url'] });
   } else if (command === 'set-webhook') {
     if (!values['callback-url'] || Boolean(values['key-env']) === Boolean(values['key-file'])) throw new Error('Supply the real callback URL and exactly one runtime secret binding: --key-env NAME or --key-file PRIVATE_PATH.');
     const callback = new URL(values['callback-url']);

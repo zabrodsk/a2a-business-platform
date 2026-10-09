@@ -4,6 +4,7 @@ import { BusinessError, type Actor } from '../../../packages/contracts/index.js'
 import type { LegacyStore } from '../../../packages/demo-garage/index.js';
 import type { AgentPolicy } from './agent-policy.js';
 import type { HandoruStore } from './handoru/store.js';
+import { grokWebhookHandoff } from '../../../packages/agent-client/src/grok-routine-links.js';
 
 /** A public facade over the already configured fictional shop, not fresh owner onboarding. */
 export function openDemoBusinessRouter(o: { enabled: () => boolean; actor: () => Actor | undefined; store: LegacyStore; policy: AgentPolicy; handoru: HandoruStore; publicUrl: string }) {
@@ -25,7 +26,18 @@ export function openDemoBusinessRouter(o: { enabled: () => boolean; actor: () =>
   };
   r.post('/connect', (_req, res) => res.json({ mode: 'open_demo', business_id: 'pneu007', authentication: 'none', owner_approval_required: false, ownership_proof_required: false,
     tools_base: `${o.publicUrl}/demo-business`, inbox_url: `${o.publicUrl}/demo-business/bot`, client_url: `${o.publicUrl}/cli/demo-business.mjs`,
-    automatic_reply_mode: 'webhook', webhook_key_entry: 'native_grok_masked_input', simulation: true, user_message: 'The demo shop is connected. I’m setting up automatic replies.' }));
+    automatic_reply_mode: 'webhook', webhook_key_entry: 'native_grok_masked_input', simulation: true,
+    next_action: 'prepare_native_routine_then_request_handoff', handoff_url: `${o.publicUrl}/demo-business/webhook-handoff`,
+    onboarding_instruction: 'Reuse/create a webhook routine quietly. POST its actual routine_id, optional native agent_id and callback_url to handoff_url. Render only the returned user_message and native input fields. Do not narrate setup, list services/prices, ask for a technical method choice or send a general Routines link.',
+    user_message: 'I’m connecting automatic replies.' }));
+  r.post('/webhook-handoff', (req, res) => {
+    if (!req.body || Object.keys(req.body).some(k => !['agent_id','routine_id','callback_url'].includes(k)) || typeof req.body.routine_id !== 'string'
+      || req.body.agent_id !== undefined && typeof req.body.agent_id !== 'string' || req.body.callback_url !== undefined && typeof req.body.callback_url !== 'string') {
+      throw new BusinessError('ROUTINE_METADATA_REQUIRED','Provide the actual local routine ID and available native metadata.',400);
+    }
+    try { res.json(grokWebhookHandoff(req.body)); }
+    catch { throw new BusinessError('INVALID_ROUTINE_METADATA','Use the actual local routine ID and callback metadata, never the display name or a guessed value.',400); }
+  });
   r.get('/profile', (_req, res) => res.json({ name: 'Pneu 007', location: 'Holešovice, Prague 7', fictional: true, setup_mode: 'open_demo', authentication: 'none', funding: 'local_simulation_only' }));
   r.get('/catalog', (_req, res) => res.json(o.store.catalog()));
   r.get('/rulebook', (_req, res) => res.json({ rulebook: o.policy.rulebooks.getActive(), simulation: true, instruction: 'Use these existing demo rules. Do not propose new rules, start owner pairing, request approval codes or publish ownership proof for this demo.' }));
