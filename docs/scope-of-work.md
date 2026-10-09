@@ -178,6 +178,14 @@ Agent pro audit používá účty a rozhraní, která už dané systémy mají; 
 
 Tyto hodnoty patří do zdrojových dat. Backend má obecné vyhodnocení podporovaných polí. Číslo 5 % se nemá současně natvrdo opisovat do instrukcí, UI a tří různých funkcí.
 
+#### Prostředí a veřejné storno podmínky
+
+Fiktivní firma, importovaná provozní historie a platební prostředí jsou nezávislé údaje. Aktuální native provider se zjišťuje z `/api/payments/config`; každý existující payment intent si zachovává vlastní provider a síť. Masumi Preprod může provádět skutečné transakce s testovacími prostředky, zatímco `local_demo` je lokální simulace. Konfigurace/readiness sama nepotvrzuje provedenou platbu. Připravený veřejný `/demo/*` chat používá samostatný simulovaný tok a neurčuje režim chráněných nativních operací. Obchodní obrazovky používají běžné názvy a jedinou přehlednou informaci o ukázkové firmě; provenience importu a platební důkazy zůstávají dostupné v detailu.
+
+Veřejná obchodní politika je verzovaný `/cancellation-policy.json`, vykreslený také na `/podminky#storno`. Pro neprovedenou službu stanoví bezplatnou změnu/storno a vrácení 100 % skutečně uhrazené zálohy či ceny včetně pozdního zrušení/nedostavení; 24 hodin je doporučení, nikoli podmínka nároku. Již spotřebované síťové poplatky se nevracejí. Dokončená služba přechází na individuální reklamační postup majitele. Obsluha potvrzuje žádost do jednoho pracovního dne a majitel po přijetí storna a ověření původní platby do tří pracovních dnů zahájí refund nebo domluví ruční kompenzaci. Neověřený refund se po pěti pracovních dnech od zahájení řeší s majitelem. Jde o lidské provozní lhůty, ne automatický scheduler nebo garantované připsání prostředků.
+
+Konkrétní technické refund okno Masumi má přednost před lhůtou obsluhy; po jeho uzavření/výplatě je potřebná samostatná kompenzace majitelem. Link/karta se vrací ručně přes poskytovatele a současný backend tyto refundy automaticky nesleduje. Agent nemá autonomní refund oprávnění. Publikace politiky ani upřesnění instrukcí neaktivuje nový rulebook, nemění staré záznamy a nenahrazuje autentizované odpovědi majitele nebo nově citovaný audit. Skutečný rozpor aktivního scope s runtime je nutné znovu vyhodnotit v příslušném firemním kontextu.
+
 ### 4.4 Funkcionalita kalkulátoru Pneu 007
 
 Kalkulátor přebírá volby a cenovou logiku [Pneu Procházka](https://www.pneuprochazka.cz/vypocet-ceny), ověřené 8. října 2026. Nabízí osobní auto, MPV/SUV/4×4 a dodávku; průměry 13″ až 22″; výměnu celých kol nebo přezutí; plechové či hliníkové disky; runflat a TPMS. Při změně voleb okamžitě přepočítá cenu a zobrazí obsah zvolené služby.

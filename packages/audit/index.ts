@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type Database from 'better-sqlite3';
@@ -23,6 +23,7 @@ export interface Source {
   source_id: string; version: string; hash: string; visibility: 'public' | 'internal';
   effective_from: string; authority: string; current: boolean; content: string;
   url?: string; physical_source?: string;
+  representation?: 'template_archive' | 'published_document'; content_note?: string;
   business_id?: string; archive_integrity?: 'verified'; attachment_base64?: string;
   capture?: {system_id:string; locator:string; captured_at:string; method:'browser'|'api'|'mcp'|'document'|'owner'; content_type:string; native_revision?:string};
 
@@ -146,8 +147,16 @@ export class SourceRegistry {
     });
     const sources: Source[] = this.webSources.map(s => {
       const content = this.read(s.path);
-      return { source_id: s.source_id, version: `web-${sha(content).slice(0, 12)}`, hash: sha(content), visibility: 'public', effective_from: metadata.effective_from, authority: 'public-description-not-policy', current: true, content, url: s.url, physical_source: s.path };
+      return { source_id: s.source_id, version: `web-${sha(content).slice(0, 12)}`, hash: sha(content), visibility: 'public', effective_from: metadata.effective_from, authority: 'public-description-not-policy', current: true, content, url: s.url, physical_source: s.path,
+        representation: 'template_archive', content_note: 'Latest retained template archive, not the currently rendered web page. Read url for live content; this hash proves only the archived template bytes.' };
     });
+    const policyPath = 'apps/legacy/public/cancellation-policy.json';
+    if (existsSync(resolve(this.rootDir, policyPath))) {
+      const content = this.read(policyPath), policy = JSON.parse(content) as {version:string;effective_from:string};
+      sources.push({source_id:'web-cancellation-policy',version:policy.version,hash:sha(content),visibility:'public',effective_from:policy.effective_from,
+        authority:'published-merchant-policy',current:true,content,url:'/cancellation-policy.json',physical_source:policyPath,representation:'published_document',
+        content_note:'Current merchant terms. Human service levels and automated capabilities are stated separately; publication does not activate agent permissions.'});
+    }
     if (actor && !['owner', 'staff', 'business_agent'].includes(actor.role)) return sources;
     sources.push(make('internal-systems', systems, 'system-owner-current', true, 'fixtures/internal/systems.json'));
     sources.push(make('internal-operations', current, 'owner-signed-current', true, 'fixtures/internal/operations.md'));

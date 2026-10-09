@@ -32,7 +32,7 @@ test('uncertain or unobserved funding does not display a successful payment', ()
 
 test('fixture amounts and simulations never become current live payment confirmations', () => {
   const fixture = paymentStatus({ origin: 'fixture', amount_minor: 50000, status: 'service_completed' });
-  assert.equal(fixture.label, 'Historický demo záznam');
+  assert.match(fixture.label, /Importovaná evidence/);
   assert.match(fixture.note, /není potvrzením aktuální platby/);
   assert.equal(paymentStatus({ origin: 'fixture', amount_minor: null, status: 'confirmed' }).label, 'Platba neevidována');
   assert.match(paymentStatus(record('escrow_funded', 'local_demo')).note, /Lokální simulace/);

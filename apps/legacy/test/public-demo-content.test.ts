@@ -24,7 +24,7 @@ test('public demo fields are complete and consistent with booking, contact and p
   assert.match(contact, /09:00–18:00/); assert.match(contact, /P1/); assert.match(contact, /fiktivní plánek/);
   const terms = renderPublicDemoContent('podminky.html', template('podminky.html'), context);
   assert.match(terms, /500 Kč → 5 test-ADA/); assert.match(terms, /výchozí maximální rozpočet 2,5 test-ADA/);
-  assert.match(terms, /samostatnou testovací platbu v Kč/); assert.match(terms, /automatický refund přes Link \/ kartu tato ukázka nenabízí/);
+  assert.match(terms, /samostatnou testovací platbu v Kč/); assert.match(terms, /vrácení zadává majitel ručně u platebního poskytovatele/);
   const simulated = renderPublicDemoContent('podminky.html', template('podminky.html'), { ...context, simulation: true });
   assert.match(simulated, /5 simulovaných ADA/); assert.match(simulated, /2,5 simulovaných ADA/);
 });

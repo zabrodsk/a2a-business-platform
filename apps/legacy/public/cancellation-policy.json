@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "policy_id": "pneu007-cancellation-refund",
+  "version": "2026-10-09.1",
+  "effective_from": "2026-10-09",
+  "business": "Pneu 007",
+  "fictional_business": true,
+  "authority": {
+    "kind": "owner_defined_merchant_terms",
+    "description": "Obchodní podmínky zadané majitelem pro fiktivní Pneu 007. Publikace není aktivací rulebooku ani udělením provozních oprávnění agentovi.",
+    "rulebook_activation": false
+  },
+  "cancellation": {
+    "scope": "unperformed_service",
+    "changes_allowed": true,
+    "change_fee_minor": 0,
+    "cancellation_fee_minor": 0,
+    "recommended_notice_hours": 24,
+    "recommended_notice_is_condition": false,
+    "late_cancellation_fee_minor": 0,
+    "no_show_fee_minor": 0,
+    "shop_cancellation_refund_percent": 100,
+    "request_channel": "staff_with_order_number",
+    "effective_when": "recorded_and_confirmed_by_staff",
+    "completed_service": "not_cancellable_owner_reviews_complaint",
+    "changes_subject_to": "staff_confirmation_and_available_capacity"
+  },
+  "refund": {
+    "unperformed_service_percent": 100,
+    "late_cancellation_percent": 100,
+    "no_show_percent": 100,
+    "amount_basis": "verified_actual_paid_service_or_deposit_amount",
+    "include_unpaid_balance": false,
+    "include_spent_network_fees": false,
+    "default_destination": "original_payment_method",
+    "alternative_compensation": "owner_agreed_same_payment_asset",
+    "fiat_conversion_for_test_assets": false,
+    "acknowledgement_business_days": 1,
+    "owner_action_business_days": 3,
+    "owner_action_starts_after": ["cancellation_accepted", "original_payment_verified"],
+    "owner_action": "initiate_refund_or_arrange_manual_compensation",
+    "unconfirmed_refund_follow_up_business_days": 5,
+    "follow_up_starts_after": "refund_initiation",
+    "deadline_kind": "human_operating_service_level",
+    "funds_arrival_deadline_guaranteed": false,
+    "business_calendar": {
+      "weekdays": [1, 2, 3, 4, 5],
+      "timezone": "Europe/Prague",
+      "description": "Pracovní dny pro tyto lhůty jsou pondělí až pátek v časovém pásmu Europe/Prague."
+    },
+    "unknown_original_payment": "reconcile_original_transaction_before_any_refund_no_duplicate_charge",
+    "completion_evidence_any_of": ["provider_confirmed_refund", "verified_external_compensation_proof"]
+  },
+  "payment_routes": {
+    "masumi": {
+      "network": "Cardano Preprod",
+      "asset": "test-ADA",
+      "refund_window": "check_provider_unlockTime_before_request_when_available",
+      "after_payout_or_closed_window": "owner_arranges_manual_compensation_in_test_ADA",
+      "test_asset_has_fiat_refund_value": false,
+      "technical_window_is_shop_cancellation_deadline": false
+    },
+    "stripe_link": {
+      "refund_execution": "owner_manually_at_provider",
+      "automatic_refund_tracking_in_legacy": false
+    }
+  },
+  "implementation_notes": {
+    "policy_is_not_automated_capability": true,
+    "automatic_deadline_scheduler": false,
+    "agent_refund_authority": false,
+    "agent_allowed_actions": ["explain_published_policy", "check_payment_and_refund_status", "refer_request_to_owner"],
+    "manual_compensation_is_not_provider_refund": true,
+    "pending_request_is_not_completed_refund": true,
+    "new_rulebook_requires_separate_human_approval": true
+  }
+}
