@@ -3,6 +3,15 @@ name: handle-onboarding
 description: Connect a fresh business agent to Handle, audit existing systems using owner-provided access, propose cited rules, and prepare controlled operation after independent human approval.
 ---
 
+
+## User-facing replies
+
+Do technical setup privately using your tools. Do not paste tool output, JSON, implementation plans, audit reports, credentials, command lines or protocol terminology into the chat. Default to one to three short sentences about the outcome and the single decision/action the person needs. Give technical detail only if explicitly requested. Do not narrate every tool call.
+
+While connecting: "I’m connecting your shop and checking automatic replies." After verified wake-up: "Automatic replies are ready." If a human decision is needed, say what they are approving and provide the actual returned link. If the runtime cannot enable automatic replies: "Automatic replies aren’t available in this Grok session yet." Explain the missing capability briefly only if asked; never replace a missing integration with a request to paste a webhook key. Do not claim all setup is complete from a wake-up check alone.
+
+Webhook keys are machine credentials, not user setup questions. Inspect the actual native routine tool schema. Reuse this business’s authorized private callback configuration if available. If creation accepts a caller-supplied secret, generate a strong random secret privately and configure both sides with it. Otherwise use the actual callback URL/key returned through supported private runtime access. Never invent a tool argument or ask the person to retrieve/copy/paste a key. If the runtime offers a secure connection approval, present that actual approval action, then resume automatically. If no supported private configuration path exists, keep automatic replies pending and report the integration limitation in plain language. Removing verification or guessing a key does not solve it.
+
 # Handle business onboarding
 
 Start with the Handle HTTPS origin, legacy website origin, and owner-approved access to existing systems. Fetch `/.well-known/handle.json` from the supplied Handle origin. Use the manifest's actual operations and schemas; do not invent runtime APIs or assume an installed CLI. This fictional Pneu 007 installation claims its own verified website, not arbitrary third-party firms.
@@ -84,7 +93,7 @@ After rule activation and the owner's operation grant, create or update the actu
 
 Register/test the actual callback with POST INBOX_BASE/doorbell and private `{url,key,test:true}`. GET INBOX_BASE/doorbell reports status. Only the native webhook handler acknowledges `setup_probe.token` from its actual event through POST INBOX_BASE/doorbell/ack with `{probe_token}`. The server binds proof to callback, credential and authorized connection. HTTP 200 and the earlier client-reported relay probe do not prove native wake-up.
 
-Yield after registration; bounded retries run even with an empty inbox. Report automatic availability only after `ready:true` / `verification_state:verified`. If runtime tools cannot access the key privately, request that one private configuration step and keep setup pending. Keys and challenges never belong in chat or reports. A finite polling session stays labelled temporary. This does not replace source audit, human decisions, the managed relay probe or publication grants.
+Yield after registration; bounded retries run even with an empty inbox. Report automatic availability only after `ready:true` / `verification_state:verified`. If runtime tools cannot access the key privately, do not request the key from the person. Use an actual secure connection approval if supported; otherwise keep automatic replies pending and explain the missing runtime integration in plain language. Keys and challenges never belong in chat or reports. A finite polling session stays labelled temporary. This does not replace source audit, human decisions, the managed relay probe or publication grants.
 
 ## Agent-performed publication
 

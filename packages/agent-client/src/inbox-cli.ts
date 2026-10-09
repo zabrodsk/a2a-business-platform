@@ -173,7 +173,10 @@ function safeWakeupStatus(value: unknown): WakeupStatus {
   return safe;
 }
 function printWakeupStatus(status: WakeupStatus, outcome: string) {
-  console.log(JSON.stringify({ ...status, outcome, next_action: status.ready ? 'handle_inbox_on_native_webhook'
+  const user_message = status.ready ? 'Automatic replies are ready.'
+    : status.verification_state === 'pending' ? 'I’m checking that automatic replies work.'
+    : 'Automatic replies still need to be enabled.';
+  console.log(JSON.stringify({ ...status, outcome, user_message, display_instruction: 'Use user_message for a short user-facing status. Keep the remaining tool output private; never request webhook keys in chat.', next_action: status.ready ? 'handle_inbox_on_native_webhook'
     : status.verification_state === 'pending' ? 'yield_to_native_routine' : 'configure_and_verify_native_routine', ...(status.verification_state === 'pending' ? { instruction: 'End this setup turn now so the native routine can run and acknowledge its webhook probe. Check wakeup-status afterward; HTTP 200 alone is not readiness.' } : {}) }, null, 2));
 }
 

@@ -3,6 +3,13 @@ name: a2a-customer-booking
 description: Discover the fictional autoshop, link the customer's agent through human consent, negotiate through A2A and accept a specific offer only within an approved customer mandate.
 ---
 
+
+## Talk to the customer, not to a developer
+
+Keep routine replies to one to three short sentences. Do the discovery, tool calls, session handling and approval submission privately. Never paste JSON, commands, tokens, internal IDs, rulebook/audit/protocol details or a long progress report unless asked. Ask only for missing service details or a real decision.
+
+Present an offer naturally: "Four tyres, Friday at 16:00 in Prague. Total 2,472 CZK; simulated deposit 500 CZK. Shall I book this demo appointment?" Use the actual returned details, never these example values. After saved confirmation: "Booked for Friday at 16:00. The deposit is simulated; no money was charged." If the business has not replied, say "I’m waiting for the shop to confirm the offer." Do not claim a booking from a quote or promise a reply deadline without evidence.
+
 # Customer booking through A2A
 
 Use the website-discovery skill for a service/location request. The hackathon's fictional Pneu 007 tyre shop is in Holešovice, Prague 7. Its actual services are tyre changes and wheel swaps. Get its website from the public registry, then fetch the current Agent Card. The demo origin below is the operator's trusted source for the clients; it is not evidence of an organic search result. Do not search or scan real businesses for a demo-only request.

@@ -8,7 +8,7 @@ Save the published business skill and this routine's operating instructions unde
 
 Every inbox command in the routine must set that same INBOX_CONFIG. Every garage command must use the existing origin-bound business GARAGE_CONFIG. Never print private config files, tokens or webhook keys.
 
-Use the runtime's actual supported native routine tools to create a webhook trigger called "Pneu 007 A2A inbox". Save its actual {url,key} privately with mode 0600 and run inbox setup-wakeup --config-file PRIVATE_WEBHOOK.json. Yield while the native handler receives and acknowledges its one-use setup event. HTTP 200 alone is not readiness. If native tools cannot access the private key, request that one private configuration step and keep setup pending. Do not invent a webhook URL or claim a routine exists without creating and observing it.
+Use the runtime's actual supported native routine tools to create a webhook trigger called "Pneu 007 A2A inbox". Save its actual {url,key} privately with mode 0600 and run inbox setup-wakeup --config-file PRIVATE_WEBHOOK.json. Yield while the native handler receives and acknowledges its one-use setup event. HTTP 200 alone is not readiness. Inspect the actual native tool schema: reuse authorized private config or generate a private secret if the tool accepts one; otherwise store its actual returned callback/key. Never ask the user to find or paste a webhook key. If the runtime has a secure connection approval, present that actual action; if no private configuration path exists, keep setup pending and say that automatic replies cannot be enabled in this Grok session. Do not invent a webhook URL or claim a routine exists without creating and observing it.
 
 Routine instructions:
 
@@ -27,3 +27,5 @@ Routine instructions:
 After verified setup, stop prestarted inbox watch sessions for this Pneu bot. Verify unattended wake-up with an actual new customer A2A message; a successful webhook HTTP response alone does not prove that the bot replied.
 
 For an advertised demo_chat_approval flow, acting_for.type=demo_customer is an isolated synthetic customer. Verify its supplied case matches the inbox agent and task before using normal quote tools. The customer bot relays explicit yes to the exact offer through /demo; read its saved result. Do not create a human mandate or call external checkout for this local simulation.
+
+Keep all setup details and tool output private. User-facing replies should normally be one to three short natural sentences with only the result or the single action needed. Never dump JSON, commands, audit findings, keys, protocol state or long technical progress reports. Use the actual verified status; do not say ready while setup is pending.
