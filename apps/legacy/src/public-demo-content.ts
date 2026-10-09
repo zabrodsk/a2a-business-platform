@@ -47,7 +47,10 @@ export function renderPublicDemoContent(file: string, template: string, context:
   const profile = loadProfile('pneu007');
   let html = template.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, publicHeader(file));
   const fill = (label: string, value: string) => { html = html.replace(`<span class="ph">${label}</span>`, escape(value)); };
-  if (file === 'index.html') fill('[PLACEHOLDER]', `${profile.site.phone} · nefunkční demo číslo`);
+  if (file === 'index.html') {
+    fill('[PLACEHOLDER]', `${profile.site.phone} · nefunkční demo číslo`);
+    html = html.replace('Bez runflat a TPMS · upřesníte v kalkulátoru', '');
+  }
   if (file === 'kontakt.html') {
     fill('[PLACEHOLDER: testovací adresa]', profile.location!.address);
     fill('[PLACEHOLDER: telefon]', `${profile.site.phone} · nefunkční demo číslo`);
