@@ -3,29 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Handle: soukromá konzole majitele pro připojení agentů, audit, pravidla a předání fiktivního Pneu 007.">
+  <meta name="description" content="Handle: soukromá konzole majitele pro připojení agentů, audit, pravidla a předání fiktivního Pneu 007. Owner console for agents, audit, rules and handover.">
   <meta name="referrer" content="same-origin">
   <title>Handle · konzole majitele</title>
-  <link rel="stylesheet" href="/design-tokens.css">
+  <link rel="preload" href="/handle-ds/fonts/InstrumentSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/handle-ds/tokens.css">
+  <link rel="stylesheet" href="/handle-ds/components.css">
   <link rel="stylesheet" href="/handle.css">
   <script type="module" src="/handle.js"></script>
 </head>
-<body class="p7">
-  <a class="skip" href="#main">Přejít k obsahu</a>
-  <div class="shell">
-    <aside class="rail dark" aria-label="Handle">
-      <a class="handoru-brand" href="/handle">HANDLE<span>Business, in your hands.</span></a>
-      <p class="rail-label">Konzole majitele</p>
-      <nav id="navigation" aria-label="Správa firmy"></nav>
-      <div class="rail-bottom"><span class="demo">Fiktivní Pneu 007</span><p>Majitel rozhoduje.<br>Agent pracuje v mezích pravidel.</p><a href="/">Otevřít web Pneu 007 ↗</a><a href="/handle/onboarding">Návod k prvnímu dni</a></div>
-    </aside>
-    <div class="workspace">
-      <header class="top"><span class="kicker">Handle / lidská správa</span><div id="identity"></div></header>
-      <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
-      <main id="main" tabindex="-1" aria-busy="true"><p class="loading" role="status">Načítání lidské Handle session…</p></main>
-      <footer>Sandbox · skutečné provozní a platební stavy se ověřují v jejich zdrojových systémech.</footer>
-    </div>
+<body>
+  <a class="hc-skip" href="#main">Přejít k obsahu / Skip to content</a>
+  <div id="app" class="hc-app">
+    <main id="main" tabindex="-1" aria-busy="true"><p class="hc-loading" role="status">Načítání… / Loading…</p></main>
   </div>
-  <noscript><p class="note warn">Konzole potřebuje JavaScript. Agent může použít zdokumentované HTTP API; lidská schválení se provádějí v samostatné Handle session.</p></noscript>
+  <dialog id="dialog" class="hc-dialog" aria-labelledby="dialog-title"></dialog>
+  <noscript><p class="hd-note hd-note-warn">Konzole potřebuje JavaScript. The console needs JavaScript.</p></noscript>
 </body>
 </html>

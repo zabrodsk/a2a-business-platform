@@ -91,7 +91,7 @@ test('compatibility transport preserves SDK tasks while adopting scoped identiti
     for (const path of ['/handle', '/handoru']) {
       const console = await fetch(`${base}${path}`);
       assert.equal(console.status, 200, path);
-      assert.match(await console.text(), /href="\/handle">HANDLE<span>/);
+      assert.match(await console.text(), /<title>Handle · [\s\S]*src="\/handle\.js"/);
     }
     const unpublished = await fetch(`${base}/.well-known/agent-card.json`);
     assert.notEqual(unpublished.status, 200);
