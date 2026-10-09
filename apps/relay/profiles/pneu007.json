@@ -23,13 +23,13 @@
       "Tyre change and wheel swap for cars, SUVs and vans",
       "Online price calculator and appointment booking (sandbox)"
     ],
-    "phone": "+1 (202) 555-0170",
-    "phoneNote": "fictional number",
+    "phone": "+420 000 007 007",
+    "phoneNote": "fiktivní nefunkční číslo",
     "notice": "Pneu 007 is fictional. No services are provided at any address; payments are sandbox only."
   },
   "location": {
     "latitude": 50.105,
     "longitude": 14.432,
-    "address": "Holešovice, Praha 7 — fiktivní demo lokalita, bez fyzické provozovny"
+    "address": "Agentova 7, 170 00 Praha 7 – Holešovice (fiktivní testovací adresa)"
   }
 }

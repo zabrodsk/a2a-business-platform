@@ -18,6 +18,7 @@ import { handoruRoutes } from './handoru/routes.js';
 import { assertCapabilities } from './handoru/capabilities.js';
 import { handoruManifest } from './handoru/manifest.js';
 import { pneuMcp } from './mcp.js';
+import { hasPublicDemoContent, renderPublicDemoContent } from './public-demo-content.js';
 import { demoChatRouter } from './demo-chat.js';
 import { AgentPolicy } from './agent-policy.js';
 import { PaymentWorkflow } from './payment-workflow.js';
@@ -601,12 +602,23 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.status(syntax ? 400 : 500).json({ error: { code: syntax ? 'INVALID_JSON' : 'INTERNAL_ERROR', message: syntax ? 'Neplatný JSON požadavku.' : 'Operaci se nepodařilo dokončit.' } });
   });
   const pages: Record<string, string> = { '/': 'index.html', '/kalkulator': 'kalkulator.html', '/kontakt': 'kontakt.html', '/podminky': 'podminky.html',
-    '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'console.html', '/handle': 'handoru.html', '/handoru': 'handoru.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
+    '/index.html': 'index.html', '/kontakt.html': 'kontakt.html', '/podminky.html': 'podminky.html', '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'console.html', '/handle': 'handoru.html', '/handoru': 'handoru.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
   for (const extension of ['css','js']) app.get(`/handle.${extension}`,(_req,res)=>res.sendFile(join(publicDirectory,`handoru.${extension}`)));
   for (const [route, file] of Object.entries(pages)) app.get(route, (_req, res) => {
     if (route.startsWith('/agent/')) res.set('Cache-Control', 'no-store').set('Referrer-Policy', 'no-referrer');
-    if(route==='/'&&handoru.installation()?.active_connection_id&&store.db.prepare("SELECT 1 FROM handoru_meta WHERE key='site_agent_card'").get()) {
-      try{const pub=JSON.parse((store.db.prepare("SELECT value FROM handoru_meta WHERE key='site_agent_card'").get() as {value:string}).value);if(pub.rulebook_hash!==rulebooks.getActive().payload_hash)throw Error('stale');return void res.type('html').send(readFileSync(join(publicDirectory,file),'utf8').replace('</footer>','<a class="handoru-agent-card-link" href="/.well-known/agent-card.json">Pro agenty · Agent Card</a></footer>'));}catch{}
+    if (hasPublicDemoContent(file)) {
+      const status = providerStatus();
+      let html = renderPublicDemoContent(file, readFileSync(join(publicDirectory, file), 'utf8'), {
+        publicUrl: cfg.publicUrl, simulation: provider.name === 'local_demo',
+        networkFee: 'checkout_network_fee' in status ? status.checkout_network_fee : undefined,
+      });
+      if (file === 'index.html' && handoru.installation()?.active_connection_id && store.db.prepare("SELECT 1 FROM handoru_meta WHERE key='site_agent_card'").get()) {
+        try {
+          const pub = JSON.parse((store.db.prepare("SELECT value FROM handoru_meta WHERE key='site_agent_card'").get() as { value: string }).value);
+          if (pub.rulebook_hash === rulebooks.getActive().payload_hash) html = html.replace('</footer>', '<a class="handoru-agent-card-link" href="/.well-known/agent-card.json">Pro agenty · Agent Card</a></footer>');
+        } catch {}
+      }
+      return void res.type('html').send(html);
     }
     res.sendFile(join(publicDirectory, file));
   });
