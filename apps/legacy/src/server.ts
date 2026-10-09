@@ -139,6 +139,12 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     if (!prompt) fail('PROMPT_UNAVAILABLE', 'Zadání pro agenta není dostupné.', 503);
     res.set('Cache-Control', 'no-store').type('text/plain').send(prompt.replaceAll('[HANDLE_URL]', cfg.publicUrl));
   });
+  app.get('/handle/customer-prompt', (_req, res) => {
+    const source = readFileSync(join(repoRoot, 'prompts/grokbot-customer-registry.md'), 'utf8');
+    const instructions = [...source.matchAll(/^> (.+)$/gm)].map(match => match[1]).join('\n\n');
+    if (!instructions) fail('PROMPT_UNAVAILABLE', 'Zákaznické instrukce nejsou dostupné.', 503);
+    res.set('Cache-Control', 'no-store').type('text/plain').send(instructions);
+  });
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>openBusinessDemo()&&!handoru.isManagedContext()?res.set('Cache-Control','no-store').type('text/markdown').send('---\nname: handle-onboarding\ndescription: Use the open demo webhook handoff and keep setup replies short.\n---\n\n'+renderOpenDemoGuide(cfg.publicUrl)):res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});
   app.post(['/api/admin/handle-ownership-proof','/api/admin/handoru-ownership-proof'],auth.require('owner'),(req,res)=>{const challenge=req.body?.challenge;if(typeof challenge!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(challenge))fail('INVALID_CHALLENGE','Use the challenge from your registration.');store.db.prepare("INSERT INTO handoru_meta VALUES('ownership_proof',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify({challenge}));res.json({ok:true,path:'/.well-known/handle-ownership.json'});});
@@ -616,7 +622,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.status(syntax ? 400 : 500).json({ error: { code: syntax ? 'INVALID_JSON' : 'INTERNAL_ERROR', message: syntax ? 'Neplatný JSON požadavku.' : 'Operaci se nepodařilo dokončit.' } });
   });
   const pages: Record<string, string> = { '/': 'index.html', '/kalkulator': 'kalkulator.html', '/kontakt': 'kontakt.html', '/podminky': 'podminky.html',
-    '/index.html': 'index.html', '/kalkulator.html': 'kalkulator.html', '/kontakt.html': 'kontakt.html', '/podminky.html': 'podminky.html', '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'admin.html', '/admin.html': 'admin.html', '/console.html': 'admin.html', '/handle': 'handoru.html', '/handoru': 'handoru.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
+    '/index.html': 'index.html', '/kalkulator.html': 'kalkulator.html', '/kontakt.html': 'kontakt.html', '/podminky.html': 'podminky.html', '/pro-agenty': 'pro-agenty.html', '/pro-agenty.html': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'admin.html', '/admin.html': 'admin.html', '/console.html': 'admin.html', '/handle': 'handoru.html', '/handoru': 'handoru.html', '/handle/get-started': 'handle-get-started.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
   for (const extension of ['css','js']) app.get(`/handle.${extension}`,(_req,res)=>res.sendFile(join(publicDirectory,`handoru.${extension}`)));
   for (const [route, file] of Object.entries(pages)) app.get(route, (_req, res) => {
     if (route.startsWith('/agent/')) res.set('Cache-Control', 'no-store').set('Referrer-Policy', 'no-referrer');

@@ -845,6 +845,8 @@ U každého externího výsledku zaznamenat skutečný runtime/účet bez tajems
 
 ## 15. Konzole a dvouminutové demo
 
+Veřejná stránka `/handle/get-started` je dostupná před přihlášením. Odděluje firemní managed onboarding a zákaznické registry discovery, nabízí kanonické kopírovatelné instrukce, uvádí potřebné lidské souhlasy, vlastní token agenta, oddělený publisher přístup, ověřený webhook a omezení Pneu-only. Checklist připravenosti je vysvětlení, nikoli automatické potvrzení neprovedených živých testů. Připravené open demo je označená alternativa, ne náhrada auditu.
+
 Záložka Agent Card obsahuje jednoduchý popis a tlačítko pro zkopírování kanonického zadání. Prompt doplní aktuální website/Handle URL a zachová soukromý token mimo veřejnou kartu. Stav a historie publikace jsou ve sbalitelném detailu.
 
 Konzole ukazuje onboarding a ověřeného vlastníka, přidělený relay/příjem práce, zdroje a audit, rulebook/schválení, website publication, připojené agenty/předání a uložené objednávky/platby. Každý pohled má konkrétní stav a další potřebný krok. Nevyvíjet vlastní náhradu plného chatového UI GrokBota.

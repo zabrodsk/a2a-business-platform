@@ -8,13 +8,13 @@ const PAID = ['escrow_funded', 'result_submitted', 'seller_paid'];
 const I18N = {
   cs: {
     skip: 'Přejít k obsahu', console: 'Konzole majitele', manage: 'Správa firmy', footer: 'Majitel rozhoduje. Agent pracuje v mezích pravidel.',
-    openWeb: 'Otevřít web firmy', guide: 'Návod k prvnímu dni', sandbox: 'Sandbox', refresh: 'Obnovit', logout: 'Odhlásit', language: 'Jazyk', business: 'Firma',
+    openWeb: 'Otevřít web firmy', guide: 'Návod k prvnímu dni', getStarted: 'Začínáme', sandbox: 'Sandbox', refresh: 'Obnovit', logout: 'Odhlásit', language: 'Jazyk', business: 'Firma',
     tabs: { overview: 'Přehled', audit: 'Audit a otázky', rules: 'Pravidla', agents: 'Agenti a přístupy', website: 'Agent Card', handover: 'Předání firmy' },
     leads: { overview: 'Co se ve firmě děje a co čeká na vaše rozhodnutí.', audit: 'Co agent zjistil o vaší firmě a na co se vás ptá.', rules: 'Co agent smí udělat sám, co jen s vaším souhlasem a co nikdy.', agents: 'Kdo pro vás pracuje a co smí dělat.', website: 'Jak zákaznické agenty najdou vašeho agenta na webu.', handover: 'Výměna agenta bez ztráty zákazníků a rozpracované práce.' },
     footNote: 'Sandbox · skutečné provozní a platební stavy se ověřují v jejich zdrojových systémech.',
     // login
     loginTitle1: 'Váš business.', loginTitle2: 'Vaše', loginTitle3: 'pravidla.', loginLead: 'Váš agent prozkoumá firmu a navrhne pravidla. Vy rozhodujete, co smí dělat.',
-    modeLogin: 'Přihlásit se', modeSignup: 'První účet', email: 'E-mail', password: 'Heslo', newPassword: 'Nové heslo · aspoň 12 znaků', setupCode: 'Aktivační kód', setupHint: 'Soukromý kód od provozovatele Handle. Není to vaše heslo.',
+    modeLogin: 'Přihlásit se', modeSignup: 'První účet', email: 'E-mail', password: 'Heslo', newPassword: 'Nové heslo · aspoň 12 znaků', setupCode: 'Aktivační kód', setupHint: 'O aktivační kód požádejte provozovatele této instalace Handle. Není to vaše heslo.',
     signIn: 'Přihlásit do Handle', createAccount: 'Vytvořit účet',
     noPassword: 'Heslo nepředávejte svému agentovi.', requestOpened: 'Otevřeli jste žádost agenta o připojení. Po přihlášení ji uvidíte. Samotný odkaz nic neschvaluje.',
     // generic
@@ -105,12 +105,12 @@ const I18N = {
   },
   en: {
     skip: 'Skip to content', console: 'Owner console', manage: 'Run the business', footer: 'You decide. Your agent works within your rules.',
-    openWeb: 'Open the business website', guide: 'First-day guide', sandbox: 'Sandbox', refresh: 'Refresh', logout: 'Sign out', language: 'Language', business: 'Business',
+    openWeb: 'Open the business website', guide: 'First-day guide', getStarted: 'Get started', sandbox: 'Sandbox', refresh: 'Refresh', logout: 'Sign out', language: 'Language', business: 'Business',
     tabs: { overview: 'Overview', audit: 'Audit & questions', rules: 'Rules', agents: 'Agents & access', website: 'Agent Card', handover: 'Handover' },
     leads: { overview: 'What is happening in your business and what needs your decision.', audit: 'What your agent learned about your business, and its questions for you.', rules: 'What the agent may do on its own, only with your approval, or never.', agents: 'Who works for you and what they may do.', website: 'How customer agents find your agent on your website.', handover: 'Swap agents without losing customers or work in progress.' },
     footNote: 'Sandbox · real operational and payment states are confirmed in their source systems.',
     loginTitle1: 'Your business.', loginTitle2: 'Your', loginTitle3: 'rules.', loginLead: 'Your agent studies the business and proposes rules. You decide what it may do.',
-    modeLogin: 'Sign in', modeSignup: 'First account', email: 'Email', password: 'Password', newPassword: 'New password · at least 12 characters', setupCode: 'Activation code', setupHint: 'A private code from the Handle operator. Not your password.',
+    modeLogin: 'Sign in', modeSignup: 'First account', email: 'Email', password: 'Password', newPassword: 'New password · at least 12 characters', setupCode: 'Activation code', setupHint: 'Ask the person running this Handle installation for an activation code. It is not your password.',
     signIn: 'Sign in to Handle', createAccount: 'Create account',
     noPassword: 'Never give your password to your agent.', requestOpened: 'You opened an agent connection request. You will see it after signing in. The link itself approves nothing.',
     techDetails: 'Technical details', none: 'None', yes: 'Yes', no: 'No', notSet: 'Not set', review: 'Review', open: 'Open', save: 'Save', approve: 'Approve', reject: 'Reject', cancel: 'Close',
@@ -330,7 +330,7 @@ function render() {
   app.innerHTML = `<div class="hc-shell">
     <aside class="hd-rail" aria-label="Handle">${wordmark()}<p class="hd-rail-l">${esc(t('console'))}</p>
       <nav aria-label="${esc(t('manage'))}">${TABS.map(id => `<button type="button" data-tab="${id}" ${state.tab === id ? 'aria-current="page"' : ''}>${esc(t(`tabs.${id}`))}${count[id] ? `<span class="hd-rail-badge">${count[id]}</span>` : ''}</button>`).join('')}</nav>
-      <div class="hd-rail-f"><p>${esc(t('footer'))}</p><div class="hc-rail-links">${b ? `<a href="${esc(safeUrl(b.legacy_url) || '/')}" target="_blank" rel="noopener">${esc(t('openWeb'))} ↗</a>` : ''}<a href="/handle/onboarding" target="_blank" rel="noopener">${esc(t('guide'))} ↗</a></div></div>
+      <div class="hd-rail-f"><p>${esc(t('footer'))}</p><div class="hc-rail-links">${b ? `<a href="${esc(safeUrl(b.legacy_url) || '/')}" target="_blank" rel="noopener">${esc(t('openWeb'))} ↗</a>` : ''}<a href="/handle/get-started">${esc(t('getStarted'))} ↗</a><a href="/handle/onboarding" target="_blank" rel="noopener">${esc(t('guide'))} ↗</a></div></div>
     </aside>
     <div class="hc-work">
       <header class="hc-top">
@@ -373,7 +373,7 @@ function renderAuth() {
           ${signup ? field(t('setupCode'), '<input class="hd-input is-mono" name="setup_secret" type="text" autocomplete="one-time-code" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="200" required>', t('setupHint')) : ''}
           <button type="submit" class="hd-btn hd-btn-primary hd-btn-block">${esc(signup ? t('createAccount') : t('signIn'))}${ARROW}</button>
         </form>
-        <span class="hc-small hc-muted">${esc(t('noPassword'))}</span>
+        <span class="hc-small hc-muted">${esc(t('noPassword'))}</span><a class="hc-small" href="/handle/get-started">${esc(t('getStarted'))} →</a>
       </div>
     </main>
   </div>`;
@@ -610,7 +610,7 @@ function renderAgents(b) {
 
 // ---------- website ----------
 function renderWebsite(b) {
-  const introduction = panel(esc(t('webTitle')), `<p>${esc(t('webText'))}</p><div class="hd-actions">${button(t('copyPrompt'), { attrs: 'data-action="copy-agent-card-prompt"' })}</div>`);
+  const introduction = panel(esc(t('webTitle')), `<p>${esc(t('webText'))}</p><div class="hd-actions">${button(t('copyPrompt'), { attrs: 'data-action="copy-agent-card-prompt"' })}<a href="/handle/get-started#business">${esc(t('getStarted'))} →</a></div>`);
   if (!b) return introduction;
   const active = activeRules(b), grant = publishGrant(b), current = currentPublication(b), publications = list(b.publications);
   const cardUrl = `${String(b.legacy_url || location.origin).replace(/\/$/, '')}/.well-known/agent-card.json`;

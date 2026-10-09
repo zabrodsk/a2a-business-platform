@@ -34,6 +34,8 @@ Its demo location is **Holešovice, Praha 7**. For “find me an autorepair shop
 
 ## Agent Card setup and customer skill
 
+Start at the public [Get started page](https://pneu007-production.up.railway.app/handle/get-started): separate business/customer instructions, copy buttons, required owner decisions, operator-provided access and a readiness checklist. It is linked before sign-in and from the owner console.
+
 Business owners open `/handle#website` for Agent Card setup and a copyable prompt. The prompt uses the selected website and configured Handle origin, obtains a private agent credential through owner-approved onboarding, and separates webhook and registry publisher access. It never puts tokens in the public card. The [source prompt](prompts/business-agent-card.md) is served at `/handle/agent-card-prompt`.
 
 Customers load [the Handle customer skill](skills/handle-customer/SKILL.md) once, then ask for a service and area. The registry serves it at `/skills/handle-customer/SKILL.md` and advertises it as `customer_skill` in root metadata. It supplies the registry URL and searches active listings before reading the returned website's current Agent Card. Persistent skill installation depends on the actual runtime. See the [customer setup prompt](prompts/grokbot-customer-registry.md).
