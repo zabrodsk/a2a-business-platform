@@ -1,0 +1,37 @@
+{
+  "kind": "SCRIPTED_TEST",
+  "observed_at": "2026-10-09T04:05:05.002Z",
+  "issuer_url": "https://pneu007-production.up.railway.app",
+  "customer_page": "https://pneu007-production.up.railway.app/handle/customer",
+  "isolated_resource_url": "https://customer-identity-verify-a-production.up.railway.app",
+  "synthetic_customer": true,
+  "real_human_or_grokbot_proof": false,
+  "booking_or_payment_attempted": false,
+  "source": "scripts/customer-identity-browser-smoke.mjs",
+  "checks": {
+    "resource_metadata": 200,
+    "fresh_login_screen": true,
+    "browser_signup": 201,
+    "browser_login": 200,
+    "plain_czech_consent_labels": true,
+    "empty_scope_rejected": true,
+    "a2a_only_consent": true,
+    "no_contact_details_shared": true,
+    "profile_update": true,
+    "cross_tab_stable_csrf": true,
+    "isolated_grant_visible": true,
+    "resource_scoped_access": true,
+    "grant_revoked": true,
+    "revoked_grant_refresh_status": 403,
+    "agent_revoked": true,
+    "revoked_agent_refresh_status": 401,
+    "bad_query_rejected": true,
+    "logout_session_cleared": true
+  },
+  "screenshot": "docs/evidence/customer-identity-browser-deployed-2026-10-09.png",
+  "status": "PASS",
+  "screenshot_redactions": [
+    "Synthetic account email replaced with a generic test address",
+    "Account header replaced with SCRIPTED_TEST label"
+  ]
+}

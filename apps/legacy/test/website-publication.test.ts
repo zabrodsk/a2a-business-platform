@@ -25,8 +25,11 @@ test('website card requires separate owner publication scope, bounded native wri
   const replay=await json(await c.agent('/api/agent/site/agent-card',{publication_id:publication.id},{'idempotency-key':'write-publication-one'}));assert.deepEqual(written.structuredContent,replay);
   const response=await f.publicCall('/.well-known/agent-card.json'),card=await json(response),etag=response.headers.get('etag');
   assert.equal(response.headers.get('cache-control'),'no-cache, max-age=0, must-revalidate');assert.ok(etag);
+  assert.equal(card.documentationUrl,`${f.base}/auth.md`);assert.equal(AgentCard.fromJSON(card).documentationUrl,card.documentationUrl);
+  const guide=await f.publicCall(new URL(card.documentationUrl).pathname);assert.equal(guide.status,200);assert.match(await guide.text(),/customer/i);
+  const skill=await f.publicCall('/skills/handle-customer/SKILL.md');assert.equal(skill.status,200);assert.match(await skill.text(),/Never ask.*(?:business|publisher).*credential/i);
   assert.equal(card.supportedInterfaces[0].url,relay.endpoint);assert.equal(card.supportedInterfaces[0].protocolVersion,'1.0');assert.equal(card.supportedInterfaces[0].protocolBinding,'JSONRPC');
-  assert.equal(card.documentationUrl,`${f.base}/agents.md`);assert.equal(card.securitySchemes.bearer.httpAuthSecurityScheme.scheme,'Bearer');assert.match(card.securitySchemes.bearer.httpAuthSecurityScheme.description,/signed-in customer/);assert.deepEqual(card.securityRequirements,[{schemes:{bearer:{list:[]}}}]);
+  assert.equal(card.securitySchemes.bearer.httpAuthSecurityScheme.scheme,'Bearer');assert.match(card.securitySchemes.bearer.httpAuthSecurityScheme.description,/No merchant approval/);assert.deepEqual(card.securityRequirements,[{schemes:{bearer:{list:[]}}}]);
   assert.equal(card.capabilities.streaming,false);assert.equal(card.capabilities.pushNotifications,false);assert.equal(card.capabilities.extensions[0].params.business.bootstrap_url,`${f.base}/.well-known/handle.json`);assert.match(card.description,/Fictional/);
   const serialized=JSON.stringify(card);for(const privateValue of [c.token,'auto_discount_bps','deposit_minor','source_authority'])assert.ok(!serialized.includes(privateValue));
   const home=await(await f.publicCall('/')).text();assert.match(home,/<a[^>]*href="\/\.well-known\/agent-card\.json"[^>]*>Pro agenty/);

@@ -1,0 +1,111 @@
+{
+  "kind": "SCRIPTED_TEST_DEPLOYED_HTTP",
+  "timestamp": "2026-10-09T04:06:21.458Z",
+  "run_id": "d60dea5e-e935-4c03-a1bf-1adb069ab651",
+  "phase": "revoked",
+  "issuer_url": "https://pneu007-production.up.railway.app",
+  "customer_business_signups": 0,
+  "explanation": "Synthetic customer/owner/agent sessions; controlled isolated business services; captured HTTP audit observations and exact synthetic owner policy decision. Not real human, GrokBot, continuous runtime, Masumi Preprod or real payment proof.",
+  "businesses": [
+    {
+      "business_id": "customer-identity-verify-a",
+      "url": "https://customer-identity-verify-a-production.up.railway.app",
+      "managed_relay_id": "relay-3ad5b7b3-8f4e-4806-986b-6af3677b9fce",
+      "audit": {
+        "report_version": 1,
+        "rulebook_version": 3,
+        "rulebook_hash": "9da363a2f3f5556316b85ad5bd5c2b0688e918d4cd06335bf5a302cdaf7e9d69",
+        "captures": [
+          {
+            "source_id": "evidence-68f4ca50-5f4f-4db2-816d-971de227d6a5",
+            "url": "https://customer-identity-verify-a-production.up.railway.app/api/services",
+            "hash": "f8ef03699b418b1c5ad78f3d7c58ec8e41ef784476efc680ceb90b79942e04cb"
+          },
+          {
+            "source_id": "evidence-17a35faa-fae9-41a2-b794-f9cecefb53bb",
+            "url": "https://customer-identity-verify-b-production.up.railway.app/api/services",
+            "hash": "f8ef03699b418b1c5ad78f3d7c58ec8e41ef784476efc680ceb90b79942e04cb"
+          }
+        ],
+        "policy_decision_source_id": "evidence-6ce9cd08-7281-45bd-9edc-6a3e120a4a57"
+      },
+      "a2a_task_id": "8d4f7429-b013-489b-bd40-52443ae72740",
+      "case_id": "case-8d0f2311-94b5-424b-8150-7cdbe66fb2fe",
+      "local_customer_record_id": "handle-customer-d4c5f711-0ac3-4210-8937-0513f59fc8d8",
+      "quote_id": "quote-c52efb1a-4e14-47af-aa89-287789719b3e",
+      "mandate_id": "mandate-e82e72ca-cfdc-48fd-9012-202d159085da",
+      "order_id": "order-01cf704f-f489-438a-a8f9-cd1ecdcf77b4",
+      "payment_intent_id": "intent-f78e2c93-b964-4a97-9737-cda8d508c126",
+      "booking_id": "booking-21dcf7ff-10b5-485c-9ca6-3e22e3ffcd4e",
+      "slot_id": "slot-001"
+    },
+    {
+      "business_id": "customer-identity-verify-b",
+      "url": "https://customer-identity-verify-b-production.up.railway.app",
+      "managed_relay_id": "relay-f5b6197c-e9b8-4db1-907d-c95974b12f16",
+      "audit": {
+        "report_version": 1,
+        "rulebook_version": 3,
+        "rulebook_hash": "c67955ad143f036e939cb1b62f38b073b2f7feb39080aef4e17fa032d667c403",
+        "captures": [
+          {
+            "source_id": "evidence-2abcbc91-6227-4650-908e-23733f40470e",
+            "url": "https://customer-identity-verify-b-production.up.railway.app/api/services",
+            "hash": "f8ef03699b418b1c5ad78f3d7c58ec8e41ef784476efc680ceb90b79942e04cb"
+          },
+          {
+            "source_id": "evidence-b5f8984e-fd55-4fc7-a529-2e566b25fb1f",
+            "url": "https://customer-identity-verify-a-production.up.railway.app/api/services",
+            "hash": "f8ef03699b418b1c5ad78f3d7c58ec8e41ef784476efc680ceb90b79942e04cb"
+          }
+        ],
+        "policy_decision_source_id": "evidence-95055c21-6297-42ba-a63a-ce306cd7b899"
+      },
+      "a2a_task_id": "13842540-fc01-4a8e-a95c-8f2351ddd4bf",
+      "case_id": "case-ca43b1a1-d68f-41cd-8ad2-dfe1d1ccca87",
+      "local_customer_record_id": "handle-customer-3ce90a55-eba2-431f-879f-0ac977f4ac49",
+      "quote_id": "quote-6a6736a0-68d6-42ea-8eba-7e732686e508",
+      "slot_id": "slot-001"
+    }
+  ],
+  "checks": {
+    "two_origins_two_offers_without_site_signup": true,
+    "cross_audience_and_delegation_denied": true,
+    "scope_and_case_insensitive_a2a_denied": true,
+    "exact_central_human_mandate_and_local_demo_booking": true,
+    "unapproved_csrf_wrong_hash_and_foreign_mandate_denied": true,
+    "renewal_retains_customer_and_original_purchase_ids": true,
+    "per_business_revocation_with_other_business_preserved": true,
+    "global_revocation_and_existing_commitment_preserved": true,
+    "revocation_survives_second_hosting_restart": true,
+    "original_booking_and_intent_survive_both_restarts": true
+  },
+  "verifications": [
+    {
+      "at": "2026-10-09T04:02:36.134Z",
+      "original_order_id": "order-01cf704f-f489-438a-a8f9-cd1ecdcf77b4",
+      "original_intent_id": "intent-f78e2c93-b964-4a97-9737-cda8d508c126",
+      "original_booking_id": "booking-21dcf7ff-10b5-485c-9ca6-3e22e3ffcd4e"
+    },
+    {
+      "at": "2026-10-09T04:05:59.799Z",
+      "original_order_id": "order-01cf704f-f489-438a-a8f9-cd1ecdcf77b4",
+      "original_intent_id": "intent-f78e2c93-b964-4a97-9737-cda8d508c126",
+      "original_booking_id": "booking-21dcf7ff-10b5-485c-9ca6-3e22e3ffcd4e"
+    }
+  ],
+  "limitations": [
+    "Issuer outage/malformed introspection covered by local integration tests only.",
+    "Business services must remain isolated from the primary Pneu demo."
+  ],
+  "hosting_restarts": {
+    "rounds": 2,
+    "services": [
+      "pneu007",
+      "customer-identity-verify-a",
+      "customer-identity-verify-b"
+    ],
+    "verified_at": "2026-10-09T04:07:29.719Z"
+  },
+  "test_human_and_test_owner_sessions_logged_out": true
+}

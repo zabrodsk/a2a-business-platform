@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Jeden zákaznický Handle účet. Váš agent a přístupy k zapojeným firmám pod vaší kontrolou.">
+  <meta name="referrer" content="same-origin">
+  <title>Handle · můj agent</title>
+  <link rel="stylesheet" href="/design-tokens.css">
+  <link rel="stylesheet" href="/customer-handle.css">
+  <script type="module" src="/customer-handle.js"></script>
+</head>
+<body class="p7">
+  <a class="skip" href="#main">Přejít k obsahu</a>
+  <header class="customer-top dark">
+    <a class="customer-brand" href="/handle/customer">HANDLE<span>Váš agent. Vaše rozhodnutí.</span></a>
+    <div id="identity"></div>
+  </header>
+  <main id="main" tabindex="-1" aria-busy="true">
+    <div class="customer-heading"><p class="kicker">Osobní Handle</p><h1>Jednou se přihlásíte.<br>Váš agent zařídí zbytek.</h1><p>Jeden zákaznický účet pro zapojené firmy. Vy určujete, co agent smí a co o vás sdílí.</p></div>
+    <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+    <div id="content"><p role="status">Načítání zákaznické session…</p></div>
+  </main>
+  <footer>Handle · přístup k firmě není souhlas s nákupem. Odvolání přístupu samo neruší již přijaté rezervace ani platby.</footer>
+  <noscript><p class="feedback">Pro přihlášení a lidské schválení zapněte JavaScript.</p></noscript>
+</body>
+</html>

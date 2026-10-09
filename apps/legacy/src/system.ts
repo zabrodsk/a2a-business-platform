@@ -104,16 +104,17 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
   if (cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true') relayConfig.demoCustomerId = session => demoCustomer(legacy.store, session).customer_id!;
   const resolveIdentity=(token:string,businessId?:string):Identity|undefined=>{
     if(!businessId&&token===cfg.env.LEGACY_RELAY_ADMIN_TOKEN)return {id:'relay-admin',role:'admin'};
-    const dynamic=legacy.handoru.identify(token)??legacy.agentAuth.identify(token);
+    const dynamic=legacy.customerIdentity.federation?.identify(token)??legacy.handoru.identify(token)??legacy.agentAuth.identify(token);
     const actor=dynamic??cfg.auth.agentTokens.get(token);
     if(!actor||actor.role==='business_agent'&&!dynamic)return;
     if(actor.role==='business_agent'&&businessId&&actor.business_id!==businessId)return;
+    if(actor.role==='customer_agent'&&actor.connection_id&&businessId&&actor.business_id!==businessId)return;
     if(!['business_agent','customer_agent','unclaimed_agent'].includes(actor.role))return;
     return {...actor,role:actor.role==='business_agent'?'business':actor.role==='customer_agent'?'customer':'unclaimed',...(businessId?{business_id:businessId}:{})};
   };
   const checkIdentity=(identity:Identity,operation?:RelayOperation)=>{
     if(identity.role==='admin')return operation===undefined;
-    if(identity.role==='customer')return operation==='a2a'||operation===undefined;
+    if(identity.role==='customer')return (!identity.connection_id || !!identity.scopes?.includes('a2a')) && (operation==='a2a'||operation===undefined);
     if(identity.role!=='business')return false;
     const scope=operation==='inbox.reply'?'inbox.reply':'inbox.claim';
     try{legacy.handoru.authorize({...identity,role:'business_agent'},identity.business_id!,scope,true);return true;}catch{return false;}

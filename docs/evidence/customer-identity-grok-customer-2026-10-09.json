@@ -1,0 +1,89 @@
+{
+  "kind": "LIVE_GROK_BOT_CUSTOMER_WITH_SCRIPTED_TEST_HUMAN",
+  "runtime": "Grok Bot desktop app, fresh Handle Customer Test agent",
+  "issuer_url": "https://pneu007-production.up.railway.app",
+  "agent_connection_id": "hcc_XIhjY9TKhC6WpycXlNUujS0FO1AtyYcndbQcDvVpzho",
+  "synthetic_customer_id": "hcu_NkFWRJgNMDtAs17NONUnxpVih8RX-_CRn4Qw1cxdlqQ",
+  "registration": "Actual runtime registered one connection and kept device/delegation/resource credentials private",
+  "human_consent": "Separately authenticated synthetic test customer; no human password/cookie supplied to bot",
+  "began_at": "2026-10-09T04:12:20.069Z",
+  "revoked_at": "2026-10-09T04:13:57.102Z",
+  "business_signup_or_login_steps": 0,
+  "scope": [
+    "a2a",
+    "customer.tools"
+  ],
+  "shared_fields": [],
+  "businesses": [
+    {
+      "business_id": "customer-identity-verify-a",
+      "url": "https://customer-identity-verify-a-production.up.railway.app",
+      "case": {
+        "id": "case-3b2c4dfc-fcc0-49b6-9407-b59e53b616e3",
+        "customer_id": "handle-customer-b4e2af06-611a-4318-8fc9-ff5e39013993",
+        "status": "open"
+      },
+      "http_status": 201,
+      "observed_by": "Actual runtime report and independent read-only backend inspection"
+    },
+    {
+      "business_id": "customer-identity-verify-b",
+      "url": "https://customer-identity-verify-b-production.up.railway.app",
+      "case": {
+        "id": "case-4504036d-453f-405c-abf7-4e9b2f1fb21b",
+        "customer_id": "handle-customer-ef7755e7-4deb-48c2-b545-ab49b3f50989",
+        "status": "open"
+      },
+      "http_status": 201,
+      "observed_by": "Actual runtime report and independent read-only backend inspection"
+    }
+  ],
+  "status": "PASS",
+  "limitations": [
+    "This is one actual customer runtime, not two separate Grok Bot accounts.",
+    "Human Handle consent was exercised with an automated synthetic test account.",
+    "No live-runtime reservation/payment attempted; booking/restart checks are separately scripted local_demo tests.",
+    "The runtime corrected an initial unsupported-field HTTP400; exactly one successful harmless case per business was observed."
+  ],
+  "completed_at": "2026-10-09T04:15:25.479Z",
+  "revocation": {
+    "business_a_resource_token": 401,
+    "business_b_resource_token": 401,
+    "issuer_delegation_token": 401,
+    "observed_by": "Actual Grok Bot result observed in desktop UI; central grant independently verified revoked"
+  },
+  "test_human_session_logged_out": true,
+  "desktop_control_skill": "clawd-cursor",
+  "hosting_http_denial_observations": [
+    {
+      "service": "customer-identity-verify-a",
+      "rows": [
+        {
+          "timestamp": "2026-10-09T04:14:03.206041005Z",
+          "method": "GET",
+          "path": "/api/agent/cases",
+          "httpStatus": 401,
+          "requestId": "avUYoTnFQtOrN6FvnbOCzg",
+          "host": "customer-identity-verify-a-production.up.railway.app",
+          "deploymentId": "8983d8b6-a630-40c2-906b-0c2e34c5d7bd"
+        }
+      ],
+      "log_query_exit": 0
+    },
+    {
+      "service": "customer-identity-verify-b",
+      "rows": [
+        {
+          "timestamp": "2026-10-09T04:14:03.397944608Z",
+          "method": "GET",
+          "path": "/api/agent/cases",
+          "httpStatus": 401,
+          "requestId": "AFzpO0dfQcSDKR4ZWVMv1w",
+          "host": "customer-identity-verify-b-production.up.railway.app",
+          "deploymentId": "d547c657-978c-4966-8cc3-cc0726c716f5"
+        }
+      ],
+      "log_query_exit": 0
+    }
+  ]
+}

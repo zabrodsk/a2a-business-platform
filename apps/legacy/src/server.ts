@@ -11,6 +11,7 @@ import { SourceRegistry, RulebookManager } from '../../../packages/audit/index.j
 import { createPaymentProvider, paymentProviderStatus, selectPaymentSku, DEMO_SELLER } from '../../../packages/payments/index.js';
 import { LegacyAuth } from './auth.js';
 import { AgentAuth } from './agent-auth.js';
+import { customerIdentityIntegration } from './customer-identity-integration.js';
 import { HandoruStore } from './handoru/store.js';
 import { importCompatibility } from './handoru/onboarding.js';
 import { renderAgentGuide, renderManagedAgentGuide, renderOpenDemoGuide } from '../../relay/src/agent-guide.js';
@@ -29,6 +30,7 @@ import { GARAGE_TOOLS } from '../../../packages/agent-client/src/garage-tools.js
 import { loadProfile } from '../../relay/src/card.js';
 
 export interface LegacyOptions {
+  customerIdentityFetch?: typeof fetch;
   discoveryFetchDocument?: DocumentFetcher;
   now?: () => Date;
   paymentProvider?: PaymentProvider;
@@ -65,11 +67,12 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   const agentAuth = new AgentAuth(store.db, { publicUrl: cfg.publicUrl, now });
   const handoru = new HandoruStore(store.db,cfg.publicUrl,now);
   importCompatibility(handoru,cfg.auth.agentTokens,cfg.env.HANDORU_FRESH==='true');
-  const auth = new LegacyAuth(store.db, { ...cfg.auth, now, agentTokens:new Map([...cfg.auth.agentTokens].filter(([,a])=>a.role!=='business_agent')), lookupAgentToken: token => handoru.identify(token) ?? agentAuth.identify(token) });
+  const auth = new LegacyAuth(store.db, { ...cfg.auth, now, agentTokens:new Map([...cfg.auth.agentTokens].filter(([,a])=>a.role!=='business_agent')), lookupAgentToken: token => customerIdentity.federation?.identify(token) ?? handoru.identify(token) ?? agentAuth.identify(token) });
   const registry = options.registry ?? new SourceRegistry(repoRoot);
   const rulebooks = new RulebookManager(store.db, registry);
   const businessIdentity = [...cfg.auth.agentTokens.values()].find(value => value.role === 'business_agent');
   const policy = new AgentPolicy(store, rulebooks, { now, businessActorId: businessIdentity?.id ?? 'garage-demo', businessId:()=>handoru.installation()?.id??'pneu007', demoChatEnabled:()=>cfg.env.DEMO_CHAT_APPROVAL==='true'&&cfg.env.DEMO_PUBLIC_A2A==='true'&&handoru.installation()?.id==='pneu007', authorizeBusiness: a=>handoru.authorize(a,handoru.installation()?.id??'pneu007','inbox.claim',true),onEvent:(entity,entityId,kind,a,data)=>{const b=handoru.installation();if(b)handoru.event(b.id,`native.${entity}.${kind}`,a.id,{entity_id:entityId,detail:data});} });
+  const customerIdentity = customerIdentityIntegration(cfg, store.db, policy, () => handoru.installation()?.id ?? fail('BUSINESS_REQUIRED', 'Complete business onboarding before accepting customer identity.', 409), { now, request: options.customerIdentityFetch });
   handoru.validateActive=(a,b,c,scope)=>{
     const active=new RulebookManager(store.db,new SourceRegistry(registry.rootDir,registry.webSources,registry.includeFixtures),{businessId:b.id,genericEvidence:b.id!=='pneu007'}).getActive();
     assertCapabilities(active.governance?.required_capabilities??[],Boolean(store.db.prepare('SELECT 1 FROM handoru_meta WHERE key=?').get(`mcp_verified:${c.id}`)));
@@ -96,6 +99,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
 
   const app = express();
   app.disable('x-powered-by');
+  if (customerIdentity.federation) app.use(customerIdentity.federation.middleware);
   app.use((_req, res, next) => {
     res.set('X-Content-Type-Options', 'nosniff').set('Referrer-Policy', 'same-origin').set('X-Frame-Options', 'SAMEORIGIN');
     res.set('Link', `</agents.md>; rel="describedby"; type="text/markdown", </.well-known/handle.json>; rel="service-desc"; type="application/json", </.well-known/agent-card.json>; rel="agent-card"; type="application/json"`);
@@ -106,6 +110,13 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.use('/demo-business', openDemoBusinessRouter({ store, policy, handoru, publicUrl: cfg.publicUrl, actor: currentBusinessIdentity,
     enabled: () => openBusinessDemo() && cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true' && cfg.env.HANDORU_FRESH !== 'true' && handoru.installation()?.id === 'pneu007' }));
   const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now: () => now().getTime() });
+  if (customerIdentity.router) app.use(customerIdentity.router);
+  if (customerIdentity.issuerOrigin) app.get('/handle/customer', (_req, res) => {
+    res.set('Cache-Control', 'no-store').set('Referrer-Policy', 'no-referrer');
+    if (customerIdentity.issuer) return void res.sendFile(join(publicDirectory, 'customer-handle.html'));
+    // Only the explicitly configured issuer can receive this navigation. No credentials are forwarded.
+    res.redirect(303, `${customerIdentity.issuerOrigin}/handle/customer`);
+  });
   const discoveryJson = express.json({ limit: '32kb' });
   app.post('/discovery/websites', (req, res, next) => {
     res.set('Cache-Control', 'no-store');
@@ -145,6 +156,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     if (!instructions) fail('PROMPT_UNAVAILABLE', 'Zákaznické instrukce nejsou dostupné.', 503);
     res.set('Cache-Control', 'no-store').type('text/plain').send(instructions);
   });
+  app.get(['/skills/handle-customer/SKILL.md','/skills/pneu007-customer/SKILL.md'],(_req,res)=>res.set('Cache-Control','no-store').type('text/markdown').sendFile(join(repoRoot,'skills/handle-customer/SKILL.md')));
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(req,res)=>req.query.setup_mode!=='managed'&&openBusinessDemo()&&!handoru.isManagedContext()?res.set('Cache-Control','no-store').type('text/markdown').send('---\nname: handle-onboarding\ndescription: Use the open demo webhook handoff and keep setup replies short.\n---\n\n'+renderOpenDemoGuide(cfg.publicUrl)):res.set('Cache-Control','no-store').type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});
   app.post(['/api/admin/handle-ownership-proof','/api/admin/handoru-ownership-proof'],auth.require('owner'),(req,res)=>{const challenge=req.body?.challenge;if(typeof challenge!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(challenge))fail('INVALID_CHALLENGE','Use the challenge from your registration.');store.db.prepare("INSERT INTO handoru_meta VALUES('ownership_proof',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify({challenge}));res.json({ok:true,path:'/.well-known/handle-ownership.json'});});
@@ -170,6 +182,8 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     });res.json(result);
   });
   app.use('/masumi', express.json({ limit: '64kb' }), auth.middleware, auth.protect);
+  if (customerIdentity.federation) app.get('/auth.md', (_req, res) => res.set('Cache-Control', 'no-store').type('text/markdown').send(
+    `# Handle customer access\n\nThis participating business accepts one customer Handle account and approved personal agent across businesses. Read ${cfg.publicUrl}/.well-known/handle-customer.json for the configured issuer and business ID. Use only your trusted configured Handle issuer; discovery alone cannot establish trust.\n\nThe merchant does not approve individual customer agents. A customer approves their own personal agent once; with valid existing consent, business-specific access is issued automatically. Reuse an existing approved personal connection. Never ask the customer for a business-agent or publisher token.\n\nRegister once at ${customerIdentity.issuerOrigin}/api/handle/customer/v1/connections/register with JSON {"name":"Your personal agent"}. Show the human the returned verification_uri and user_code. The human signs into Handle and approves scopes and shared fields. Never obtain their password/session. Exchange the device_code once at ${customerIdentity.issuerOrigin}/api/handle/customer/v1/connections/exchange, then keep the delegation_token privately at the issuer only. POST ${customerIdentity.issuerOrigin}/api/handle/customer/v1/token with JSON {"business_id":"${cfg.env.HANDLE_CUSTOMER_BUSINESS_ID}"} and that delegation token to obtain a ten-minute business-specific access token. Send the access token only to this verified business origin. Renew at Handle within the same consent; do not register or log into this business.\n\nA booking still needs a human mandate approved through the Handle customer page; identity alone permits no purchase. Preserve business, case, grant and connection IDs. No universal OIDC compatibility is claimed. The previous local claim remains available below.\n\n${agentAuth.authDocument()}`));
   app.use(agentAuth.router(auth));
   const human = auth.require('human_customer');
   const operators = auth.require('owner', 'staff');
@@ -385,6 +399,9 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     const record = value as Record<string, unknown>; return { ...record, detail: JSON.parse(String(record.data_json)) };
   }) }));
   app.post('/api/admin/reset', owner, (_req, res) => {
+    if (customerIdentity.federation && store.db.prepare('SELECT 1 FROM customer_identity_mappings LIMIT 1').get()) {
+      fail('PERSISTENT_CUSTOMERS_PRESENT', 'Demo reset would remove persistent Handle customer records.', 409);
+    }
     store.resetLocal(() => {
       for(const table of ['handoru_operations','handoru_reply_outbox','handoru_publications','handoru_handoffs'])store.db.prepare(`DELETE FROM ${table}`).run();
       store.db.prepare('UPDATE handoru_connections SET ready_json=NULL').run();
@@ -488,14 +505,27 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.status(201).json({ case: policy.createCase(actor(req), req.body) });
   });
   app.get('/api/agent/cases/:id', agents, (req, res) => {const c=policy.getCase(actor(req),param(req,'id'));const approval=store.db.prepare('SELECT payload_json FROM agent_approvals WHERE case_id=? AND quote_id=?').get(c.id,c.quote_id??'') as {payload_json:string}|undefined;res.json({case:c,quote:c.quote_id?store.getQuote(c.quote_id):null,approval:approval?JSON.parse(approval.payload_json):null});});
-  app.post('/api/agent/mandates', auth.require('customer_agent'), (req, res) => res.status(201).json({ mandate: policy.proposeMandate(actor(req), req.body) }));
+  app.post('/api/agent/mandates', auth.require('customer_agent'), (req, res) => {
+    const mandate = policy.proposeMandate(actor(req), req.body);
+    const a = actor(req);
+    const approvalUrl = a.connection_id && customerIdentity.federation
+      ? `${customerIdentity.issuerOrigin}/handle/customer?business=${encodeURIComponent(cfg.env.HANDLE_CUSTOMER_BUSINESS_ID!)}&mandate=${encodeURIComponent(mandate.id)}&connection=${encodeURIComponent(a.connection_id)}` : undefined;
+    res.status(201).json({ mandate, ...(approvalUrl ? { approval_url: approvalUrl } : {}) });
+  });
   app.get('/api/agent/mandates/:id', auth.require('customer_agent'), (req, res) => res.json({ mandate: policy.getMandate(actor(req), param(req, 'id')) }));
   app.get('/api/agent/availability', business, (req, res) => {
     rulebooks.getActive();
     res.json({ slots: store.availability({ service_id: query(req, 'service_id'), from: query(req, 'from'), to: query(req, 'to') }), timezone: 'Europe/Prague' });
   });
   app.post('/api/agent/cases/:id/quotes', business, (req, res) => {const a=actor(req),caseId=param(req,'id');const result=a.connection_id&&a.connection_id!=='compatibility-pneu007'?handoru.operation(a,req.header('idempotency-key')??'','quote.create',{case_id:caseId,...req.body},'cases.quote',()=>policy.quote(a,caseId,req.body)):policy.quote(a,caseId,req.body);res.status(201).json(result);});
-  app.post('/api/agent/cases/:id/accept', auth.require('customer_agent'), (req, res) => res.json(policy.accept(actor(req), param(req, 'id'), req.body)));
+  app.post('/api/agent/cases/:id/accept', auth.require('customer_agent'), (req, res) => {
+    const result = policy.accept(actor(req), param(req, 'id'), req.body);
+    if (result.order && customerIdentity.federation?.identify(/^Bearer\s+(.+)$/i.exec(req.header('authorization') ?? '')?.[1] ?? '')) {
+      const contact = store.db.prepare('SELECT name,email,phone FROM customers WHERE id=?').get(actor(req).customer_id!) as { name: string; email: string; phone: string };
+      store.db.prepare('INSERT OR IGNORE INTO order_contact_snapshots VALUES(?,?,?,?)').run(result.order.id, contact.name, contact.email, contact.phone);
+    }
+    res.json(result);
+  });
   app.get('/api/agent/orders/:id', agents, (req, res) => res.json(orderView(ownOrder(req, param(req, 'id')))));
   app.post('/api/agent/orders/:id/checkout', business, async (req, res) => {
     const order = ownOrder(req, param(req, 'id'));
@@ -646,7 +676,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.use(express.static(publicDirectory, { index: false, dotfiles: 'deny' }));
   processor.start(cfg.reconciliationMs);
   stripe.startBackground(cfg.reconciliationMs);
-  return { app, store, policy, rulebooks, registry, processor, stripe, auth, agentAuth, handoru,
+  return { app, store, policy, rulebooks, registry, processor, stripe, auth, agentAuth, handoru, customerIdentity,
     close: async () => { await processor.close(); await stripe.close(); store.close(); } };
 }
 

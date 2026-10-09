@@ -31,7 +31,7 @@ async function listen(server:Server) {
   return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 async function close(server:Server) { server.closeAllConnections();await new Promise<void>((done,reject)=>server.close(error=>error?reject(error):done())); }
-export async function freshFixture(t:TestContext,options:{unified?:boolean}={}) {
+export async function freshFixture(t:TestContext,options:{unified?:boolean;env?:NodeJS.ProcessEnv;customerIdentityFetch?:typeof fetch}={}) {
   const dir=mkdtempSync(join(tmpdir(),'handoru-fresh-http-'));
   // Bind first so the configured public/managed URLs already use the real port. No port reservation race.
   const server=createServer(),base=await listen(server);
@@ -40,8 +40,8 @@ export async function freshFixture(t:TestContext,options:{unified?:boolean}={}) 
   const cfg=loadLegacyConfig({NODE_ENV:'production',HANDLE_FRESH:'true',HANDLE_OWNER_SETUP_SECRET:setupSecret,LEGACY_PORT:String((server.address() as AddressInfo).port),LEGACY_PUBLIC_URL:base,
     LEGACY_DB_PATH:join(dir,'legacy.sqlite'),LEGACY_RELAY_DB_PATH:join(dir,'relay.sqlite'),LEGACY_RECONCILIATION_MS:'0',LEGACY_RELAY_REPLY_WAIT_MS:'150',LEGACY_RELAY_RERING_MS:'60000',
     LEGACY_OWNER_PASSWORD:password,LEGACY_STAFF_PASSWORD:password,LEGACY_CUSTOMER_A_PASSWORD:password,LEGACY_CUSTOMER_B_PASSWORD:password,
-    LEGACY_CUSTOMER_AGENT_A_TOKEN:customerToken,LEGACY_CUSTOMER_AGENT_B_TOKEN:customerBToken,LEGACY_RELAY_ADMIN_TOKEN:'synthetic-test-relay-admin-0123456789',PAYMENT_PROVIDER:'local_demo'});
-  const opts={now:clock,paymentProvider:new LocalDemoProvider({now:clock})};
+    LEGACY_CUSTOMER_AGENT_A_TOKEN:customerToken,LEGACY_CUSTOMER_AGENT_B_TOKEN:customerBToken,LEGACY_RELAY_ADMIN_TOKEN:'synthetic-test-relay-admin-0123456789',PAYMENT_PROVIDER:'local_demo',...options.env});
+  const opts={now:clock,paymentProvider:new LocalDemoProvider({now:clock}),customerIdentityFetch:options.customerIdentityFetch};
   let current=options.unified?await createUnifiedSystem(cfg,opts):createLegacy(cfg,opts);
   const system=current;
   server.on('request',system.app);
