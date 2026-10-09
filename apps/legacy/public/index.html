@@ -6,14 +6,14 @@
 <script src="/assets/47eeca62-2159-41fe-9b12-38b4d8c24906.js"></script><script src="/assets/9c7382f7-ac4c-451e-b16a-03eefa86c088.js"></script><script src="/assets/02c6e987-5384-493f-911e-0046172115a9.js"></script>
 <style>/* Pneu 007 / Handoru — sdílené tokeny a komponenty (prototyp) */
 :root{
-  --g900:#071C17; --g800:#0D2620; --g700:#14352C; --g600:#1E4A3D; --g500:#2C6553;
-  --blk:#0B0D0C; --anth:#1A1E1D; --anth2:#262B2A;
-  --silver:#C9CECB; --silver2:#A6AEAB; --silver3:#7E8784;
-  --gold:#D8C394; --goldd:#6F5A27;
-  --paper:#F2F1EC; --paper2:#E8E7E0; --card:#FFFFFF; --line:#D8DAD4; --line2:#B9BEB9;
-  --ink:#111614; --ink2:#2F3835; --mute:#535D5A;
+  --g900:#0E0E10; --g800:#151517; --g700:#1F1F23; --g600:#2A2A2F; --g500:#4A4A52;
+  --blk:#0B0B0C; --anth:#19191B; --anth2:#27272A;
+  --silver:#CDCBC6; --silver2:#A9A6A0; --silver3:#85827C;
+  --gold:#C49A6C; --goldd:#8C6239;
+  --paper:#F6F5F1; --paper2:#ECEAE5; --card:#FFFFFF; --line:#E2DFD8; --line2:#C8C4BC;
+  --ink:#121211; --ink2:#2E2D2A; --mute:#5E5B56;
   --ok:#1C6644; --okb:#E2EFE7; --warn:#855000; --warnb:#F7ECD5; --bad:#9E2E28; --badb:#F6E0DC;
-  --info:#22568A; --infob:#E0EAF4; --neu:#4B5452; --neub:#E7E8E4; --esc:#4F3D86; --escb:#ECE8F6;
+  --info:#22568A; --infob:#E0EAF4; --neu:#55524D; --neub:#ECEAE6; --esc:#4F3D86; --escb:#ECE8F6;
   --focus:#2F6FD6;
   --serif:'Instrument Serif', Georgia, 'Times New Roman', serif;
   --sans:'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -41,15 +41,15 @@ body{margin:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 
 /* dark surfaces */
-.dark{background:var(--g900);color:#F2F1EC}
+.dark{background:var(--g900);color:#F6F5F1}
 .dark .mute{color:var(--silver2)}
 .p7 .dark a{color:var(--gold)}
-.p7 .dark a:hover{color:#EFE2C2}
+.p7 .dark a:hover{color:#E2C3A1}
 .blk{background:var(--blk);color:var(--silver)}
 
 /* wordmark */
-.wm{display:inline-flex;align-items:center;gap:12px;text-decoration:none;color:#F2F1EC;min-height:44px}
-.p7 a.wm,.p7 .dark a.wm{color:#F2F1EC;text-decoration:none}
+.wm{display:inline-flex;align-items:center;gap:12px;text-decoration:none;color:#F6F5F1;min-height:44px}
+.p7 a.wm,.p7 .dark a.wm{color:#F6F5F1;text-decoration:none}
 .wm-a{font:300 20px/1 var(--sans);letter-spacing:.42em;text-transform:uppercase}
 .wm-b{font:500 20px/1 var(--sans);letter-spacing:.3em;color:var(--gold)}
 .wm.ink{color:var(--ink)} .wm.ink .wm-b{color:var(--goldd);border-color:var(--goldd)}
@@ -57,18 +57,18 @@ body{margin:0}
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:10px 22px;border:1px solid transparent;border-radius:999px;font:700 15px/1.25 var(--sans);letter-spacing:.005em;text-decoration:none;cursor:pointer;background:none;color:inherit;text-align:center}
 .p7 a.btn{text-decoration:none}
-.btn-gold,.p7 a.btn-gold,.p7 .dark a.btn-gold{background:var(--gold);color:#17140C;border-color:var(--gold)}
-.btn-gold:hover,.p7 a.btn-gold:hover,.p7 .dark a.btn-gold:hover{background:#E6D7B1;color:#17140C}
-.btn-green,.p7 a.btn-green{background:var(--g900);color:#F2F1EC;border-color:var(--g900)}
+.btn-gold,.p7 a.btn-gold,.p7 .dark a.btn-gold{background:var(--gold);color:#140F0A;border-color:var(--gold)}
+.btn-gold:hover,.p7 a.btn-gold:hover,.p7 .dark a.btn-gold:hover{background:#D6B08A;color:#140F0A}
+.btn-green,.p7 a.btn-green{background:var(--g900);color:#F6F5F1;border-color:var(--g900)}
 .btn-green:hover,.p7 a.btn-green:hover{background:var(--g700);color:#fff}
 .btn-line,.p7 a.btn-line{border-color:currentColor;color:var(--ink)}
-.dark .btn-line,.p7 .dark a.btn-line{color:#F2F1EC}
-.btn-line:hover{background:rgba(7,28,23,.06)}
+.dark .btn-line,.p7 .dark a.btn-line{color:#F6F5F1}
+.btn-line:hover{background:rgba(14,14,16,.06)}
 .dark .btn-line:hover{background:rgba(255,255,255,.06)}
 .btn-danger{background:var(--bad);color:#fff;border-color:var(--bad)}
 .btn-sm{min-height:44px;padding:8px 14px;font-size:14px}
 .btn-q{min-height:44px;padding:8px 6px;text-decoration:underline;text-underline-offset:3px;font-weight:600;color:var(--g600);background:none;border:0;cursor:pointer;font:600 14px var(--sans)}
-.btn[disabled],.btn.is-off{background:var(--paper2);color:#5F6765;border-color:var(--line2);cursor:not-allowed}
+.btn[disabled],.btn.is-off{background:var(--paper2);color:#66635E;border-color:var(--line2);cursor:not-allowed}
 .btn-col{border-radius:14px}
 .btn .bsub{display:block;font-weight:500;font-size:12px;opacity:.9;margin-top:2px}
 .btn-col{flex-direction:column;gap:0}
@@ -89,7 +89,7 @@ body{margin:0}
 .opt{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 14px;border:1px solid var(--line2);background:#fff;border-radius:2px;font:500 15px/1.3 var(--sans);color:var(--ink);cursor:pointer;text-align:left;width:100%}
 .opt:hover{border-color:var(--g600)}
 .opt .rad{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--mute);flex:none;display:grid;place-items:center;background:#fff}
-.opt.on{border-color:var(--g900);box-shadow:inset 0 0 0 1px var(--g900);background:#F5F7F1}
+.opt.on{border-color:var(--g900);box-shadow:inset 0 0 0 1px var(--g900);background:#F4F2EE}
 .opt.on .rad{border-color:var(--g900)}
 .opt.on .rad::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--g900)}
 .opt .osub{display:block;font-size:12.5px;color:var(--mute);font-weight:400;margin-top:2px}
@@ -109,12 +109,12 @@ body{margin:0}
 .chip.wait{color:var(--warn);background:#FBF4E4;border-color:#DDBF85}.chip.wait::before{content:"\2026";background:var(--warn)}
 .chip.bad{color:var(--bad);background:var(--badb);border-color:#DDA59F}.chip.bad::before{content:"\00D7";background:var(--bad);font-size:13px}
 .chip.info{color:var(--info);background:var(--infob);border-color:#A6C0DB}.chip.info::before{content:"i";background:var(--info);font-family:var(--serif);font-size:12px}
-.chip.neu{color:var(--neu);background:var(--neub);border-color:#C2C6C1}.chip.neu::before{content:"\2013";background:var(--neu)}
+.chip.neu{color:var(--neu);background:var(--neub);border-color:#C9C6C0}.chip.neu::before{content:"\2013";background:var(--neu)}
 .chip.esc{color:var(--esc);background:var(--escb);border-color:#C3B8E2}.chip.esc::before{content:"\25C6";background:var(--esc);font-size:9px}
 .chip.gold{color:#4E3F17;background:#F4ECD7;border-color:#CDB677}.chip.gold::before{content:"\2605";background:#7A6328;font-size:9px}
 .chip.lockd{color:#3A0F0C;background:#F2D4CF;border-color:#B5544B}.chip.lockd::before{content:"\00D7";background:#6E1C17;font-size:13px}
 .dark .chip{background:rgba(255,255,255,.06)}
-.dark .chip.ok{color:#9ED8B7;border-color:#3E7B5B}.dark .chip.warn,.dark .chip.wait{color:#F0CF8E;border-color:#8A6A2C}.dark .chip.info{color:#A9CBEE;border-color:#3D6790}.dark .chip.esc{color:#CBBEF2;border-color:#6352A0}.dark .chip.bad{color:#F2ADA6;border-color:#9A453E}.dark .chip.neu{color:#D3D7D4;border-color:#5F6966}
+.dark .chip.ok{color:#9ED8B7;border-color:#3E7B5B}.dark .chip.warn,.dark .chip.wait{color:#F0CF8E;border-color:#8A6A2C}.dark .chip.info{color:#A9CBEE;border-color:#3D6790}.dark .chip.esc{color:#CBBEF2;border-color:#6352A0}.dark .chip.bad{color:#F2ADA6;border-color:#9A453E}.dark .chip.neu{color:#D7D5D0;border-color:#66635E}
 
 /* cards, tables, misc */
 .card{background:#fff;border:1px solid var(--line);border-radius:2px}
@@ -122,15 +122,15 @@ body{margin:0}
 .pad-s{padding:16px}
 .hr{height:1px;background:var(--line);border:0;margin:0}
 .ph{display:inline-flex;align-items:center;gap:6px;font:500 12.5px/1.4 var(--mono);color:var(--goldd);background:#FBF5E6;border:1px dashed #A88B47;padding:2px 8px;border-radius:2px}
-.dark .ph,.blk .ph{color:var(--gold);background:rgba(216,195,148,.08);border-color:rgba(216,195,148,.55)}
+.dark .ph,.blk .ph{color:var(--gold);background:rgba(196,154,108,.08);border-color:rgba(196,154,108,.55)}
 .demo{display:inline-flex;align-items:center;gap:6px;font:700 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;border:1px solid currentColor;border-radius:2px;white-space:nowrap}
 .i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .i-s{width:15px;height:15px}
 .tscroll{overflow-x:auto;border:1px solid var(--line);background:#fff}
 .tbl{width:100%;border-collapse:collapse;font-size:14px}
-.tbl th{text-align:left;font:600 11.5px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:10px 12px;border-bottom:1px solid var(--line2);white-space:nowrap;background:#F7F7F3}
+.tbl th{text-align:left;font:600 11.5px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:10px 12px;border-bottom:1px solid var(--line2);white-space:nowrap;background:#F8F7F4}
 .tbl td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-.tbl tr.sel td{background:#EDF2EA}
+.tbl tr.sel td{background:#F1EEE8}
 .tbl .r{text-align:right;white-space:nowrap}
 .tbl .nw{white-space:nowrap}
 .rowbtn{background:none;border:0;padding:0;min-height:28px;font:600 14px var(--mono);color:var(--g600);text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left}
@@ -154,21 +154,21 @@ details.tech .tb{padding:4px 14px 14px;font:13px/1.6 var(--mono);color:var(--ink
 .stp.done{color:var(--ok)} .stp.done b{background:var(--okb);border-color:#A6CBB5}
 
 /* public chrome */
-.notice{background:var(--blk);color:#D3D7D4;font-size:13px}
-.nav{background:#000;color:#F2F1EC;border-bottom:1px solid rgba(201,206,203,.14)}
-.p7 .nav a.nl{color:#E3E3DC;text-decoration:none;font-weight:500;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;padding:10px 2px;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent}
+.notice{background:var(--blk);color:#D7D5D0;font-size:13px}
+.nav{background:#000;color:#F6F5F1;border-bottom:1px solid rgba(205,203,198,.14)}
+.p7 .nav a.nl{color:#E7E5E0;text-decoration:none;font-weight:500;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;padding:10px 2px;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent}
 .p7 .nav a.nl:hover,.p7 .nav a.nl.cur{color:#fff;border-bottom-color:var(--gold)}
-.foot{background:#000;color:#C9CECB}
-.p7 .foot a{color:#ECEBE5}
+.foot{background:#000;color:#CDCBC6}
+.p7 .foot a{color:#EEECE7}
 .p7 .foot a:hover{color:var(--gold)}
 
 /* app shell (admin, Handoru) */
 .app{display:flex;flex-wrap:wrap;min-height:100vh;background:var(--paper)}
-.side{flex:1 1 232px;background:var(--g900);color:#E3E3DC;padding:18px 12px;display:flex;flex-direction:column;gap:2px}
+.side{flex:1 1 232px;background:var(--g900);color:#E7E5E0;padding:18px 12px;display:flex;flex-direction:column;gap:2px}
 .side.h{background:var(--anth)}
-.p7 .side a.sl{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;color:#D6DAD6;text-decoration:none;font-size:14.5px;border-radius:2px}
+.p7 .side a.sl{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;color:#DAD8D3;text-decoration:none;font-size:14.5px;border-radius:2px}
 .p7 .side a.sl:hover{background:rgba(255,255,255,.07);color:#fff}
-.p7 .side a.sl.cur{background:rgba(216,195,148,.16);color:#fff;font-weight:600}
+.p7 .side a.sl.cur{background:rgba(196,154,108,.16);color:#fff;font-weight:600}
 .side .sh{font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--silver2);padding:16px 12px 6px}
 .main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
 .proto{background:#2B2511;color:#F1E6C6;font-size:12.5px;padding:6px 24px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
@@ -198,14 +198,14 @@ details.tech .tb{padding:4px 14px 14px;font:13px/1.6 var(--mono);color:var(--ink
 .tl li::after{content:"";position:absolute;left:89px;top:18px;bottom:0;width:1px;background:var(--line2)}
 .tl li:last-child::after{display:none}
 .tl .dot.ok{background:var(--ok);border-color:var(--ok)} .tl .dot.warn{background:var(--warn);border-color:var(--warn)} .tl .dot.bad{background:var(--bad);border-color:var(--bad)} .tl .dot.esc{background:var(--esc);border-color:var(--esc)} .tl .dot.open{background:#fff;border-style:dashed}
-.ref{display:inline-flex;align-items:center;gap:4px;font:500 12px/1.4 var(--mono);color:var(--g600);background:#EEF2EC;border:1px solid #C9D6CC;padding:1px 6px;border-radius:2px;text-decoration:none;white-space:nowrap}
+.ref{display:inline-flex;align-items:center;gap:4px;font:500 12px/1.4 var(--mono);color:var(--g600);background:#F2EFEA;border:1px solid #DCD6CC;padding:1px 6px;border-radius:2px;text-decoration:none;white-space:nowrap}
 .cite{font-family:var(--serif);font-size:19px;line-height:1.4;color:var(--ink2);padding:14px 18px;background:#FAF8F1;border:1px solid #E3D9BD}
 .cite mark{background:#F1E2B5;color:inherit;padding:0 2px}
-.dlg-back{position:absolute;inset:0;background:rgba(7,28,23,.6);display:flex;align-items:flex-start;justify-content:center;padding:96px 16px 16px;z-index:20}
+.dlg-back{position:absolute;inset:0;background:rgba(14,14,16,.6);display:flex;align-items:flex-start;justify-content:center;padding:96px 16px 16px;z-index:20}
 .dlg{background:#fff;max-width:600px;width:100%;border:1px solid var(--line2);box-shadow:0 24px 60px rgba(0,0,0,.35)}
 .dlg-h{padding:20px 24px 12px;display:flex;flex-direction:column;gap:6px}
 .dlg-b{padding:4px 24px 20px;display:flex;flex-direction:column;gap:14px}
-.dlg-f{padding:16px 24px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;background:#F8F8F5}
+.dlg-f{padding:16px 24px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;background:#F8F7F4}
 .diff{font:13px/1.6 var(--mono);border:1px solid var(--line)}
 .diff div{padding:4px 10px}
 .diff .m{background:#F8E4E1;color:#5E1611}
@@ -217,53 +217,53 @@ details.tech .tb{padding:4px 14px 14px;font:13px/1.6 var(--mono);color:var(--ink
 .bento{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
 .tile{border-radius:20px;padding:32px;display:flex;flex-direction:column;gap:16px;position:relative;overflow:hidden}
 .tile.l{background:#fff;border:1px solid var(--line)}
-.tile.d{background:var(--g900);color:#F2F1EC}
-.tile.a{background:var(--anth);color:#ECEBE5}
+.tile.d{background:var(--g900);color:#F6F5F1}
+.tile.a{background:var(--anth);color:#EEECE7}
 .bignum{font:400 clamp(56px,6vw,88px)/.9 var(--serif);letter-spacing:-.03em;font-variant-numeric:lining-nums}
 .pill{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border-radius:999px;border:1px solid currentColor;font:600 12.5px/1 var(--sans)}
 .segs{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:999px;background:var(--paper)}
 .segs button{min-height:40px;padding:6px 16px;border:0;border-radius:999px;background:none;font:600 14px var(--sans);color:var(--ink2);cursor:pointer}
 .segs button.on{background:var(--g900);color:#fff}
 .qlab{font:600 11px/1.2 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
-.quick-quote{background:#fff;border-radius:24px;box-shadow:0 30px 80px rgba(6,22,17,.22);padding:28px;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px;align-items:center}
+.quick-quote{background:#fff;border-radius:24px;box-shadow:0 30px 80px rgba(10,10,11,.22);padding:28px;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px;align-items:center}
 .quick-quote-fields{min-width:0;display:flex;flex-wrap:nowrap;align-items:flex-start;justify-content:space-between;gap:14px}
 .quick-quote-fields>div{flex-shrink:0}
 .quick-quote .segs{flex-wrap:nowrap}
 .quick-quote .segs button{padding:6px 10px;white-space:nowrap;font-size:13px;min-height:40px}
 .quick-quote #q-dia{width:88px!important}
-.quick-quote-summary{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding-left:24px;border-left:1px solid #D8DAD4}
-@media(max-width:1099px){.quick-quote{grid-template-columns:1fr}.quick-quote-fields{flex-wrap:wrap;justify-content:flex-start;gap:18px 28px}.quick-quote-summary{flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:20px 0 0;border-left:0;border-top:1px solid #D8DAD4}}
+.quick-quote-summary{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding-left:24px;border-left:1px solid #E2DFD8}
+@media(max-width:1099px){.quick-quote{grid-template-columns:1fr}.quick-quote-fields{flex-wrap:wrap;justify-content:flex-start;gap:18px 28px}.quick-quote-summary{flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:20px 0 0;border-left:0;border-top:1px solid #E2DFD8}}
 @media(max-width:700px){.quick-quote{padding:20px}.quick-quote-fields{gap:18px 16px}.quick-quote .segs button{padding:6px 12px}.quick-quote-summary{align-items:flex-start}}
 .navx{position:absolute;left:0;right:0;top:0;z-index:5}
 
 /* ultra premium layer */
-.lux{background:#000;color:#F2F1EC}
+.lux{background:#000;color:#F6F5F1}
 .caps{text-transform:uppercase;letter-spacing:.2em;font-weight:500;font-size:12.5px}
-.tlink{display:inline-flex;align-items:center;gap:14px;min-height:44px;color:#F2F1EC;text-decoration:none;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);border-bottom:1px solid rgba(242,241,236,.5);padding:14px 0}
-.p7 a.tlink{color:#F2F1EC;text-decoration:none}
+.tlink{display:inline-flex;align-items:center;gap:14px;min-height:44px;color:#F6F5F1;text-decoration:none;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);border-bottom:1px solid rgba(246,245,241,.5);padding:14px 0}
+.p7 a.tlink{color:#F6F5F1;text-decoration:none}
 .p7 a.tlink:hover{color:var(--gold);border-color:var(--gold)}
-.p7 a.tlink.ink{color:var(--ink);border-color:rgba(17,22,20,.5)}
-.btn-lux,.p7 a.btn-lux{border-radius:0;min-height:52px;padding:14px 30px;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);background:#F2F1EC;color:#000;border:1px solid #F2F1EC;text-decoration:none;display:inline-flex;align-items:center;gap:12px}
+.p7 a.tlink.ink{color:var(--ink);border-color:rgba(18,18,17,.5)}
+.btn-lux,.p7 a.btn-lux{border-radius:0;min-height:52px;padding:14px 30px;text-transform:uppercase;letter-spacing:.2em;font:600 12.5px/1 var(--sans);background:#F6F5F1;color:#000;border:1px solid #F6F5F1;text-decoration:none;display:inline-flex;align-items:center;gap:12px}
 .p7 a.btn-lux:hover,.btn-lux:hover{background:var(--gold);border-color:var(--gold);color:#000}
-.btn-lux.ghost,.p7 a.btn-lux.ghost{background:transparent;color:#F2F1EC;border-color:rgba(242,241,236,.6)}
-.imgslot{position:relative;overflow:hidden;background:#0A0C0B;display:flex;align-items:center;justify-content:center}
-.imgslot::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 55% 60%,rgba(44,101,83,.28),rgba(0,0,0,0) 70%)}
+.btn-lux.ghost,.p7 a.btn-lux.ghost{background:transparent;color:#F6F5F1;border-color:rgba(246,245,241,.6)}
+.imgslot{position:relative;overflow:hidden;background:#0B0B0C;display:flex;align-items:center;justify-content:center}
+.imgslot::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 55% 60%,rgba(196,154,108,.28),rgba(0,0,0,0) 70%)}
 .imgslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.imgslot .lab{position:relative;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(216,195,148,.75);border:1px solid rgba(216,195,148,.35);padding:8px 14px;text-align:center}
+.imgslot .lab{position:relative;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(196,154,108,.75);border:1px solid rgba(196,154,108,.35);padding:8px 14px;text-align:center}
 .shade-b{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 50%,rgba(0,0,0,.75) 100%);pointer-events:none}
-.luxseg{display:flex;flex-wrap:wrap;gap:0;border:1px solid rgba(242,241,236,.25)}
-.luxseg button{flex:1 1 auto;min-height:52px;padding:10px 18px;border:0;border-right:1px solid rgba(242,241,236,.18);background:none;color:#C9CECB;font:600 12px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+.luxseg{display:flex;flex-wrap:wrap;gap:0;border:1px solid rgba(246,245,241,.25)}
+.luxseg button{flex:1 1 auto;min-height:52px;padding:10px 18px;border:0;border-right:1px solid rgba(246,245,241,.18);background:none;color:#CDCBC6;font:600 12px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
 .luxseg button:last-child{border-right:0}
-.luxseg button.on{background:#F2F1EC;color:#000}
+.luxseg button.on{background:#F6F5F1;color:#000}
 
 /* hero photo slot (Main) */
-.hphoto{position:absolute;top:0;right:0;bottom:0;width:68%;background:#0A0C0B;overflow:hidden}
+.hphoto{position:absolute;top:0;right:0;bottom:0;width:68%;background:#0B0B0C;overflow:hidden}
 .hphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.hphoto::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#061611 0%,rgba(6,22,17,.8) 16%,rgba(6,22,17,0) 46%),linear-gradient(180deg,rgba(6,22,17,.55) 0%,rgba(6,22,17,0) 18%),linear-gradient(0deg,#061611 0%,rgba(6,22,17,0) 30%)}
-.hphoto .lab{position:absolute;right:48px;top:50%;transform:translateY(-50%);z-index:1;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(216,195,148,.8);border:1px solid rgba(216,195,148,.4);padding:8px 14px;max-width:340px;text-align:center}
+.hphoto::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0A0A0B 0%,rgba(10,10,11,.8) 16%,rgba(10,10,11,0) 46%),linear-gradient(180deg,rgba(10,10,11,.55) 0%,rgba(10,10,11,0) 18%),linear-gradient(0deg,#0A0A0B 0%,rgba(10,10,11,0) 30%)}
+.hphoto .lab{position:absolute;right:48px;top:50%;transform:translateY(-50%);z-index:1;font:500 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(196,154,108,.8);border:1px solid rgba(196,154,108,.4);padding:8px 14px;max-width:340px;text-align:center}
 @media (max-width:900px){.hphoto{width:100%;opacity:.45}}
 </style>
-<link rel="stylesheet" href="/live.css"></head>
+<link rel="stylesheet" href="/live.css"><link rel="stylesheet" href="/theme.css"></head>
 <body>
 <x-dc>
 <helmet>
@@ -774,16 +774,16 @@ details.tech .tb{padding:4px 14px 14px;font:13px/1.6 var(--mono);color:var(--ink
 </style>
 <style>
 body{margin:0}
-a{color:#1E4A3D}a:hover{color:#071C17}
-.hnav a{color:#F2F1EC;text-decoration:none;text-transform:uppercase;letter-spacing:.2em;font:500 12px/1 'Manrope',sans-serif;min-height:44px;display:inline-flex;align-items:center}
-.hnav a:hover{color:#D8C394}
+a{color:#2A2A2F}a:hover{color:#0E0E10}
+.hnav a{color:#F6F5F1;text-decoration:none;text-transform:uppercase;letter-spacing:.2em;font:500 12px/1 'Manrope',sans-serif;min-height:44px;display:inline-flex;align-items:center}
+.hnav a:hover{color:#C49A6C}
 .svc{transition:transform .2s ease}
 .svc:hover{transform:translateY(-2px)}
 </style>
 </helmet>
-<div class="p7" style="min-height: 100vh; display: flex; flex-direction: column; background: #F2F1EC">
+<div class="p7" style="min-height: 100vh; display: flex; flex-direction: column; background: #F6F5F1">
 
-<section class="dark" aria-labelledby="hero-h" style="position: relative; overflow: hidden; background: #061611; padding-bottom: 150px; min-height: 860px">
+<section class="dark" aria-labelledby="hero-h" style="position: relative; overflow: hidden; background: #0A0A0B; padding-bottom: 150px; min-height: 860px">
   <div class="hphoto">
     <img src="/assets/bd7745e0-57f8-4e9f-86b9-ebb137d89c2c.jpg" alt="Zelené sportovní kupé na pobřežní silnici" style="object-position: 58% 50%">
   </div>
@@ -797,14 +797,14 @@ a{color:#1E4A3D}a:hover{color:#071C17}
     <nav aria-label="Další odkazy" style="display: flex; flex-wrap: wrap; gap: 0 36px; justify-content: flex-end">
       <a href="/kontakt">Kontakt</a>
       <a href="/podminky">Podmínky</a>
-      <a href="/kalkulator" style="color: #D8C394">Objednat</a>
+      <a href="/kalkulator" style="color: #C49A6C">Objednat</a>
     <div class="live-session"><button class="btn-q" type="button" data-live-login>Přihlásit se</button></div></nav>
   </header>
 
   <div class="wrap" style="position: relative; z-index: 2; padding-top: 96px; display: flex; flex-direction: column; gap: 32px">
-    <p class="eyebrow" style="color: #D8C394">Přezutí · výměna kol · online objednání</p>
-    <h1 id="hero-h" class="serif" style="font-size: clamp(60px, 8.4vw, 136px); max-width: 760px; line-height: .92">Připraveni na <em style="color: #D8C394">další jízdu.</em></h1>
-    <p class="pretty" style="font-size: 19px; line-height: 1.6; color: #D3D8D4; max-width: 470px">Cenu za čtyři kola znáte předem. Termín si vyberete online a zaplatíte rovnou při objednání — zálohu, nebo celou částku.</p>
+    <p class="eyebrow" style="color: #C49A6C">Přezutí · výměna kol · Praha 7 – Holešovice</p>
+    <h1 id="hero-h" class="serif" style="font-size: clamp(60px, 8.4vw, 136px); max-width: 760px; line-height: .92">Připraveni na <em style="color: #C49A6C">další jízdu.</em></h1>
+    <p class="pretty" style="font-size: 19px; line-height: 1.6; color: #D7D5D0; max-width: 470px">Cenu za čtyři kola znáte předem. Termín si vyberete online a zaplatíte rovnou při objednání — zálohu, nebo celou částku.</p>
     <div style="display: flex; flex-wrap: wrap; gap: 12px">
       <a class="btn btn-gold" href="/kalkulator">Spočítat cenu <svg class="i" sc-camel-view-box="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
       <a class="btn btn-line" href="#postup">Jak to funguje</a>
@@ -835,7 +835,7 @@ a{color:#1E4A3D}a:hover{color:#071C17}
       </div>
       <div style="display: flex; flex-direction: column; gap: 8px">
         <label class="qlab" for="q-dia">Průměr</label>
-        <sc-raw-select id="q-dia" class="input" value="{{dia}}" sc-camel-on-change="{{onDia}}" style="min-height: 48px; border-radius: 999px; padding: 0 16px; width: 120px; background: #F2F1EC; border-color: #F2F1EC; font-weight: 600">
+        <sc-raw-select id="q-dia" class="input" value="{{dia}}" sc-camel-on-change="{{onDia}}" style="min-height: 48px; border-radius: 999px; padding: 0 16px; width: 120px; background: #F6F5F1; border-color: #F6F5F1; font-weight: 600">
           <option value="13">13″</option><option value="14">14″</option><option value="15">15″</option><option value="16">16″</option><option value="17">17″</option><option value="18">18″</option><option value="19">19″</option><option value="20">20″</option><option value="21">21″</option><option value="22">22″</option>
         </sc-raw-select>
       </div>
@@ -860,29 +860,29 @@ a{color:#1E4A3D}a:hover{color:#071C17}
 
     <div class="bento">
       <article class="tile d svc" style="min-height: 420px">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px"><span class="pill" style="color: #D8C394">01 · Přezutí</span><span class="mono small" style="color: #A6AEAB">od</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px"><span class="pill" style="color: #C49A6C">01 · Přezutí</span><span class="mono small" style="color: #A9A6A0">od</span></div>
         <p class="bignum">1 440 <span style="font-size: .45em">Kč</span></p>
         <h3 class="serif" style="font-size: 40px">Přezutí pneumatik</h3>
-        <p class="pretty" style="color: #C9CECB">Přezujeme vaše pneumatiky na disky a kola namontujeme na vůz. Cenu ovlivní vůz, průměr, disky, runflat a TPMS.</p>
+        <p class="pretty" style="color: #CDCBC6">Přezujeme vaše pneumatiky na disky a kola namontujeme na vůz. Cenu ovlivní vůz, průměr, disky, runflat a TPMS.</p>
         <a class="btn btn-gold" href="/kalkulator" style="margin-top: auto; align-self: flex-start">Spočítat přezutí</a>
       </article>
       <article class="tile l svc" style="min-height: 420px">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px"><span class="pill" style="color: #6F5A27">02 · Výměna kol</span><span class="mono small mute">od</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px"><span class="pill" style="color: #8C6239">02 · Výměna kol</span><span class="mono small mute">od</span></div>
         <p class="bignum">1 480 <span style="font-size: .45em">Kč</span></p>
         <h3 class="serif" style="font-size: 40px">Výměna kompletních kol</h3>
-        <p class="pretty" style="color: #2F3835">Máte druhou sadu kol na discích? Vyměníme je. Cenu ovlivní jen typ vozu a materiál disku.</p>
+        <p class="pretty" style="color: #2E2D2A">Máte druhou sadu kol na discích? Vyměníme je. Cenu ovlivní jen typ vozu a materiál disku.</p>
         <a class="btn btn-green" href="/kalkulator" style="margin-top: auto; align-self: flex-start">Spočítat výměnu</a>
       </article>
       <article class="tile a" style="min-height: 420px">
-        <span class="pill" style="color: #C9CECB; align-self: flex-start">V ceně obou služeb</span>
+        <span class="pill" style="color: #CDCBC6; align-self: flex-start">V ceně obou služeb</span>
         <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0; margin-top: 8px">
-          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Montáž kol na vozidlo</span><span class="mono" style="color: #D8C394">01</span></li>
-          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Mytí kol</span><span class="mono" style="color: #D8C394">02</span></li>
-          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Vyvážení a nahuštění</span><span class="mono" style="color: #D8C394">03</span></li>
-          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #343B39"><span>Ošetření dosedacích ploch</span><span class="mono" style="color: #D8C394">04</span></li>
-          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0"><span>Dotažení předepsaným momentem</span><span class="mono" style="color: #D8C394">05</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #303033"><span>Montáž kol na vozidlo</span><span class="mono" style="color: #C49A6C">01</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #303033"><span>Mytí kol</span><span class="mono" style="color: #C49A6C">02</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #303033"><span>Vyvážení a nahuštění</span><span class="mono" style="color: #C49A6C">03</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #303033"><span>Ošetření dosedacích ploch</span><span class="mono" style="color: #C49A6C">04</span></li>
+          <li style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0"><span>Dotažení předepsaným momentem</span><span class="mono" style="color: #C49A6C">05</span></li>
         </ul>
-        <p class="small" style="color: #A6AEAB; margin-top: auto">Přezutí navíc zahrnuje demontáž a montáž pneumatik na disky.</p>
+        <p class="small" style="color: #A9A6A0; margin-top: auto">Přezutí navíc zahrnuje demontáž a montáž pneumatik na disky.</p>
       </article>
     </div>
   </div>
@@ -892,31 +892,31 @@ a{color:#1E4A3D}a:hover{color:#071C17}
   <div class="wrap" style="display: flex; flex-direction: column; gap: 48px">
     <h2 id="po-h" class="serif" style="font-size: clamp(44px, 5vw, 72px)">Čtyři kroky <em>k termínu.</em></h2>
     <ol style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 16px">
-      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #071C17">
-        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">1</span>
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #0E0E10">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #8C6239">1</span>
         <h3 style="font-size: 19px; font-weight: 700">Konfigurace</h3>
         <p class="mute pretty">Vůz, služba, průměr a disky, runflat a TPMS.</p>
       </li>
-      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #071C17">
-        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">2</span>
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #0E0E10">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #8C6239">2</span>
         <h3 style="font-size: 19px; font-weight: 700">Cena</h3>
         <p class="mute pretty">Všechny položky a konečná cena za čtyři kola.</p>
       </li>
-      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #071C17">
-        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">3</span>
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #0E0E10">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #8C6239">3</span>
         <h3 style="font-size: 19px; font-weight: 700">Termín a platba</h3>
         <p class="mute pretty">Vyberete volný slot a zaplatíte zálohu 500 Kč, nebo celou cenu.</p>
       </li>
-      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #D8C394">
-        <span class="serif" style="font-size: 64px; font-style: italic; color: #6F5A27">4</span>
+      <li style="display: flex; flex-direction: column; gap: 14px; padding: 28px 0 0; border-top: 2px solid #C49A6C">
+        <span class="serif" style="font-size: 64px; font-style: italic; color: #8C6239">4</span>
         <h3 style="font-size: 19px; font-weight: 700">Potvrzení</h3>
         <p class="mute pretty">Po ověření platby je termín váš. Stav sledujete online.</p>
       </li>
     </ol>
-    <div class="dark" style="border-radius: 24px; padding: 40px; display: flex; flex-wrap: wrap; gap: 24px 40px; align-items: center; justify-content: space-between; background: #071C17">
+    <div class="dark" style="border-radius: 2px; padding: 40px; display: flex; flex-wrap: wrap; gap: 24px 40px; align-items: center; justify-content: space-between; background: #0E0E10">
       <div style="display: flex; flex-direction: column; gap: 8px; max-width: 640px">
         <p class="serif" style="font-size: 40px">Záloha je součástí ceny.</p>
-        <p style="color: #C9CECB">U ceny 2 472 Kč zaplatíte 500 Kč předem a 1 972 Kč při návštěvě. Nebo vše najednou.</p>
+        <p style="color: #CDCBC6">U ceny 2 472 Kč zaplatíte 500 Kč předem a 1 972 Kč při návštěvě. Nebo vše najednou.</p>
       </div>
       <a class="btn btn-gold" href="/kalkulator">Spočítat a objednat</a>
     </div>
@@ -928,7 +928,7 @@ a{color:#1E4A3D}a:hover{color:#071C17}
     <div style="display: flex; flex-wrap: wrap; gap: 32px 64px; justify-content: space-between">
       <div style="display: flex; flex-direction: column; gap: 16px; max-width: 360px">
         <a class="wm" href="/" aria-label="Pneu 007 — úvod"><span class="wm-a" style="font-size: 26px">Pneu</span><span class="wm-b" style="font-size: 26px">007</span></a>
-        <p class="small">servis@pneu007.example · telefon <span class="ph">[PLACEHOLDER]</span></p>
+        <p class="small">Pneumatická 7, 170 00 Praha 7 – Holešovice<br>servis@pneu007.example · +420 000 007 007</p>
       </div>
       <nav aria-label="Patička" style="display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 4px 40px">
         <a href="#sluzby" style="min-height: 40px; display: inline-flex; align-items: center">Služby</a>
@@ -936,10 +936,10 @@ a{color:#1E4A3D}a:hover{color:#071C17}
         <a href="/kontakt" style="min-height: 40px; display: inline-flex; align-items: center">Kontakt</a>
         <a href="/podminky" style="min-height: 40px; display: inline-flex; align-items: center">Podmínky a FAQ</a>
         <a href="/admin" style="min-height: 40px; display: inline-flex; align-items: center">Pro zaměstnance</a>
-        <a href="/pro-agenty" style="min-height: 40px; display: inline-flex; align-items: center; gap: 8px; color: #D8C394; font-weight: 700">Pro agenty <svg class="i i-s" sc-camel-view-box="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+        <a href="/pro-agenty" style="min-height: 40px; display: inline-flex; align-items: center; gap: 8px; color: #C49A6C; font-weight: 700">Pro agenty <svg class="i i-s" sc-camel-view-box="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
       </nav>
     </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; padding-top: 20px; border-top: 1px solid #262B2A; font-size: 13px; color: #A6AEAB">
+    <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; padding-top: 20px; border-top: 1px solid #27272A; font-size: 13px; color: #A9A6A0">
       <span>Fiktivní pneuservis pro hackathon.</span>
       <span>Testnet platba přes Masumi, bez skutečné autoservisní služby.</span>
     </div>
@@ -983,4 +983,4 @@ class Component extends DCLogic {
 </script>
 
 
-<script type="module" src="/live.js"></script></body></html>
+<script type="module" src="/live.js"></script><script type="module" src="/i18n.js"></script></body></html>

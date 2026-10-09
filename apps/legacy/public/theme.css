@@ -1,0 +1,65 @@
+/* Pneu 007 public theme: obsidian, ivory and champagne bronze. Loaded after the Claude Design tokens. */
+:root{
+  --accent:#C49A6C; --accent-hover:#D6B08A; --accent-ink:#8C6239;
+  --obsidian:#0A0A0B; --hairline:rgba(246,245,241,.12);
+}
+.p7{background:var(--paper);letter-spacing:.003em}
+.p7 ::selection{background:rgba(196,154,108,.32)}
+
+/* Crisp geometry instead of pills and soft blobs. */
+.p7 .btn{border-radius:2px;font-weight:600;font-size:14px;letter-spacing:.04em;min-height:50px;padding:12px 26px;transition:background-color .2s ease,border-color .2s ease,color .2s ease}
+.p7 .btn-sm{min-height:42px;padding:8px 16px;font-size:13px}
+.p7 .btn-col{border-radius:2px}
+.p7 .btn-outline,.p7 a.btn-outline{border:1px solid var(--ink);color:var(--ink);background:transparent}
+.p7 .btn-outline:hover{background:var(--ink);color:var(--paper)}
+.p7 .btn-gold:hover,.p7 a.btn-gold:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.p7 .tile,.p7 .quick-quote,.p7 .segs,.p7 .segs button,.p7 .pill,.p7 .card,.p7 .live-section,.p7 .note,.p7 .input,.p7 .opt{border-radius:2px}
+.p7 .tile{padding:36px}
+.p7 .tile.l{border-color:var(--line)}
+.p7 .quick-quote{box-shadow:0 1px 0 var(--line),0 40px 90px -30px rgba(10,10,11,.45)}
+.p7 .segs{background:var(--paper2)}
+.p7 .segs button.on{background:var(--ink)}
+.p7 .quick-quote #q-dia,.p7 sc-raw-select#q-dia,.p7 select#q-dia{border-radius:2px!important}
+.p7 .pill{min-height:28px;padding:4px 10px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase}
+.p7 .card{border-color:var(--line)}
+.p7 .kicker{letter-spacing:.2em}
+
+/* Quieter chrome. */
+.p7 .nav{background:var(--obsidian);border-bottom:1px solid var(--hairline)}
+.p7 .foot{background:var(--obsidian)}
+.p7 .foot .wm-b,.p7 .nav .wm-b{color:var(--accent)}
+.p7 .dark{background:#0E0E10}
+.hphoto::after{background:linear-gradient(90deg,#0A0A0B 0%,rgba(10,10,11,.82) 16%,rgba(10,10,11,0) 48%),linear-gradient(180deg,rgba(10,10,11,.6) 0%,rgba(10,10,11,0) 20%),linear-gradient(0deg,#0A0A0B 0%,rgba(10,10,11,0) 32%)}
+.p7 .hphoto img{filter:saturate(.82) contrast(1.04)}
+
+/* Agent Card on /pro-agenty. */
+.p7 .agent-card{background:#0E0E10;color:#F6F5F1;border-radius:2px;padding:36px;display:flex;flex-direction:column;gap:28px}
+.p7 .agent-card-head{display:flex;flex-direction:column;gap:10px}
+.p7 .agent-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:0;margin:0;border-top:1px solid var(--hairline)}
+.p7 .agent-card-grid>div{padding:16px 20px 16px 0;border-bottom:1px solid var(--hairline);min-width:0}
+.p7 .agent-card-grid dt{font:600 11px/1.3 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:#A9A6A0;margin-bottom:6px}
+.p7 .agent-card-grid dd{margin:0;font-size:15px;overflow-wrap:anywhere}
+.p7 .agent-card-actions{display:flex;flex-wrap:wrap;gap:12px}
+.p7 .agent-card .btn-line,.p7 .agent-card a.btn-line{color:#F6F5F1;border-color:rgba(246,245,241,.5)}
+.p7 .agent-card .btn-line:hover{background:rgba(246,245,241,.08)}
+@media (min-width:1000px){.p7 .agent-card-grid>div:first-child{grid-column:span 2}}
+@media (max-width:700px){.p7 .agent-card{padding:24px}}
+
+/* Language switch inserted by i18n.js. */
+.lang-switch{display:inline-flex;align-items:center;gap:0;border:1px solid rgba(246,245,241,.28);border-radius:2px;margin-left:8px}
+.lang-switch button{min-width:40px;min-height:32px;padding:4px 10px;border:0;background:none;color:#CDCBC6;font:600 11.5px/1 var(--sans,system-ui);letter-spacing:.14em;cursor:pointer}
+.lang-switch button[aria-pressed="true"]{background:#F6F5F1;color:#0A0A0B}
+.lang-switch button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Compact home header on phones: wordmark first, links in two centred rows. */
+@media (max-width:700px){
+  .p7 header.hnav{grid-template-columns:1fr!important;justify-items:center;gap:6px!important;padding-top:18px!important;padding-bottom:6px!important}
+  .p7 header.hnav .wm{order:-1}
+  .p7 header.hnav nav{justify-content:center!important;align-items:center;gap:0 20px!important}
+  .p7 header.hnav a{font-size:11px;letter-spacing:.16em}
+  .p7 #hero-h+p,.p7 .hnav~.wrap{padding-top:40px}
+}
+
+.p7 .live-section>.live-hint{margin:12px 0 16px}
+.p7 .agent-card a:not(.btn){color:var(--accent)}
+.p7 .agent-card a:not(.btn):hover{color:var(--accent-hover)}
