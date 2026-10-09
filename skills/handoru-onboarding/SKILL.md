@@ -43,6 +43,10 @@ The business owner uses a separate **human Handle account and session**. Legacy 
 6. Read `/me` to obtain the current business ID, connection ID, scopes and epoch. Use your own IDs from the server, not a name or ID copied from an example.
 7. `POST /businesses/:businessId/relay` with a stable `Idempotency-Key`. The existing relay engine assigns the firm's endpoint and inbox. Retry/restart must reuse this resource. No Railway/GitHub project or owner-hosted relay is needed.
 
+## Continue automatically through human decision gates
+
+For owner questions, exact rulebook activation, operation/publication grants and handover, present the required secure web decision and keep the current installer active with bounded periodic reads of your own authorized `/businesses/:businessId/context`, `/me` and `/businesses/:businessId/capabilities`, as appropriate. Resume only when the expected server-recorded answer, exact rulebook version/hash, scope or handover state is satisfied. Chat text is not approval. If the runtime must yield, create or update one actual native continuation routine with the current private credential reference and phase checkpoint; verify creation and resume support, and reuse the same flow without duplicate pairings, proposals or business operations. The initial provisional monitor stops at credential exchange; later gates use the authorized service credential and their own current checkpoint. Stop waiting on rejection, revocation or expiry, and reconcile uncertain results before retrying. Never require me to type “continue”, approve on my behalf, grant yourself permissions or claim unattended continuation if unsupported. If neither active waiting nor native continuation is available, report the limitation precisely.
+
 ## G0: private bridge before the audit
 
 After approved audit access and stable relay provisioning, complete G0 before the observational audit. Let `B` be `/api/handle/v1/businesses/:businessId` using your server-returned business ID:
