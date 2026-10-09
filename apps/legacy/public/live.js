@@ -128,6 +128,12 @@ document.addEventListener('click',async event=>{
 });
 async function initialize() {
   const nav=document.querySelector('header[data-dc-tpl]');if(!nav)return false;
+  if(location.pathname==='/'){
+    const actions=document.querySelector('a.btn-gold[href="/kalkulator"]')?.parentElement;
+    if(actions&&!actions.querySelector('.btn-link-pay')){
+      const link=document.createElement('a');link.className='btn btn-link-pay';link.href='/objednavka?payment=link';link.textContent='Zaplatit přes Link';actions.append(link);
+    }
+  }
   await refreshSession().catch(()=>{});
   const profile=['/','/kontakt','/pro-agenty'].includes(location.pathname)?await api('/api/agent/profile').catch(()=>null):null;
   if(profile?.location?.address){
