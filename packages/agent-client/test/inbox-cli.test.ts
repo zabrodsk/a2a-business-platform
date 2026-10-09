@@ -300,3 +300,25 @@ test('wake-up setup follows the assigned managed relay base and never borrows an
     }
   });
 });
+
+test('scheduled inbox tools use the existing private enrollment without asking for webhook credentials', async () => {
+  await fixture(async (_garage, inbox) => {
+    writeFileSync(inbox, JSON.stringify({ url, token }));
+    const requests: {path:string;method:string;body:unknown}[] = [], logs:string[] = [];
+    console.log = (...values) => logs.push(values.join(' '));
+    globalThis.fetch = async (input, init) => {
+      const target = new URL(String(input));
+      assert.equal(target.origin, url);
+      assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer ' + token);
+      assert.equal(init?.redirect, 'error');
+      requests.push({ path: target.pathname, method: init?.method ?? 'GET', body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      return new Response(JSON.stringify({ mode:'scheduled', available:false, runtime_schedule_verified:false, user_message:'I’m testing automatic inbox checks.' }));
+    };
+    await inboxMain(['scheduled-check-in']);
+    await inboxMain(['availability']);
+    assert.deepEqual(requests, [{path:'/bot/scheduled-check-in',method:'POST',body:{interval_seconds:60}},{path:'/bot/availability',method:'GET',body:undefined}]);
+    assert.ok(!logs.join('\n').includes(token));
+    for (const interval of ['59','301','NaN','60.5']) await assert.rejects(inboxMain(['scheduled-check-in','--interval',interval]), /60..300/);
+    assert.equal(requests.length, 2);
+  });
+});
