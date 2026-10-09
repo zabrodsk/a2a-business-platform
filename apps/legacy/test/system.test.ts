@@ -492,7 +492,7 @@ test('demo chat yes approves only the exact owned offer and creates one locally 
     const ownerOffer = await (await call(`/demo/cases/${ownerCase.id}`)).json();
     assert.equal((await call(`/demo/cases/${ownerCase.id}/approve`, ownerOffer.approval_request)).status, 403, 'chat approval must not bypass owner discount consent');
     assert.equal((await call(`/demo/cases/${c.id}/approve`, { ...approval, confirmation: 'no' })).status, 403);
-    for (const change of [{ total_minor: approval.total_minor + 1 }, { deposit_minor: 0 }, { slot_id: 'slot-other' }, { quote_hash: 'wrong' }, { quote_version: 99 }]) assert.equal((await call(`/demo/cases/${c.id}/approve`, { ...approval, ...change })).status, 409);
+    for (const change of [{ total_minor: approval.total_minor + 1 }, { deposit_minor: 0 }, { slot_id: 'slot-other' }, { start_at: '2026-10-16T15:00:00Z' }, { quote_hash: 'wrong' }, { quote_version: 99 }]) assert.equal((await call(`/demo/cases/${c.id}/approve`, { ...approval, ...change })).status, 409);
     const result = await call(`/demo/cases/${c.id}/approve`, approval); assert.equal(result.status, 200, await result.clone().text());
     const booked = await result.json(); assert.equal(booked.booking.status, 'confirmed'); assert.equal(booked.actual_money_charged, false); assert.equal(booked.intent.provider, 'local_demo'); assert.equal(booked.intent.authorization.kind, 'demo_chat'); assert.equal(booked.independent_human_verification, false);
     const repeated = await (await call(`/demo/cases/${c.id}/approve`, approval)).json(); assert.equal(repeated.booking.id, booked.booking.id); assert.equal(repeated.intent.intent_id, booked.intent.intent_id);

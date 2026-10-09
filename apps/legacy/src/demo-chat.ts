@@ -34,9 +34,9 @@ export function demoChatRouter(options: { store: LegacyStore; policy: AgentPolic
   r.get('/cases/:id', (req, res) => {
     const c = options.policy.getCase(req.legacyActor!, String(req.params.id));
     const q = c.quote_id ? options.store.getQuote(c.quote_id) : null;
-    const slot = q ? options.store.db.prepare('SELECT start_at,end_at FROM calendar_slots WHERE id=?').get(q.slot_id) : null;
+    const slot = q ? options.store.db.prepare('SELECT start_at,end_at FROM calendar_slots WHERE id=?').get(q.slot_id) as {start_at:string;end_at:string}|undefined : null;
     res.json({ simulation: true, case: c, quote: q, slot, consent_source: 'agent_relayed_demo_chat', independent_human_verification: false,
-      approval_request: q ? { quote_id: q.id, quote_hash: c.quote_hash, quote_version: q.version, slot_id: q.slot_id, total_minor: q.price.total_minor, deposit_minor: BOOKING_CONFIG.deposit_minor, currency: q.price.currency, simulation: true, confirmation: 'yes_i_approve' } : null,
+      approval_request: q ? { quote_id: q.id, quote_hash: c.quote_hash, quote_version: q.version, slot_id: q.slot_id, start_at: slot?.start_at, end_at: slot?.end_at, total_minor: q.price.total_minor, deposit_minor: BOOKING_CONFIG.deposit_minor, currency: q.price.currency, simulation: true, confirmation: 'yes_i_approve' } : null,
       order: c.order_id ? options.store.getOrder(c.order_id) : null,
       booking: c.order_id ? options.store.calendar(c.customer_id).find(b => b.order_id === c.order_id) ?? null : null,
       instruction: 'Show the exact business, service, appointment, total and simulated deposit. Submit approval_request only after the customer explicitly agrees. This creates a fictional reservation with local simulated funding; no money or testnet funds are transferred.' });

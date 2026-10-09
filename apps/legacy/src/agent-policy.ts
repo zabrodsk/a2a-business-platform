@@ -84,18 +84,20 @@ export class AgentPolicy {
       status TEXT NOT NULL, payload_json TEXT NOT NULL, decided_by TEXT, decided_at TEXT, created_at TEXT NOT NULL
     );`);
   }
-  acceptDemoChat(actor: Actor, caseId: string, input: {quote_id:string;quote_hash:string;quote_version:number;slot_id:string;total_minor:number;deposit_minor:number;currency:string;confirmation:string;simulation:boolean}) {
+  acceptDemoChat(actor: Actor, caseId: string, input: {quote_id:string;quote_hash:string;quote_version:number;slot_id:string;start_at:string;end_at:string;total_minor:number;deposit_minor:number;currency:string;confirmation:string;simulation:boolean}) {
     if (!this.options.demoChatEnabled?.() || !/^demo:[a-f0-9-]{36}$/.test(actor.id) || actor.customer_id !== `demo-customer-${actor.id.slice(5)}`) fail('DEMO_ONLY','Chat approval is available only for an isolated fictional demo session.',403);
     role(actor,'customer_agent');
-    object(input,['quote_id','quote_hash','quote_version','slot_id','total_minor','deposit_minor','currency','confirmation','simulation']);
+    object(input,['quote_id','quote_hash','quote_version','slot_id','start_at','end_at','total_minor','deposit_minor','currency','confirmation','simulation']);
     if (input.confirmation!=='yes_i_approve'||input.simulation!==true) fail('CHAT_APPROVAL_REQUIRED','Relay explicit customer approval of this exact simulated offer.',403);
-    const fingerprint=createHash('sha256').update(JSON.stringify(['demo_chat',...['quote_id','quote_hash','quote_version','slot_id','total_minor','deposit_minor','currency','confirmation','simulation'].map(k=>input[k as keyof typeof input])])).digest('hex');
+    const fingerprint=createHash('sha256').update(JSON.stringify(['demo_chat',...['quote_id','quote_hash','quote_version','slot_id','start_at','end_at','total_minor','deposit_minor','currency','confirmation','simulation'].map(k=>input[k as keyof typeof input])])).digest('hex');
     return this.store.db.transaction(()=>{
       const c=this.getCase(actor,caseId);
       const prior=this.store.db.prepare('SELECT fingerprint,intent_id FROM demo_chat_acceptances WHERE case_id=?').get(c.id) as {fingerprint:string;intent_id:string}|undefined;
       if (prior) { if(prior.fingerprint!==fingerprint)fail('APPROVAL_CONFLICT','This case already has a different immutable approval.',409);return {case:c,order:this.store.getOrder(c.order_id!),intent:this.store.getPaymentIntent(prior.intent_id)}; }
       const q=this.store.getQuote(input.quote_id),active=this.rulebooks.getActive();this.verifyQuote(c,q,active);this.verifyDiscount(q);
       if(c.status==='accepted'||c.business_id!=='pneu007'||input.quote_hash!==c.quote_hash||input.quote_version!==q.version||input.slot_id!==q.slot_id||input.total_minor!==q.price.total_minor||input.currency!==q.price.currency||input.deposit_minor!==active.params.deposit_minor||input.deposit_minor!==BOOKING_CONFIG.deposit_minor)fail('OFFER_CHANGED','Approval must match the exact current quote, slot, price and deposit.',409);
+      const slot=this.store.db.prepare('SELECT start_at,end_at FROM calendar_slots WHERE id=?').get(q.slot_id) as {start_at:string;end_at:string}|undefined;
+      if(!slot||input.start_at!==slot.start_at||input.end_at!==slot.end_at)fail('OFFER_CHANGED','Appointment time changed; ask the customer again.',409);
       const mapping=selectPaymentSku({payment_mode:'deposit',amount_minor:input.deposit_minor,max_network_fee:'0',network:'local'},{});
       const order=this.store.createOrder(q.id),approved_at=this.time();
       const authorization:PurchaseAuthorization={kind:'demo_chat',actor_id:actor.id,customer_id:c.customer_id,quote_id:q.id,quote_version:q.version,payment_mode:'deposit',max_total_minor:q.price.total_minor,max_deposit_minor:input.deposit_minor,network:'local',seller_id:mapping.seller_id,asset:mapping.asset,asset_quantity:mapping.asset_quantity,max_network_fee:'0',mapping_version:mapping.mapping_version,rulebook_version:active.version,approved_at};
