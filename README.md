@@ -2,8 +2,11 @@
 
 **Shared project specification:** [Handle Final Draft v2.2](docs/scope-of-work.md)
 is the approved product and technical target. Its [HTML reading copy](docs/handoru-final-draft.html)
-is available offline. The existing demo console is `/handle`; `/handoru` remains a compatible alias.
-Fresh-business onboarding and managed relay implementation remain local work in progress.
+is available offline. The console is `/handle`; `/handoru` remains a compatible alias over the same stored state.
+Fresh business onboarding starts at `/.well-known/handle.json`; the independent owner console is `/handle`.
+The [technical onboarding guide](docs/handoru-onboarding.html), [owner and GrokBot draft](docs/company-grokbot-onboarding.html),
+and [implementation evidence](docs/handoru-implementation-proof.html) distinguish local regression results from live integration gates.
+Live fresh-GrokBot onboarding, Preprod handover and full official A2A conformance remain unverified.
 See [AGENTS.md](AGENTS.md) for repository guidance.
 
 Infrastructure for personal agents to discover business agents, negotiate service offers, and complete authorized transactions.
