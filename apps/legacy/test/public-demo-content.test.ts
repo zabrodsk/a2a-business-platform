@@ -12,6 +12,19 @@ import { renderPublicDemoContent } from '../src/public-demo-content.js';
 const template = (name: string) => readFileSync(join(repoRoot, 'apps/legacy/public', name), 'utf8');
 const context = { publicUrl: 'https://pneu007.example', networkFee: '2500000', simulation: false };
 
+test('agent guide describes the actual payment environment and links public setup without changing the source template', () => {
+  const source = template('pro-agenty.html');
+  const local = renderPublicDemoContent('pro-agenty.html', source, { ...context, simulation: true });
+  assert.match(local, /místní simulaci platby/);
+  assert.doesNotMatch(local, /plná úhrada přes Masumi na síti Cardano Preprod/);
+  assert.match(local, /href="\/handle\/get-started"/);
+  assert.match(local, /není vyžadován zákaznický účet ani e-mail/);
+  const preprod = renderPublicDemoContent('pro-agenty.html', source, context);
+  assert.match(preprod, /Masumi na Cardano Preprod používá testovací prostředky/);
+  assert.doesNotMatch(preprod, /místní simulaci platby/);
+  assert.equal(template('pro-agenty.html'), source);
+});
+
 test('public demo fields are complete and consistent with booking, contact and payment data', () => {
   const profile = loadProfile('pneu007');
   for (const file of ['index.html', 'kalkulator.html', 'kontakt.html', 'podminky.html']) {

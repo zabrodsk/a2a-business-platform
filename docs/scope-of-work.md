@@ -139,6 +139,8 @@ Pevně připravené budou vstupní dokumenty, data a kontakt firmy pro zákazní
 
 Výsledná konverzace, auditní závěry a kompletní rulebook nesmějí být předem napsané. Obchodní vstupy a referenční ceník jsou připravené zdroje, ze kterých agent teprve vyvodí doložený návrh.
 
+Legacy web a jeho administrace představují samostatný, již existující provozní systém. Běžné objednávky, kalendář, zákazníci a sklad fungují před připojením Handle; provozní UI Pneu neobsahuje propagaci, navigaci ani přihlašovací nápovědu Handle. Připojení agenta a jeho schvalování se zahajuje ze samostatného Handle vstupu. Toto oddělení UI nemění oprávnění kontrolované agentické API/MCP cesty.
+
 ### 4.2 Vstupní balíček
 
 | Zdroj | Obsah | Přístup |
@@ -842,6 +844,8 @@ T43 ověřuje samostatnou volitelnou lidskou platební cestu podle §10.3; její
 U každého externího výsledku zaznamenat skutečný runtime/účet bez tajemství, metodu přístupu/verzi API či MCP a protokolu, report/evidence/rulebook hash, čas a návazná ID. Skriptovaní klienti a lokální providery jsou důkaz backendu; nejsou důkazem živého GrokBota, jiného konkrétního produktu ani on-chain transakce. Bez přístupu k účtům, prostředí nebo funds uvést NOT_RUN/BLOCKED a konkrétní závislost.
 
 ## 15. Konzole a dvouminutové demo
+
+Veřejná stránka `/handle/get-started` je dostupná před přihlášením. Odděluje firemní managed onboarding a zákaznické registry discovery, nabízí kanonické kopírovatelné instrukce, uvádí potřebné lidské souhlasy, vlastní token agenta, oddělený publisher přístup, ověřený webhook a omezení Pneu-only. Checklist připravenosti je vysvětlení, nikoli automatické potvrzení neprovedených živých testů. Připravené open demo je označená alternativa, ne náhrada auditu.
 
 Záložka Agent Card obsahuje jednoduchý popis a tlačítko pro zkopírování kanonického zadání. Prompt doplní aktuální website/Handle URL a zachová soukromý token mimo veřejnou kartu. Stav a historie publikace jsou ve sbalitelném detailu.
 

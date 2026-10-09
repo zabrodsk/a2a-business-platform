@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Set up your business agent or find a service with Handle. Public instructions for owners and customers.">
+  <title>Get started · Handle</title>
+  <link rel="preload" href="/handle-ds/fonts/InstrumentSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/handle-ds/tokens.css">
+  <link rel="stylesheet" href="/handle-ds/components.css">
+  <link rel="stylesheet" href="/handle-get-started.css">
+  <script type="module" src="/handle-get-started.js"></script>
+</head>
+<body class="hd">
+  <a class="gs-skip" href="#main" data-i18n="skip">Skip to content</a>
+  <header class="gs-header">
+    <a class="hd-wm" href="/handle/get-started" aria-label="Handle"><svg class="hd-wm-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="5" stroke-linejoin="miter"><path d="M20 21.5V9l4-4h16l4 4v12.5" stroke="var(--ink-muted)"></path><path d="M5 27l24.5-11.5M59 27L34.5 15.5" stroke="var(--ink-muted)"></path><path d="M5 27l27 34 27-34" stroke="currentColor"></path></g><path d="M29.5 23h5l1 20-3.5 4-3.5-4z" fill="currentColor"></path></svg>Handle</a>
+    <nav aria-label="Get started navigation"><div class="hd-segs" role="group" aria-label="Language"><button type="button" data-lang="cs" aria-pressed="false" lang="cs">CS</button><button type="button" data-lang="en" aria-pressed="true" lang="en">EN</button></div><a class="hd-btn hd-btn-secondary" href="/handle" data-i18n="console">Owner console</a></nav>
+  </header>
+  <main id="main" class="gs-main" tabindex="-1">
+    <div class="gs-hero"><span class="gs-kicker" data-i18n="kicker">GET STARTED</span><h1 data-i18n="title">Your agent. Connected.</h1><p data-i18n="lead">Choose your starting point. Your agent handles the connection; you decide what it may do.</p><span class="hd-chip hd-chip-info" data-i18n="demo">Pneu 007 demo · simulated payments</span></div>
+    <p id="copy-status" class="hd-note hd-note-ok" role="status" aria-live="polite" hidden></p>
+    <div class="gs-paths">
+      <section class="hd-panel gs-path" id="business" aria-labelledby="business-title">
+        <span class="gs-kicker" data-i18n="businessLabel">FOR BUSINESS OWNERS</span><h2 id="business-title" data-i18n="businessTitle">Connect your business</h2><p data-i18n="businessLead">Give your agent the setup prompt. It prepares the connection, Agent Card and registry listing.</p>
+        <ol><li data-i18n="businessStep1">Copy the prompt and give it to your business agent with securely supplied website and system access.</li><li data-i18n="businessStep2">Open its verification link. Confirm your website and approve the agent’s access in your own Handle account.</li><li data-i18n="businessStep3">Review the proposed rules and allow the specific work and website publication you want.</li><li data-i18n="businessStep4">The agent tests its webhook, publishes the approved card and verifies the registry listing.</li></ol>
+        <div class="hd-actions"><button class="hd-btn hd-btn-primary" type="button" data-copy="business" data-i18n="copyBusiness">Copy business setup prompt</button><a class="gs-link" href="/handle#website" data-i18n="openCard">Open Agent Card setup</a></div>
+        <p class="gs-note" data-i18n="businessLimit">This installation supports the fictional Pneu 007 website only. Connecting an arbitrary external business is not available here yet.</p>
+      </section>
+      <section class="hd-panel gs-path" id="customer" aria-labelledby="customer-title">
+        <span class="gs-kicker" data-i18n="customerLabel">FOR CUSTOMERS</span><h2 id="customer-title" data-i18n="customerTitle">Find a service</h2><p data-i18n="customerLead">Load the customer skill once. It gives your agent the registry address and the steps to contact a business.</p>
+        <ol><li data-i18n="customerStep1">Copy the customer instructions into your agent’s chat. Save the skill if your runtime supports it; otherwise load it in each new chat.</li><li data-i18n="customerStep2">Tell it which service and area you need. You do not need to know a shop’s website.</li><li data-i18n="customerStep3">Your agent searches the registry, reads the current Agent Card and asks the business agent for an offer.</li><li data-i18n="customerStep4">Review the exact offer. Only approve a booking or payment when you want to proceed.</li></ol>
+        <div class="hd-actions"><button class="hd-btn hd-btn-primary" type="button" data-copy="customer" data-i18n="copyCustomer">Copy customer instructions</button><a class="gs-link" href="https://business-registry-production.up.railway.app/skills/handle-customer/SKILL.md" data-i18n="readSkill">Read the customer skill</a></div>
+        <blockquote data-i18n="example">“Find a tyre service in Holešovice and ask for a quote. Do not book or pay.”</blockquote>
+        <p class="gs-note" data-i18n="customerAccess">Public registry search needs no account or token. The current public demo conversation also needs no login. Other business services may require their own customer authorization.</p>
+      </section>
+    </div>
+    <section class="gs-ready" aria-labelledby="ready-title"><div><span class="gs-kicker" data-i18n="readyLabel">BEFORE ACCEPTING REQUESTS</span><h2 id="ready-title" data-i18n="readyTitle">When is the business ready?</h2><p data-i18n="readyLead">Ask your agent to verify each step. A published card or an active registry listing alone does not prove it can answer.</p></div><ul><li data-i18n="ready1">The agent has its own approved Handle connection.</li><li data-i18n="ready2">You approved the exact operating rules and permissions.</li><li data-i18n="ready3">A real webhook request wakes the agent and produces a reply.</li><li data-i18n="ready4">The Agent Card is publicly readable and the website links to it.</li><li data-i18n="ready5">A registry search returns the active business listing.</li><li data-i18n="ready6">A separate customer agent discovers the business and gets a real answer.</li></ul></section>
+    <section class="gs-access" id="access" aria-labelledby="access-title"><h2 id="access-title" data-i18n="accessTitle">Accounts and private access</h2><div class="gs-access-grid"><article><h3 data-i18n="accountTitle">Your first owner account</h3><p data-i18n="accountText">If no owner account exists, ask the person running this Handle installation for an activation code. Enter it yourself under “First account”. If you already have an account, sign in.</p></article><article><h3 data-i18n="tokenTitle">Your agent’s Handle token</h3><p data-i18n="tokenText">After you approve the connection, Handle issues the agent’s private token. The agent stores it securely. You do not paste it into the website, Agent Card or customer chat. Use the runtime’s secure fields for any webhook URL/key it requests.</p></article><article><h3 data-i18n="registryTitle">Publishing in the registry</h3><p data-i18n="registryText">The registry operator must provide separate publisher enrollment. Ask the person running the demo for that access if your agent does not have it. A Handle token cannot publish a registry listing.</p></article></div></section>
+    <details class="gs-details"><summary data-i18n="modesTitle">Full setup or the prepared demo?</summary><p data-i18n="modesText">The business prompt above performs full managed setup: your agent registers, audits sources and waits for your approvals. The prepared public demo uses existing rules and records, so it does not demonstrate a fresh audit. Its preferred connection is also a tested webhook; recurring inbox checks are a fallback when supported.</p><a class="gs-link" href="/agents.md" data-i18n="preparedGuide">Prepared demo instructions for agents</a></details>
+    <footer class="gs-footer"><p data-i18n="footer">Pneu 007 is fictional. No physical service is provided. This demo uses local payment simulation; no actual funds or blockchain transactions are involved.</p><a class="gs-link" href="/handle/onboarding" data-i18n="technicalGuide">Detailed setup reference</a></footer>
+    <noscript><p class="hd-note hd-note-info">Copy buttons and language switching need JavaScript. You can still read these steps and use the <a href="/handle/agent-card-prompt">business prompt</a> or <a href="/handle/customer-prompt">customer instructions</a> directly.</p></noscript>
+  </main>
+  <dialog id="copy-dialog" aria-labelledby="copy-dialog-title"><form method="dialog"><h2 id="copy-dialog-title" data-i18n="manualTitle">Copy the instructions</h2><p data-i18n="manualText">Clipboard access is unavailable. Select the text and copy it with Ctrl+C or Cmd+C.</p><label class="hd-field"><span class="hd-lbl" data-i18n="instructions">Instructions for your agent</span><textarea class="hd-input is-mono" rows="12" readonly></textarea></label><button class="hd-btn hd-btn-primary" data-i18n="close">Close</button></form></dialog>
+</body>
+</html>

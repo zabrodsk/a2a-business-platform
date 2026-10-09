@@ -8,7 +8,7 @@ export interface PublicDemoContext {
   networkFee?: string;
   simulation: boolean;
 }
-const publicPages = new Set(['index.html', 'kalkulator.html', 'kontakt.html', 'podminky.html']);
+const publicPages = new Set(['index.html', 'kalkulator.html', 'kontakt.html', 'podminky.html', 'pro-agenty.html']);
 export const hasPublicDemoContent = (file: string) => publicPages.has(file);
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
 function publicHeader(file: string): string {
@@ -45,6 +45,18 @@ const workshopPlan = `<svg viewBox="0 0 360 180" width="360" style="width:100%;m
  * This presentation is not a new audit or activation of operating policy. */
 export function renderPublicDemoContent(file: string, template: string, context: PublicDemoContext): string {
   if (!hasPublicDemoContent(file)) return template;
+  if (file === 'pro-agenty.html') {
+    const payment = context.simulation
+      ? 'Aktuální demo používá místní simulaci platby se zálohou 500 Kč. Žádné skutečné prostředky, blockchainové transakce ani fyzická služba.'
+      : 'Masumi na Cardano Preprod používá testovací prostředky. Aktuální platební možnosti a schválení ověřte před potvrzením nabídky; žádná fyzická služba.';
+    return template
+      .replace('Začněte <a href="/agents.md">úplnými instrukcemi pro agenty</a>.', 'Začněte <a href="/handle/get-started">stručným průvodcem Handle pro majitele a zákazníky</a>. Technické <a href="/agents.md">instrukce pro agenty</a> jsou dostupné zvlášť.')
+      .replace('Záloha 500 Kč, nebo plná úhrada přes Masumi na síti Cardano Preprod. Bez skutečné služby.', payment)
+      .replace('e-mail, telefon, provozovna (povinné); jméno', 'V aktuální veřejné demo konverzaci není vyžadován zákaznický účet ani e-mail. Jiný režim může vyžadovat vlastní ověření.')
+      .replace('záloha, nebo plná úhrada, je-li povolená', context.simulation ? 'simulovaná záloha 500 Kč podle schválené nabídky' : 'jen skutečně podporovaná a schválená testovací platební metoda')
+      .replace('Platby na mainnetu nebo v korunách', context.simulation ? 'Skutečné platby, blockchainové transakce a reálné služby' : 'Platby na mainnetu a reálné služby')
+      .replace('Rezervace platí až po ověření platby.', 'Rezervaci potvrďte až podle uloženého stavu objednávky a platby; nabídka sama není rezervace.');
+  }
   const profile = loadProfile('pneu007');
   let html = template.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, publicHeader(file));
   const fill = (label: string, value: string) => { html = html.replace(`<span class="ph">${label}</span>`, escape(value)); };
