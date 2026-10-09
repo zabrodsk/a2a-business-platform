@@ -31,7 +31,18 @@ function feedback(message, error = false) { const target = document.querySelecto
 async function api(path, body) {
   const response = await fetch(`${API}${path}`, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', redirect: 'error', headers: { Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json', 'x-csrf-token': state.csrf }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) { const error = new Error(`${data.error?.code || data.code || `HTTP_${response.status}`}: ${data.error?.message || data.message || (typeof data.error === 'string' ? data.error : 'Požadavek se nepodařil.')}`); error.status = response.status; throw error; }
+  if (!response.ok) {
+    const code = data.error?.code || data.code || `HTTP_${response.status}`;
+    const accountMessages = {
+      OWNER_SETUP_REQUIRED: 'Aktivační kód chybí nebo není správný. Vložte soukromý kód pro založení prvního účtu.',
+      OWNER_EXISTS: 'První účet už byl založen. Přepněte na „Přihlásit se“.',
+      INVALID_LOGIN: 'Nesprávný e-mail nebo heslo.',
+      INVALID_ACCOUNT: 'Zadejte platný e-mail a heslo dlouhé alespoň 12 znaků.',
+    };
+    const error = new Error(accountMessages[code] || `${code}: ${data.error?.message || data.message || (typeof data.error === 'string' ? data.error : 'Požadavek se nepodařil.')}`);
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 async function load() {
@@ -63,7 +74,7 @@ function render() {
 }
 function renderAuth() {
   const signup = state.authMode === 'signup';
-  main.innerHTML = `<div class="auth-layout"><div class="auth-copy"><span class="eyebrow">Majitel má poslední slovo</span><h1>Váš business.<br>Vaše pravidla.</h1><p>GrokBot prozkoumá systémy a navrhne pravidla. Vy nezávisle potvrdíte připojení, posoudíte audit a povolíte přesný rozsah práce.</p><div class="note info">Přihlášení do Handle je oddělené od admin účtu Pneu, který jste předali agentovi.</div>${requestedId ? '<p class="small">Otevřeli jste žádost o připojení. Po přihlášení ji můžete zkontrolovat. Odkaz nic automaticky neschvaluje.</p>' : ''}</div><section class="surface auth-card" aria-label="Lidské přihlášení"><div class="auth-tabs"><button type="button" data-auth="login" aria-current="${!signup}">Přihlásit se</button><button type="button" data-auth="signup" aria-current="${signup}">První účet</button></div><form data-form="${signup ? 'signup' : 'login'}"><label class="field"><span class="lbl">E-mail</span><input class="input" name="email" type="email" autocomplete="username" required maxlength="200"></label><label class="field"><span class="lbl">${signup ? 'Nové heslo · nejméně 12 znaků' : 'Heslo'}</span><input class="input" name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" ${signup ? 'minlength="12"' : ''} maxlength="200" required></label>${signup ? '<label class="field"><span class="lbl">Samostatný setup credential</span><input class="input" name="setup_secret" type="password" autocomplete="off" maxlength="200" required><span class="hint">Předejte jej pouze člověku. Je uložen mimo web v data/handoru-access.json (interní název souboru) nebo HANDLE_OWNER_SETUP_SECRET. Konzole jej sama nečte.</span></label>' : ''}<button class="btn btn-green" type="submit">${signup ? 'Vytvořit lidský účet' : 'Přihlásit do Handle'} →</button></form><p class="form-note">Hesla, lidskou session ani setup credential nesdílejte s agentem. Neukládáme je do URL ani browser storage.</p></section></div>`;
+  main.innerHTML = `<div class="auth-layout"><div class="auth-copy"><span class="eyebrow">Majitel má poslední slovo</span><h1>Váš business.<br>Vaše pravidla.</h1><p>GrokBot prozkoumá systémy a navrhne pravidla. Vy nezávisle potvrdíte připojení, posoudíte audit a povolíte přesný rozsah práce.</p><div class="note info">Přihlášení do Handle je oddělené od admin účtu Pneu, který jste předali agentovi.</div>${requestedId ? '<p class="small">Otevřeli jste žádost o připojení. Po přihlášení ji můžete zkontrolovat. Odkaz nic automaticky neschvaluje.</p>' : ''}</div><section class="surface auth-card" aria-label="Lidské přihlášení"><div class="auth-tabs"><button type="button" data-auth="login" aria-current="${!signup}">Přihlásit se</button><button type="button" data-auth="signup" aria-current="${signup}">První účet</button></div><form data-form="${signup ? 'signup' : 'login'}"><label class="field"><span class="lbl">E-mail</span><input class="input" name="email" type="email" autocomplete="username" required maxlength="200"></label><label class="field"><span class="lbl">${signup ? 'Nové heslo · nejméně 12 znaků' : 'Heslo'}</span><input class="input" name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" ${signup ? 'minlength="12"' : ''} maxlength="200" required></label>${signup ? '<label class="field"><span class="lbl">Aktivační kód pro první účet</span><input class="input" name="setup_secret" type="text" autocomplete="one-time-code" inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="200" aria-describedby="owner-activation-help" required><span class="hint" id="owner-activation-help">Soukromý kód od provozovatele Handle. Slouží pouze k založení prvního účtu; není to vaše heslo.</span></label>' : ''}<button class="btn btn-green" type="submit">${signup ? 'Vytvořit účet' : 'Přihlásit do Handle'} →</button></form><p class="form-note">Heslo ani aktivační kód nepředávejte svému agentovi.</p></section></div>`;
 }
 function emptyBusiness() { return '<section class="surface"><h2>Firma ještě není připojena</h2><p>Dejte fresh botovi URL Handle a přístupy k legacy systémům bezpečným kanálem. Bot zahájí žádost a ukáže vám ověřovací kód.</p><p class="small mute">Účet, relay, audit ani pravidla se nepředvyplňují.</p></section>'; }
 function pendingRequests() {
@@ -136,7 +147,7 @@ main.addEventListener('submit', async event => {
     let message = 'Změna byla uložena.', rotatedAccess = null;
     if (kind === 'login' || kind === 'signup') {
       const account = { email: data.get('email'), password: data.get('password'), ...(kind === 'signup' ? { setup_secret: data.get('setup_secret') } : {}) };
-      form.querySelectorAll('input[type=password]').forEach(input => input.value = '');
+      form.querySelectorAll('input[type=password], input[name=setup_secret]').forEach(input => input.value = '');
       await api(`/owner/${kind}`, account); account.password = ''; if ('setup_secret' in account) account.setup_secret = '';
       message = kind === 'signup' ? 'Lidský účet Handle byl vytvořen.' : 'Přihlášeno do Handle.';
     } else if (kind === 'consent') {
