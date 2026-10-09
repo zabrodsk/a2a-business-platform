@@ -16,6 +16,7 @@ Requirements in the draft are distinct from the verified build status below.
 See [AGENTS.md](AGENTS.md) for the repository entry instructions.
 An offline [HTML reading copy](docs/handoru-final-draft.html) is generated from
 the canonical specification; make requirement changes in the Markdown source.
+The [owner and GrokBot draft](docs/company-grokbot-onboarding.html) complements the technical onboarding guide. Live fresh-GrokBot onboarding through the new Handle process, Preprod handover and full official A2A conformance remain unverified; earlier customer-booking and payment reports below cover their recorded workflows, not these new gates.
 
 A customer should be able to tell their agent, **“I need my tires swapped,”** and have it find businesses that accept agent requests, obtain current offers, and book within the customer's approved limits. This hackathon project brings the discovery, communication, business tools, rules, and payment adapters into one repository.
 

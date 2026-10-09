@@ -19,5 +19,5 @@ infra/masumi/buyer.env
 tasks
 docs
 
-# Public Handoru onboarding instructions are served by the legacy runtime.
+# Public Handle onboarding instructions are served by the legacy runtime.
 !docs/handoru-onboarding.html

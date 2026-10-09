@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AgentCard,Role,TaskState } from '@a2a-js/sdk';
 import { ClientFactory,ClientFactoryOptions,JsonRpcTransportFactory } from '@a2a-js/sdk/client';
-import {freshFixture,onboard,audited,activate,provision,operational,ready,mcp,json,customerToken,operationScopes} from './handoru-fixture.js';
+import {freshFixture,onboard,audited,activate,provision,operational,ready,mcp,json,operationScopes} from './handoru-fixture.js';
 
 async function publish(c:Awaited<ReturnType<typeof ready>>,key='publication-one') {
   const publication=await json(await c.agent(`${c.path}/website-publications`,{},{'idempotency-key':key}),201);
@@ -26,7 +26,7 @@ test('website card requires separate owner publication scope, bounded native wri
   const response=await f.publicCall('/.well-known/agent-card.json'),card=await json(response),etag=response.headers.get('etag');
   assert.equal(response.headers.get('cache-control'),'no-cache, max-age=0, must-revalidate');assert.ok(etag);
   assert.equal(card.supportedInterfaces[0].url,relay.endpoint);assert.equal(card.supportedInterfaces[0].protocolVersion,'1.0');assert.equal(card.supportedInterfaces[0].protocolBinding,'JSONRPC');
-  assert.deepEqual(card.securitySchemes,{bearer:{httpAuthSecurityScheme:{scheme:'Bearer'}}});assert.deepEqual(card.securityRequirements,[{schemes:{bearer:{list:[]}}}]);
+  assert.equal(card.documentationUrl,`${f.base}/auth.md`);assert.equal(card.securitySchemes.bearer.httpAuthSecurityScheme.scheme,'Bearer');assert.match(card.securitySchemes.bearer.httpAuthSecurityScheme.description,/signed-in customer/);assert.deepEqual(card.securityRequirements,[{schemes:{bearer:{list:[]}}}]);
   assert.deepEqual(card.capabilities,{streaming:false,pushNotifications:false});assert.match(card.description,/Fictional/);
   const serialized=JSON.stringify(card);for(const privateValue of [c.token,'auto_discount_bps','deposit_minor','source_authority'])assert.ok(!serialized.includes(privateValue));
   const home=await(await f.publicCall('/')).text();assert.match(home,/<a[^>]*href="\/\.well-known\/agent-card\.json"[^>]*>Pro agenty/);
@@ -38,10 +38,17 @@ test('website card requires separate owner publication scope, bounded native wri
   assert.ok(!(await(await f.publicCall('/')).text()).includes('class="handoru-agent-card-link"'));
 });
 
-test('published managed endpoint is genuinely A2A and revalidation discovers changed endpoint on next run',async t=>{
+test('published managed endpoint accepts customer-bound auth.md credentials and discovers endpoint changes',async t=>{
   const f=await freshFixture(t,{unified:true}),c=await ready(f);await publish(c);
   const firstResponse=await f.publicCall('/.well-known/agent-card.json'),wire=await json(firstResponse),firstTag=firstResponse.headers.get('etag')!;
-  const authenticatedFetch:typeof fetch=(input,init)=>{const headers=new Headers(init?.headers);headers.set('authorization',`Bearer ${customerToken}`);return fetch(input,{...init,headers});};
+  const guide=await fetch(wire.documentationUrl);assert.equal(guide.status,200);
+  const registration=await json(await f.publicCall('/agent/identity',{type:'service_auth',login_hint:'jana.vesela@example.com'}),201);
+  const claimAttempt=new URL(registration.claim.verification_uri).searchParams.get('claim_attempt_token');assert.ok(claimAttempt);
+  const human=await f.login('customer-a');
+  await json(await human.call('/api/agent/identity/confirm',{claim_attempt_token:claimAttempt,user_code:registration.claim.user_code}));
+  const credential=await json(await fetch(`${f.base}/oauth2/token`,{method:'POST',body:new URLSearchParams({grant_type:'urn:workos:agent-auth:grant-type:claim',claim_token:registration.claim_token})}));
+  const customer=f.client({authorization:`Bearer ${credential.access_token}`});
+  const authenticatedFetch:typeof fetch=(input,init)=>{const target=new URL(input instanceof Request?input.url:String(input));assert.equal(target.origin,f.base);const headers=new Headers(init?.headers);headers.set('authorization',`Bearer ${credential.access_token}`);return fetch(input,{...init,headers});};
   const factory=new ClientFactory(ClientFactoryOptions.createFrom(ClientFactoryOptions.default,{transports:[new JsonRpcTransportFactory({fetchImpl:authenticatedFetch})],preferredTransports:['JSONRPC']}));
   // Customer gets only the business website; the endpoint comes from its fetched public card.
   const client=await factory.createFromAgentCard(AgentCard.fromJSON(wire));
@@ -50,10 +57,16 @@ test('published managed endpoint is genuinely A2A and revalidation discovers cha
   let items:any[]=[];
   for(let attempt=0;attempt<20&&!items.length;attempt++){items=(await json(await c.agent(`/relay/${c.relay.id}/bot/inbox`))).items;if(!items.length)await new Promise(done=>setTimeout(done,20));}
   assert.equal(items.length,1);assert.equal(items[0].task_id,taskId);assert.equal(items[0].business_id,c.businessId);assert.ok(items[0].lease_token);
+  assert.deepEqual(items[0].customer_identity,{agent_id:registration.registration_id,acting_for:{type:'customer',id:'customer-001'}});
+  const opened=await json(await customer('/api/agent/cases',{relay_task_id:taskId,service_spec:{service_id:'wheel_swap',vehicle_type:'personal',wheel_size_inches:17,rim_type:'alu',runflat:false,tpms:false,wheel_count:4}}),201);
+  assert.equal(opened.case.customer_agent_id,registration.registration_id);assert.equal(opened.case.customer_id,'customer-001');
   await json(await c.agent(`/relay/${c.relay.id}/bot/reply`,{work_item_id:items[0].work_item_id,text:'Synthetic native relay transport reply.',state:'completed',lease_token:items[0].lease_token,claim_generation:items[0].claim_generation}));
   let task=await client.getTask({id:taskId,tenant:'',historyLength:undefined});
   for(let attempt=0;attempt<20&&task.status?.state!==TaskState.TASK_STATE_COMPLETED;attempt++){await new Promise(done=>setTimeout(done,20));task=await client.getTask({id:taskId,tenant:'',historyLength:undefined});}
   assert.equal(task.status?.state,TaskState.TASK_STATE_COMPLETED);assert.match(JSON.stringify(task),/Synthetic native relay transport reply/);
+  await json(await human.call(`/api/agent/identities/${registration.registration_id}/revoke`,{}));
+  assert.equal((await customer('/api/agent/identity')).status,401);
+  assert.equal((await customer(`/relay/${c.relay.id}/a2a`,{})).status,401);
   // A deployment changes the managed endpoint. It is fixture administration, not agent write access.
   const newEndpoint=`${c.relay.endpoint}?deployment_revision=2`;
   f.store.db.prepare('UPDATE handoru_relays SET endpoint=? WHERE id=?').run(newEndpoint,c.relay.id);

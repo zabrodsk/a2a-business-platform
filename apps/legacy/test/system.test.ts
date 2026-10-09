@@ -86,6 +86,11 @@ test('compatibility transport preserves SDK tasks while adopting scoped identiti
     const home = await fetch(base);
     assert.equal(home.status, 200);
     assert.match(await home.text(), /Pneu 007/);
+    for (const path of ['/handle', '/handoru']) {
+      const console = await fetch(`${base}${path}`);
+      assert.equal(console.status, 200, path);
+      assert.match(await console.text(), /href="\/handle">HANDLE<span>/);
+    }
     const unpublished = await fetch(`${base}/.well-known/agent-card.json`);
     assert.notEqual(unpublished.status, 200);
     assert.equal((await fetch(`${base}/a2a/jsonrpc`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, 401);

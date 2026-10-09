@@ -11,7 +11,7 @@ import { SourceRegistry, RulebookManager } from '../../../packages/audit/index.j
 import { createPaymentProvider, paymentProviderStatus, selectPaymentSku, DEMO_SELLER } from '../../../packages/payments/index.js';
 import { LegacyAuth } from './auth.js';
 import { AgentAuth } from './agent-auth.js';
-import { HandoruStore, fail as handoruFail } from './handoru/store.js';
+import { HandoruStore } from './handoru/store.js';
 import { importCompatibility } from './handoru/onboarding.js';
 import { handoruRoutes } from './handoru/routes.js';
 import { assertCapabilities } from './handoru/capabilities.js';

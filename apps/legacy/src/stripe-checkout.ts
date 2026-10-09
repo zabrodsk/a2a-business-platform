@@ -110,6 +110,7 @@ export class StripeCheckoutWorkflow {
     try {
       response = await this.fetcher(`${API}${path}`, { method, redirect: 'error', signal: AbortSignal.timeout(10_000),
         headers: { Authorization: `Bearer ${this.options.env.STRIPE_SECRET_KEY!}`, 'Stripe-Version': API_VERSION,
+          'Stripe-Account': this.options.env.STRIPE_ACCOUNT_ID!,
           ...(body === undefined ? {} : { 'Content-Type': 'application/x-www-form-urlencoded' }),
           ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) }, body });
     } catch { throw failure('STRIPE_TEMPORARILY_UNAVAILABLE'); }
@@ -119,14 +120,17 @@ export class StripeCheckoutWorkflow {
 
   private async verifyAccount() {
     this.requireConfig();
-    // Official unclaimed CLI sandbox keys cannot read /account. Their test account
-    // ID comes from the private CLI result and all session reads stay key-scoped.
+    // Official unclaimed CLI sandbox keys use the private CLI account result;
+    // every provider operation still carries the authenticated merchant scope.
     if (this.options.env.STRIPE_SECRET_KEY!.startsWith('rkcs_test_')) return;
     if (this.accountVerifiedUntil > this.clock().getTime()) return;
     if (this.accountCheck) return this.accountCheck;
     this.accountCheck = (async () => {
-      const account = await this.request('/account');
-      if (!object(account) || account.id !== this.options.env.STRIPE_ACCOUNT_ID || account.object !== 'account') throw failure('STRIPE_ACCOUNT_MISMATCH', 409);
+      // Checkout read access is sufficient: Stripe authorizes the requested
+      // merchant in Stripe-Account without requiring unrelated Account access.
+      const sessions = await this.request('/checkout/sessions?limit=1');
+      if (!object(sessions) || sessions.object !== 'list' || !Array.isArray(sessions.data) ||
+        sessions.url !== '/v1/checkout/sessions') throw failure('STRIPE_ACCOUNT_MISMATCH', 409);
       this.accountVerifiedUntil = this.clock().getTime() + 300_000;
     })().finally(() => { this.accountCheck = undefined; });
     return this.accountCheck;

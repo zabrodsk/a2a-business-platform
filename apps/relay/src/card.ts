@@ -19,7 +19,7 @@ export function loadProfile(id: string): BusinessProfile {
 }
 
 // Public card. Declares only what the relay actually implements: JSON-RPC binding,
-// v1.0, bearer auth, no streaming or advertised push notifications.
+// v1.0, bearer auth; streaming and push are not advertised pending live verification.
 // No internal rules, prices or keys belong here (scope-of-work §5.2).
 export function buildAgentCard(cfg: Config): AgentCard {
   const p = loadProfile(cfg.businessProfile);
