@@ -29,7 +29,7 @@ export function paymentStatus(record) {
   const stripe = object(view.stripe_checkout), observation = object(intent.observation);
   const simulation = intent.provider === 'local_demo' || view.simulation === true;
   const environment = simulation ? 'Lokální simulace; skutečné peníze se nepřevádějí.'
-    : intent.provider === 'masumi' ? 'Masumi · Cardano Preprod, pouze testovací prostředky.' : '';
+    : intent.provider === 'masumi' ? 'Masumi · Cardano Preprod, blockchainové transakce v test-ADA.' : '';
   const result = (label, tone, note = '') => ({ label, tone, note: [environment, note].filter(Boolean).join(' ') });
 
   // A failed reconciliation must not turn an older escrow observation into a settled payment.
@@ -64,7 +64,7 @@ export function paymentStatus(record) {
     return { ...status(...entry), note: `${note}${stripe.state === 'paid' ? ' Přijetí platby neprokazuje provedení služby.' : ''}` };
   }
   if (order.origin === 'fixture' && Number.isSafeInteger(order.amount_minor) && order.amount_minor > 0) {
-    return { ...status('Historický demo záznam', 'neutral'), note: 'Importovaná částka je ukázková evidence; není potvrzením aktuální platby u poskytovatele.' };
+    return { ...status('Importovaná evidence platby', 'neutral'), note: 'Importovaná částka pochází z původního systému; není potvrzením aktuální platby u poskytovatele.' };
   }
   return result('Platba neevidována', 'neutral', 'Z dostupného záznamu nelze potvrdit přijetí platby.');
 }
