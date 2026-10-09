@@ -20,6 +20,7 @@ import { handoruManifest } from './handoru/manifest.js';
 import { pneuMcp } from './mcp.js';
 import { hasPublicDemoContent, renderPublicDemoContent } from './public-demo-content.js';
 import { demoChatRouter } from './demo-chat.js';
+import { openDemoBusinessRouter } from './open-demo-business.js';
 import { AgentPolicy } from './agent-policy.js';
 import { PaymentWorkflow } from './payment-workflow.js';
 import { StripeCheckoutWorkflow } from './stripe-checkout.js';
@@ -99,7 +100,9 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.set('Link', `</agents.md>; rel="describedby"; type="text/markdown", </.well-known/handle.json>; rel="service-desc"; type="application/json", </.well-known/agent-card.json>; rel="agent-card"; type="application/json"`);
     next();
   });
-  app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true')));
+  app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true', cfg.env.DEMO_OPEN_BUSINESS === 'true')));
+  app.use('/demo-business', openDemoBusinessRouter({ store, policy, handoru, publicUrl: cfg.publicUrl, actor: currentBusinessIdentity,
+    enabled: () => cfg.env.DEMO_OPEN_BUSINESS === 'true' && cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true' && cfg.env.HANDORU_FRESH !== 'true' && handoru.installation()?.id === 'pneu007' }));
   const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now: () => now().getTime() });
   const discoveryJson = express.json({ limit: '32kb' });
   app.post('/discovery/websites', (req, res, next) => {
@@ -125,7 +128,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.use('/api', (_req,_res,next)=>{const b=handoru.installation();if(b)rulebooks.useBusiness(b.id,{genericEvidence:b.id!=='pneu007'});next();});
   app.use(['/api/handle/v1','/api/handoru/v1'],handoruApi.router);
   app.use('/mcp',pneuMcp(auth,handoru));
-  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true')));
+  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true',cfg.env.DEMO_OPEN_BUSINESS==='true')));
   app.get(['/handle/onboarding','/handoru/onboarding'],(_req,res)=>res.sendFile(join(repoRoot,'docs/handoru-onboarding.html')));
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});
@@ -579,6 +582,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.type('text/javascript').sendFile(path);
   });
   app.get('/cli/customer.mjs', (_req, res) => res.type('text/javascript').sendFile(join(repoRoot, 'packages/agent-client/dist/customer.mjs')));
+  app.get('/cli/demo-business.mjs', (_req, res) => res.type('text/javascript').sendFile(join(repoRoot, 'packages/agent-client/dist/demo-business.mjs')));
   app.get('/skills/a2a-customer-booking/SKILL.md', (_req, res) => res.type('text/markdown').sendFile(join(repoRoot, 'skills/a2a-customer-booking/SKILL.md')));
   app.get('/cli/discover-sites.mjs', (_req, res) => {
     const path = join(repoRoot, 'packages/agent-client/dist/discover-sites.mjs');

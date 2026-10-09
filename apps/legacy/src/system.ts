@@ -9,6 +9,7 @@ import { buildAgentCard } from '../../relay/src/card.js';
 import type { Config, Identity } from '../../relay/src/config.js';
 import { demoCustomer } from './demo-chat.js';
 import { requireRole } from '../../relay/src/auth.js';
+import { botRouter } from '../../relay/src/bot-api.js';
 import { createRelay } from '../../relay/src/server.js';
 import { RulebookManager, SourceRegistry } from '../../../packages/audit/index.js';
 import { BusinessError, type Actor } from '../../../packages/contracts/index.js';
@@ -55,6 +56,7 @@ export function unifiedRelayConfig(cfg: LegacyConfig): Config {
     businessProfile: 'pneu007',
     demoPublicA2a: cfg.env.DEMO_PUBLIC_A2A === 'true',
     demoChatApproval: cfg.env.DEMO_CHAT_APPROVAL === 'true',
+    demoOpenBusiness: cfg.env.DEMO_OPEN_BUSINESS === 'true',
     ...(cfg.env.HANDORU_FRESH==='true'?{}:{businessId:'pneu007'}),
     businessWebhook: webhookUrl && webhookKey ? { url: webhookUrl, key: webhookKey } : undefined,
     pushHostAllowlist: (cfg.env.LEGACY_PUSH_HOST_ALLOWLIST ?? 'api2.cursor.sh')
@@ -156,6 +158,19 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
   });
   // Cases remain in the native authority; transport ownership is verified per isolated resource.
   // Initial compatibility relay retains its own stable task store.
+
+  const openDemoInbox = botRouter({ ...relayConfig, demoOnlyOwners: true }, relay.db, relay.doorbell, relay.executor);
+  legacy.app.use('/demo-business/bot', (req, res, next) => {
+    if (cfg.env.DEMO_OPEN_BUSINESS !== 'true' || cfg.env.DEMO_CHAT_APPROVAL !== 'true' || cfg.env.DEMO_PUBLIC_A2A !== 'true'
+      || cfg.env.HANDORU_FRESH === 'true' || legacy.handoru.installation()?.id !== 'pneu007') return void res.status(404).json({ error: 'DEMO_DISABLED' });
+    const routes: Record<string, string> = { '/inbox': 'GET', '/wait': 'GET', '/reply': 'POST', '/scheduled-check-in': 'POST', '/availability': 'GET' };
+    if (routes[req.path] !== req.method) return void res.status(404).json({ error: 'Unknown open demo operation' });
+    // Use the already configured fictional shop internally; never return its credential.
+    const token = cfg.env.LEGACY_BUSINESS_AGENT_TOKEN;
+    if (!token || !active('pneu007')) return void res.status(503).json({ error: 'DEMO_UNAVAILABLE' });
+    req.headers.authorization = `Bearer ${token}`;
+    openDemoInbox(req, res, next);
+  });
 
 
   // Authenticate before the policy gate, so unpublished operation does not reveal private policy.

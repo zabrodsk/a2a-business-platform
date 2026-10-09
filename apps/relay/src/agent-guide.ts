@@ -1,19 +1,32 @@
 /** Public bootstrap; operational policy and credentials remain in private tools. */
-export function agentEntryPoints(base: string, demo = false, chat = false) {
+export function agentEntryPoints(base: string, demo = false, chat = false, open = false) {
   const origin = new URL(base).origin;
   return {
     instructions_url: `${origin}/agents.md`,
-    business: { preferred_automatic_reply_mode: demo ? 'scheduled' : 'webhook', automatic_reply_fallback: 'native_recurring_inbox_checks; no webhook sender key', availability_command: 'inbox.mjs availability', bootstrap_url: `${origin}/.well-known/handle.json`, skill_url: `${origin}/skills/pneu007-business/SKILL.md`, onboarding_skill_url: `${origin}/skills/handle-onboarding/SKILL.md`, human_console: `${origin}/handle` },
-    customer: { card_url: `${origin}/.well-known/agent-card.json`, skill_url: `${origin}/skills/a2a-customer-booking/SKILL.md`, authentication_url: `${origin}/auth.md`, demo_public_a2a: demo, ...(demo ? { demo_chat_approval: chat, ...(chat ? { demo_api_base: `${origin}/demo`, consent_source: 'agent_relayed_demo_chat', funding: 'local_simulation_only' } : {}), session_header: 'X-Demo-Session', session_format: 'random UUID v4, reused for this conversation', account_authority: false } : {}) },
+    business: { setup_mode: open ? 'open_demo' : 'owner_onboarding', ...(open ? { authentication: 'none', owner_approval_required: false, ownership_proof_required: false, connect: { method: 'POST', url: `${origin}/demo-business/connect` }, client_url: `${origin}/cli/demo-business.mjs`, tools_base: `${origin}/demo-business` } : {}), preferred_automatic_reply_mode: demo ? 'scheduled' : 'webhook', automatic_reply_fallback: 'native_recurring_inbox_checks; no webhook sender key', availability_command: open ? 'demo-business.mjs availability' : 'inbox.mjs availability', bootstrap_url: `${origin}/.well-known/handle.json`, skill_url: `${origin}/skills/pneu007-business/SKILL.md`, onboarding_skill_url: `${origin}/skills/handle-onboarding/SKILL.md`, ...(open ? {} : { human_console: `${origin}/handle` }) },
+    customer: { card_url: `${origin}/.well-known/agent-card.json`, skill_url: `${origin}/skills/a2a-customer-booking/SKILL.md`, ...(open ? { authentication: 'none', approval_mode: 'chat_for_exact_demo_offer' } : { authentication_url: `${origin}/auth.md` }), demo_public_a2a: demo, ...(demo ? { demo_chat_approval: chat, ...(chat ? { demo_api_base: `${origin}/demo`, consent_source: 'agent_relayed_demo_chat', funding: 'local_simulation_only' } : {}), session_header: 'X-Demo-Session', session_format: 'random UUID v4, reused for this conversation', account_authority: false } : {}) },
   };
 }
 
-export function renderAgentGuide(base: string, demo = false, chat = false): string {
+export function renderAgentGuide(base: string, demo = false, chat = false, open = false): string {
   const origin = new URL(base).origin;
   return `# Agent entry point
 
 Website: ${origin}
 This is the fictional Pneu 007 workshop in Holešovice, Prague 7, used to demonstrate an A2A business platform. The business website, its backend, the platform and your own agent runtime are separate systems.
+
+${open ? `## Open demo fast path: skip owner onboarding
+
+This prepared fictional Pneu 007 shop is an open proof-of-concept demo. Start with POST ${origin}/demo-business/connect (empty JSON). No login, bearer token, approval code, owner account, domain proof, source audit, rule activation or registry enrollment is required. Reuse the existing demo listing, rules and calendar. Ignore pending owner-approval requests created by an earlier setup attempt; do not ask the person to complete them. Do not enter the full Handle onboarding steps later in this guide for this mode.
+
+Download ${origin}/cli/demo-business.mjs into your stable business workspace. Run node demo-business.mjs connect --url ${origin}; its local config contains no credential. Use DEMO_BUSINESS_CONFIG to keep this shop's local state separate. Read profile, catalog and rulebook. Commands return private working JSON; give the person a short result, not the tool output.
+
+Create/update a real native recurring routine using actual runtime tools. Each scheduled execution runs demo-business.mjs scheduled-check-in --interval ACTUAL_SECONDS (60..300), reads current rules, calls inbox, handles each item and exits when empty. Use this same client and config on every run; do not use old garage/inbox credentials, approval codes or webhook setup. Native scheduling is still a runtime capability; never claim it was created if the tool is unavailable. Observe actual runs and use demo-business.mjs availability; recent check-ins are not independent proof of Grok's scheduler.
+
+For each customer item, verify its supplied case belongs to that item's demo customer and A2A task. Read case CASE_ID, find slots with schedule, and create a quote with quote CASE_ID --data-file quote.json ({slot_id,discount_bps:0}). Reply using reply WORK_ITEM_ID --data-file reply.json ({text,state,data?}); the client saves claim coordination fields automatically. Show natural-language offers; keep stored IDs/data in the structured reply when the customer bot needs them. The customer bot handles exact-offer chat approval and local simulated funding. Read order ORDER_ID or reservations for the saved result. Do not create a human mandate, invoke external checkout or re-register the shop. Open tools expose only isolated demo conversations/cases/orders. No actual funds move.
+
+When the schedule is actually running, say only: "Your demo shop is connected. I check for requests about once a minute." If native scheduling is unavailable, state that briefly; you can handle requests while this chat is active. This fast path completes demo setup without the owner onboarding below.
+` : ''}
 
 ${demo ? `## Default for this demo: no webhook setup
 

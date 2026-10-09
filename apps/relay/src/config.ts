@@ -54,6 +54,9 @@ export interface Config {
   /** Explicit sandbox opt-in: unauthenticated A2A conversations, never business tools. */
   demoPublicA2a?: boolean;
   demoChatApproval?: boolean;
+  demoOpenBusiness?: boolean;
+  /** The open demo facade must never claim historical/account-linked customer work. */
+  demoOnlyOwners?: boolean;
   demoCustomerId?: (session: string) => string;
   /** One isolated transport DB per managed resource. Absent for the legacy standalone relay. */
   businessId?: string;

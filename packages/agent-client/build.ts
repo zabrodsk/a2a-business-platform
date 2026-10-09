@@ -4,6 +4,7 @@ import { build } from 'esbuild';
 for (const [entry, out] of [
   ['src/a2a-cli.ts', 'dist/a2a.mjs'],
   ['src/customer-cli.ts', 'dist/customer.mjs'],
+  ['src/demo-business-cli.ts', 'dist/demo-business.mjs'],
   ['src/inbox-cli.ts', 'dist/inbox.mjs'],
   ['src/handoru-cli.ts', 'dist/handoru.mjs'],
   ['src/handoru-cli.ts', 'dist/handle.mjs'],

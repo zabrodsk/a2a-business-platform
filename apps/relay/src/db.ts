@@ -168,7 +168,7 @@ export class RelayDb {
   }
 
   /** Managed claims have opaque, expiring fences. Only the current connection can renew work. */
-  claimAvailable(leaseMs: number, identity?: Identity): WorkItem[] {
+  claimAvailable(leaseMs: number, identity?: Identity, demoOnly = false): WorkItem[] {
     const now = Date.now();
     return this.sqlite.transaction(() => {
       const managed = this.businessId !== 'standalone';
@@ -182,11 +182,13 @@ export class RelayDb {
           .run(this.businessId, identity!.connection_id!, identity!.execution_epoch!);
       }
       if (managed && this.sqlite.prepare(`SELECT 1 FROM work_items WHERE business_id = ? AND status = 'claimed'
+        AND (? = 0 OR owner LIKE 'demo:%')
         AND claimed_by_connection_id = ? AND claim_epoch = ? AND lease_until > ? LIMIT 1`)
-        .get(this.businessId, identity!.connection_id!, identity!.execution_epoch!, now)) return [];
+        .get(this.businessId, demoOnly ? 1 : 0, identity!.connection_id!, identity!.execution_epoch!, now)) return [];
       const items = this.sqlite.prepare(`SELECT * FROM work_items WHERE business_id = ?
+        AND (? = 0 OR owner LIKE 'demo:%')
         AND (status = 'pending' OR (status = 'claimed' AND COALESCE(lease_until, claimed_at + ?) <= ?))
-        ORDER BY created_at LIMIT ?`).all(this.businessId, leaseMs, now, managed ? 1 : -1) as WorkItem[];
+        ORDER BY created_at LIMIT ?`).all(this.businessId, demoOnly ? 1 : 0, leaseMs, now, managed ? 1 : -1) as WorkItem[];
       const update = this.sqlite.prepare(`UPDATE work_items SET status = 'claimed', claimed_at = ?,
         claimed_by_connection_id = ?, claim_epoch = ?, claim_generation = claim_generation + 1,
         lease_token_hash = ?, lease_until = ? WHERE id = ? AND business_id = ?`);
@@ -202,11 +204,12 @@ export class RelayDb {
     })();
   }
 
-  countAvailable(leaseMs: number, identity?: Identity): number {
+  countAvailable(leaseMs: number, identity?: Identity, demoOnly = false): number {
     const row = this.sqlite.prepare(`SELECT COUNT(*) AS n FROM work_items WHERE business_id = ?
+      AND (? = 0 OR owner LIKE 'demo:%')
       AND (status = 'pending' OR (status = 'claimed' AND (COALESCE(lease_until, claimed_at + ?) <= ?
         OR (? IS NOT NULL AND (claimed_by_connection_id IS NOT ? OR claim_epoch IS NOT ?)))))`)
-      .get(this.businessId, leaseMs, Date.now(), identity?.connection_id ?? null,
+      .get(this.businessId, demoOnly ? 1 : 0, leaseMs, Date.now(), identity?.connection_id ?? null,
         identity?.connection_id ?? null, identity?.execution_epoch ?? null) as { n: number };
     return row.n;
   }

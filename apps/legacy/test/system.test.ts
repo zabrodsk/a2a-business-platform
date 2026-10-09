@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -513,4 +513,66 @@ test('demo chat yes approves only the exact owned offer and creates one locally 
     const approved = await run(process.execPath, [cli, 'demo-approve', base, c.id, '--data-file', approvalFile], { env, timeout: 15000 }); assert.equal(JSON.parse(approved.stdout).booking.id, booked.booking.id);
     assert.equal(externalCalls, 0);
   } finally { await closeServer(server); await system.close(); rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('open demo connects a fresh business bot with no login or proof and completes the customer booking loop', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pneu-open-business-'));
+  const probe = createServer(); await new Promise<void>(done => probe.listen(0, '127.0.0.1', done));
+  const port = (probe.address() as AddressInfo).port; await closeServer(probe);
+  const base = `http://127.0.0.1:${port}`, cfg = config(dir, base);
+  cfg.env.DEMO_PUBLIC_A2A = 'true'; cfg.env.DEMO_CHAT_APPROVAL = 'true'; cfg.env.DEMO_OPEN_BUSINESS = 'true';
+  let externalCalls = 0; const external = async (): Promise<never> => { externalCalls++; throw new Error('No external purchase is allowed'); };
+  const system = await createUnifiedSystem(cfg, { paymentProvider: { name:'masumi',start:external,observe:external,submitResult:external,requestRefund:external } });
+  const server = system.app.listen(port, '127.0.0.1'); await new Promise<void>(done => server.once('listening', done));
+  const session = crypto.randomUUID();
+  const call = (path: string, body?: unknown, headers: Record<string,string> = {}) => fetch(base+path, { method:body === undefined?'GET':'POST',headers:{'content-type':'application/json',...headers},...(body===undefined?{}:{body:JSON.stringify(body)}) });
+  const service: ServiceSpec = { service_id:'tyre_change',vehicle_type:'personal',wheel_size_inches:18,rim_type:'alu',runflat:false,tpms:false,wheel_count:4 };
+  try {
+    // Prepared rules are trusted test setup; the connecting agent performs no human login or onboarding.
+    const rules=system.policy.rulebooks, proposed=rules.propose({id:'garage-demo',role:'business_agent'},fixtureProposal(rules.sources));
+    rules.activate({id:'staff-owner',role:'owner'},proposed.version);
+    system.handoru.db.prepare("UPDATE handoru_connections SET state='active',scopes_json=? WHERE id='compatibility-pneu007'").run(JSON.stringify(ALL_SCOPES));
+    system.handoru.db.prepare("UPDATE handoru_businesses SET active_connection_id='compatibility-pneu007',execution_epoch=1 WHERE id='pneu007'").run();
+    const manifest=await(await call('/.well-known/handle.json')).json();
+    assert.equal(manifest.setup_mode,'open_demo'); assert.equal(manifest.owner_approval_required,false); assert.equal(manifest.pairing,undefined);
+    const connected=await call('/demo-business/connect',{}); assert.equal(connected.status,200);
+    const connection=await connected.json(); assert.equal(connection.authentication,'none'); assert.equal(connection.ownership_proof_required,false);
+    for(const secret of Object.values(tokens))assert.ok(!JSON.stringify(connection).includes(secret));
+    assert.equal((await call('/api/agent/cases')).status,401,'normal account-linked tools are unchanged');
+    const privateCase=system.policy.createCase({id:'customer-agent-a',role:'customer_agent',customer_id:'customer-001'},{service_spec:service});
+    assert.equal((await call(`/demo-business/cases/${privateCase.id}`)).status,404);
+    const privateWork=system.relay.db.createWorkItem({task_id:crypto.randomUUID(),context_id:crypto.randomUUID(),owner:'customer-agent-a',customer_message_id:crypto.randomUUID(),message_json:'{}'});
+    assert.equal((await(await call('/demo-business/bot/inbox')).json()).items.length,0);
+    assert.equal(system.relay.db.getWorkItem(privateWork.id)?.status,'pending');
+    assert.equal((await call('/demo-business/bot/reply',{work_item_id:privateWork.id,text:'not allowed',state:'completed'})).status,404);
+    for(const path of ['/demo-business/bot/doorbell','/demo-business/bot/tasks/anything','/demo-business/orders/anything/checkout'])assert.equal((await call(path)).status,404);
+    const taskResponse=await call('/a2a/jsonrpc',{jsonrpc:'2.0',id:'open-demo-task',method:'SendMessage',params:{message:{messageId:crypto.randomUUID(),role:'ROLE_USER',parts:[{text:'Synthetic open demo request'}]},configuration:{returnImmediately:true}}},{'X-Demo-Session':session,'A2A-Version':'1.0'});
+    const task=(await taskResponse.json()).result.task; assert.ok(task.id);
+    for(let n=0;n<30&&!system.relay.db.sqlite.prepare('SELECT 1 FROM work_items WHERE task_id=?').get(task.id);n++)await new Promise(done=>setTimeout(done,20));
+    const opened=await call('/demo/cases',{relay_task_id:task.id,service_spec:service},{'X-Demo-Session':session}); assert.equal(opened.status,201);
+    const c=(await opened.json()).case;
+    const demoConfig=join(dir,'fresh-business.json'), env={...process.env,DEMO_BUSINESS_CONFIG:demoConfig}, cli=resolve(root,'packages/agent-client/dist/demo-business.mjs');
+    const tool=async(args:string[])=>JSON.parse((await run(process.execPath,[cli,...args],{env,timeout:15000})).stdout);
+    assert.equal((await tool(['connect','--url',base])).mode,'open_demo');
+    assert.equal(JSON.parse(readFileSync(demoConfig,'utf8')).token,undefined);
+    assert.equal((await tool(['rulebook'])).simulation,true);
+    const inbox=await tool(['inbox']); assert.equal(inbox.items.length,1); assert.equal(inbox.items[0].task_id,task.id); assert.ok(inbox.items[0].lease_token);
+    const available=await tool(['schedule','--service','tyre_change']); const slot=available.slots[0];assert.ok(slot);
+    const quoteFile=join(dir,'quote.json');writeFileSync(quoteFile,JSON.stringify({slot_id:slot.id,discount_bps:0}));
+    const quoted=await tool(['quote',c.id,'--data-file',quoteFile]); assert.ok(quoted.quote.id);
+    assert.equal((await tool(['quote',c.id,'--data-file',quoteFile])).quote.id,quoted.quote.id,'quote retries must not create a second offer');
+    const replyFile=join(dir,'reply.json');writeFileSync(replyFile,JSON.stringify({text:'Here is the fictional demo offer.',state:'input-required',data:{case_id:c.id,quote_id:quoted.quote.id}}));
+    assert.equal((await tool(['reply',inbox.items[0].work_item_id,'--data-file',replyFile])).ok,true);
+    const offer=await(await call(`/demo/cases/${c.id}`,undefined,{'X-Demo-Session':session})).json();
+    const accepted=await call(`/demo/cases/${c.id}/approve`,offer.approval_request,{'X-Demo-Session':session}); assert.equal(accepted.status,200,await accepted.clone().text());
+    const booked=await accepted.json();assert.equal(booked.booking.status,'confirmed');assert.equal(booked.intent.provider,'local_demo');assert.equal(booked.actual_money_charged,false);
+    assert.equal((await tool(['order',booked.order.id])).booking.id,booked.booking.id);
+    assert.equal((await tool(['reservations'])).reservations.length,1);
+    assert.equal((await tool(['scheduled-check-in'])).available,false);assert.equal((await tool(['availability'])).mode,'scheduled');
+    assert.equal(externalCalls,0);
+    assert.equal((await(await call('/demo-business/cases')).json()).cases.length,1,'legacy account cases remain outside the open demo');
+    cfg.env.DEMO_OPEN_BUSINESS='false';
+    assert.equal((await call('/demo-business/connect',{})).status,404);assert.equal((await call('/demo-business/bot/inbox')).status,404);
+    cfg.env.DEMO_OPEN_BUSINESS='true';cfg.env.HANDORU_FRESH='true';assert.equal((await call('/demo-business/connect',{})).status,404,'fresh production-style installations cannot use this facade');
+  } finally { await closeServer(server); await system.close(); rmSync(dir,{recursive:true,force:true}); }
 });

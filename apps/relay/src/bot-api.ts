@@ -52,7 +52,7 @@ export function botRouter(cfg: Config, db: RelayDb, doorbell: Doorbell, executor
   const claim = async (identity: Identity, authorization: string | undefined) => {
     allowed(identity, 'inbox.read', authorization);
     executor.hydrateAcceptedReplies();
-    const items = db.claimAvailable(cfg.leaseMs, identity);
+    const items = db.claimAvailable(cfg.leaseMs, identity, cfg.demoOnlyOwners);
     for (const i of items) db.logEvent({ task_id: i.task_id, actor: identity.id, kind: 'work_claimed', detail: { work_item: i.id } });
     const views = await Promise.all(items.map((item) => view(item, identity, authorization)));
     allowed(identity, 'inbox.read', authorization);
@@ -71,7 +71,7 @@ export function botRouter(cfg: Config, db: RelayDb, doorbell: Doorbell, executor
     const timeoutMs = Math.min(timeoutSeconds, 55) * 1000;
     allowed(req.identity!, 'inbox.read', req.header('authorization'));
     executor.hydrateAcceptedReplies();
-    if (db.countAvailable(cfg.leaseMs, req.identity!) === 0) {
+    if (db.countAvailable(cfg.leaseMs, req.identity!, cfg.demoOnlyOwners) === 0) {
       await new Promise<void>((resolve) => {
         const done = () => {
           clearTimeout(t);
@@ -102,6 +102,7 @@ export function botRouter(cfg: Config, db: RelayDb, doorbell: Doorbell, executor
     }
     const item = db.getWorkItem(work_item_id);
     if (!item) return void res.status(404).json({ error: 'unknown work_item_id' });
+    if (cfg.demoOnlyOwners && !item.owner.startsWith('demo:')) return void res.status(404).json({ error: 'unknown demo work_item_id' });
     if (item.status === 'cancelled') return void res.status(409).json({ error: 'task was canceled by the customer' });
 
     const message = agentMessage(item.task_id, item.context_id, text, data);

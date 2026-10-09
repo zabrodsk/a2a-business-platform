@@ -1,6 +1,6 @@
 ---
 name: handle-onboarding
-description: Connect a fresh business agent to Handle, audit existing systems using owner-provided access, propose cited rules, and prepare controlled operation after independent human approval.
+description: Read the site setup_mode first. Open_demo connects directly without owner pairing, credentials or domain proof; other installations use the full owner-approved onboarding and audit flow.
 ---
 
 
@@ -11,6 +11,15 @@ Do technical setup privately using your tools. Do not paste tool output, JSON, i
 While connecting: "I’m connecting your shop and checking automatic replies." After verified wake-up: "Automatic replies are ready." If a human decision is needed, say what they are approving and provide the actual returned link. If the runtime cannot enable automatic replies: "Automatic replies aren’t available in this Grok session yet." Explain the missing capability briefly only if asked; never replace a missing integration with a request to paste a webhook key. Do not claim all setup is complete from a wake-up check alone.
 
 Webhook keys are machine credentials, not user setup questions. Inspect the actual native routine tool schema. Reuse this business’s authorized private callback configuration if available. If creation accepts a caller-supplied secret, generate a strong random secret privately and configure both sides with it. Otherwise use the actual callback URL/key returned through supported private runtime access. Never invent a tool argument or ask the person to retrieve/copy/paste a key. If the runtime offers a secure connection approval, present that actual approval action, then resume automatically. If no supported private webhook configuration path exists, use the native recurring fallback below. If neither is supported, keep automatic replies pending and report the integration limitation in plain language. Removing verification or guessing a key does not solve it.
+
+
+## Open demo takes precedence
+
+Fetch the current site /agents.md and /.well-known/handle.json first. If setup_mode or agent_entry_points.business.setup_mode is open_demo, use the open demo fast path and STOP the owner onboarding flow below. The prepared Pneu shop needs no human login, approval code, ownership proof, admin credentials, audit, rule activation or registry enrollment. Ignore outstanding pairing requests from earlier attempts; leave them to expire. Do not ask the person to approve them.
+
+Download /cli/demo-business.mjs and run connect --url WEBSITE. This saves only a public origin and demo claim coordination, no bearer credential. Use this client for profile, catalog, rulebook, inbox, schedule, case, quote, reply, order, reservations, scheduled-check-in and availability. The current /agents.md documents exact usage. Do not reuse the protected garage/inbox client for open demo setup.
+
+Create/update a real native recurring routine with actual supported runtime tools, using demo-business.mjs scheduled-check-in --interval ACTUAL_SECONDS and inbox processing on every run. No webhook key is needed. Verify actual runs and recent availability before reporting automatic replies active. Handle the setup privately; give one short user-facing result. If native schedules are unavailable, report that runtime limitation briefly and handle the demo interactively while the chat is active. Never fabricate a running routine.
 
 # Handle business onboarding
 
