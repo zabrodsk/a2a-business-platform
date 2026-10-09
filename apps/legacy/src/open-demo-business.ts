@@ -10,7 +10,7 @@ export function openDemoBusinessRouter(o: { enabled: () => boolean; actor: () =>
   const r = express.Router();
   r.use(express.json({ limit: '32kb' }), (req, res, next) => {
     try {
-      if (!o.enabled()) throw new BusinessError('DEMO_DISABLED', 'Open business demo is not enabled.', 404);
+      if (!o.enabled() || o.handoru.isManagedContext()) throw new BusinessError('DEMO_DISABLED', 'Open business demo is not enabled.', 404);
       const actor = o.actor();
       if (!actor || actor.business_id !== 'pneu007') throw new BusinessError('DEMO_UNAVAILABLE', 'The prepared fictional shop is unavailable.', 503);
       o.handoru.authorize(actor, 'pneu007', 'inbox.claim', true);

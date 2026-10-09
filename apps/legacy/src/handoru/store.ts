@@ -22,6 +22,7 @@ export interface Business { id:string; legacy_url:string; name:string; active_co
 export interface Connection { id:string; business_id:string; principal_id:string; runtime:string; state:string; scopes_json:string; ready_json:string|null }
 export interface Owner { id:string; email:string }
 export interface HumanSession { owner:Owner; csrf:string; hash:string }
+export interface Onboarding { id:string;principal_id:string;legacy_url:string;challenge:string;expires_at:number;state:string;connection_id:string|null;code_hash:string;failures:number }
 
 /** Firm-owned state; credentials are always stored as one-way hashes. */
 export class HandoruStore {
@@ -60,6 +61,16 @@ export class HandoruStore {
     return row??fail('BUSINESS_NOT_FOUND','Unknown business.',404);
   }
   installation():Business|undefined { return this.db.prepare('SELECT b.* FROM handoru_businesses b JOIN handoru_meta m ON m.key=\'installation_business\' AND m.value=b.id').get() as Business|undefined; }
+  /** A prepared public facade must never inherit a managed firm's private authority. */
+  isManagedContext():boolean {
+    const business=this.installation();
+    if(!business)return false;
+    if(business.id!=='pneu007'||business.active_connection_id&&business.active_connection_id!=='compatibility-pneu007')return true;
+    if(!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='audit_rulebook_versions'").get())return false;
+    const active=this.db.prepare("SELECT payload_json FROM audit_rulebook_versions WHERE business_id=? AND record_kind='rulebook' AND status='active'").get(business.id) as {payload_json:string}|undefined;
+    if(!active)return false;
+    try{return Object.hasOwn(JSON.parse(active.payload_json),'governance');}catch{return true;}
+  }
   connection(connectionId:string):Connection {
     const row=this.db.prepare('SELECT * FROM handoru_connections WHERE id=?').get(connectionId) as Connection|undefined;
     return row??fail('CONNECTION_NOT_FOUND','Unknown connection.',404);
@@ -86,12 +97,24 @@ export class HandoruStore {
       this.db.prepare('INSERT INTO handoru_principals VALUES(?,?)').run(principal,runtime);
       this.db.prepare('INSERT INTO handoru_onboarding(id,principal_id,legacy_url,provisional_hash,code_hash,challenge,expires_at) VALUES(?,?,?,?,?,?,?)').run(request,principal,url.origin,hash(token),hash(`${request}:${code}`),challenge,this.time()+15*60_000);
     }).immediate();
-    return {request_id:request,principal_id:principal,provisional_credential:token,user_code:code,verification_url:`${this.publicUrl}/handle?request=${request}`,expires_in:900,ownership_challenge:{path:'/.well-known/handle-ownership.json',challenge,publication_api:'/api/admin/handle-ownership-proof'}};
+    return {request_id:request,principal_id:principal,provisional_credential:token,user_code:code,verification_url:`${this.publicUrl}/handle?request=${request}`,expires_in:900,requested_scopes:[...AUDIT_SCOPES],ownership_challenge:{path:'/.well-known/handle-ownership.json',challenge,publication_api:'/api/admin/handle-ownership-proof'}};
   }
   onboarding(requestId:string,token:string) {
-    const row=this.db.prepare('SELECT * FROM handoru_onboarding WHERE id=? AND provisional_hash=?').get(requestId,hash(token)) as {id:string;principal_id:string;legacy_url:string;challenge:string;expires_at:number;state:string;connection_id:string|null;code_hash:string;failures:number}|undefined;
+    const row=this.db.prepare('SELECT * FROM handoru_onboarding WHERE id=? AND provisional_hash=?').get(requestId,hash(token)) as Onboarding|undefined;
     if (!row||row.expires_at<=this.time()||row.failures>=5) fail('ONBOARDING_UNAVAILABLE','Invalid or expired onboarding credential.',401);
     return row;
+  }
+  ownershipVerification(row:Onboarding,owner?:Owner) {
+    let state:'required'|'verified'|'not_required'='required';
+    const business=this.db.prepare('SELECT id FROM handoru_businesses WHERE legacy_url=?').get(row.legacy_url) as {id:string}|undefined;
+    if(owner&&business&&this.db.prepare('SELECT 1 FROM handoru_memberships WHERE business_id=?').get(business.id)) {
+      this.member(owner,business.id);
+      state='not_required';
+    } else {
+      const proof=this.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;
+      if(proof&&JSON.parse(proof.value).challenge===row.challenge)state='verified';
+    }
+    return {state,ready_for_consent:state!=='required'&&row.state==='pending'&&row.expires_at>this.time()&&row.failures<5};
   }
   signup(email:unknown,password:unknown,setup:unknown,expectedSetup:string|undefined) {
     if (!expectedSetup||typeof setup!=='string'||hash(setup)!==hash(expectedSetup)) fail('OWNER_SETUP_REQUIRED','Use the separate Handle owner setup credential.',403);
@@ -133,18 +156,15 @@ export class HandoruStore {
       const current=this.db.prepare('SELECT state FROM handoru_onboarding WHERE id=?').get(requestId) as {state:string};
       if (current.state!=='pending') fail('ONBOARDING_UNAVAILABLE','Already decided.',409);
       if (decision==='rejected') {this.db.prepare("UPDATE handoru_onboarding SET state='rejected' WHERE id=?").run(requestId);return {state:'rejected'};}
+      if(this.ownershipVerification(row,owner).state==='required')fail('OWNERSHIP_PROOF_REQUIRED','Publish the one-time challenge on the legacy website first.',409);
       let business=this.db.prepare('SELECT * FROM handoru_businesses WHERE legacy_url=?').get(row.legacy_url) as Business|undefined;
       if (business) {
         if(this.db.prepare('SELECT 1 FROM handoru_memberships WHERE business_id=?').get(business.id)) this.member(owner,business.id);
         else {
-          const proof=this.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;
-          if(!proof||JSON.parse(proof.value).challenge!==row.challenge)fail('OWNERSHIP_PROOF_REQUIRED','Publish the one-time website challenge.',409);
           this.db.prepare('INSERT INTO handoru_memberships VALUES(?,?)').run(owner.id,business.id);
         }
       }
       else {
-        const proof=this.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;
-        if (!proof||JSON.parse(proof.value).challenge!==row.challenge) fail('OWNERSHIP_PROOF_REQUIRED','Publish the one-time challenge on the legacy website first.',409);
         business={id:id('business'),legacy_url:row.legacy_url,name:'Pneu 007 (fictional)',active_connection_id:null,execution_epoch:0};
         this.db.prepare('INSERT INTO handoru_businesses VALUES(?,?,?,?,?)').run(business.id,business.legacy_url,business.name,null,0);
         this.db.prepare('INSERT INTO handoru_memberships VALUES(?,?)').run(owner.id,business.id);

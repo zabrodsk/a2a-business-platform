@@ -5,7 +5,7 @@ import { repoRoot } from '../config.js';
 import type { AgentPolicy } from '../agent-policy.js';
 import { RulebookManager, SourceRegistry } from '../../../../packages/audit/index.js';
 import { HandoruAudits } from './audits.js';
-import { HandoruStore, AUDIT_SCOPES, ALL_SCOPES, hash, secret, id, fail, text, type Owner, type HumanSession } from './store.js';
+import { HandoruStore, AUDIT_SCOPES, ALL_SCOPES, hash, secret, id, fail, text, type Owner, type HumanSession, type Onboarding } from './store.js';
 import { provisionRelay, authorizeOperation } from './onboarding.js';
 import { assertCapabilities } from './capabilities.js';
 import { prepareHandover, commitHandover } from './handover.js';
@@ -49,11 +49,17 @@ export function handoruRoutes(h:HandoruStore,rulebooks:RulebookManager,policy:Ag
   r.post('/owner/login',(req,res)=>{h.rate(`login:${req.ip}`,20,900_000);res.json(setSession(res,h.login(req.body?.email,req.body?.password)));});
   r.post('/owner/logout',human,(req,res)=>{h.db.prepare('DELETE FROM handoru_sessions WHERE token_hash=?').run(req.handoruHuman!.hash);res.clearCookie('handoru_session',{path:'/'});res.json({ok:true});});
   r.post('/agent-registrations',(req,res)=>{h.rate(`registration:${req.ip}`,20,900_000);res.status(201).json(h.register(req.body));});
-  r.get('/onboarding/:requestId',(req,res)=>{const row=h.onboarding(param(req,'requestId'),bearer(req));res.json({request_id:row.id,state:row.state,connection_id:row.connection_id,expires_at:new Date(row.expires_at).toISOString()});});
+  r.get('/onboarding/:requestId',(req,res)=>{const row=h.onboarding(param(req,'requestId'),bearer(req));res.json({request_id:row.id,state:row.state,connection_id:row.connection_id,expires_at:new Date(row.expires_at).toISOString(),ownership_verification:h.ownershipVerification(row)});});
   r.post('/onboarding/:requestId/credentials',(req,res)=>{h.rate(`exchange:${req.ip}`,30);res.json(h.exchange(param(req,'requestId'),bearer(req)));});
   r.get('/owner/onboarding/:requestId',human,(req,res)=>{
-    const row=h.db.prepare('SELECT o.id,o.legacy_url,o.state,o.expires_at,p.runtime FROM handoru_onboarding o JOIN handoru_principals p ON p.id=o.principal_id WHERE o.id=?').get(param(req,'requestId'));
-    if(!row)fail('NOT_FOUND','Unknown onboarding.',404);res.json(row);
+    const row=h.db.prepare('SELECT o.*,p.runtime FROM handoru_onboarding o JOIN handoru_principals p ON p.id=o.principal_id WHERE o.id=?').get(param(req,'requestId')) as Onboarding&{runtime:string}|undefined;
+    if(!row)fail('NOT_FOUND','Unknown onboarding.',404);res.json(ownerRequest(row,req.handoruHuman!.owner));
+  });
+  r.get('/owner/onboarding/:requestId/ownership-challenge',human,(req,res)=>{
+    const row=h.db.prepare('SELECT * FROM handoru_onboarding WHERE id=?').get(param(req,'requestId')) as Onboarding|undefined;
+    if(!row||row.state!=='pending'||row.expires_at<=h.time()||row.failures>=5)fail('ONBOARDING_UNAVAILABLE','Request expired or already decided.',409);
+    const ownership_verification=h.ownershipVerification(row,req.handoruHuman!.owner);
+    res.json({request_id:row.id,ownership_verification,...(ownership_verification.state==='required'?{legacy_url:row.legacy_url,challenge:row.challenge,publication_api:'/api/admin/handle-ownership-proof',public_path:'/.well-known/handle-ownership.json'}:{})});
   });
   r.post('/owner/onboarding/:requestId/decide',human,(req,res)=>res.json(h.decide(req.handoruHuman!.owner,param(req,'requestId'),req.body?.user_code,req.body?.decision,req.body?.scopes)));
   r.get('/me',(req,res)=>{const a=req.legacyActor;if(!a?.connection_id)fail('UNAUTHENTICATED','Business connection required.',401);h.authorize(a,a.business_id!,'audit.read');const c=h.connection(a.connection_id);res.json({role:'business_agent',principal_id:a.id,connection_id:c.id,business_id:c.business_id,state:c.state,scopes:JSON.parse(c.scopes_json),execution_epoch:h.business(c.business_id).execution_epoch});});
@@ -63,9 +69,12 @@ export function handoruRoutes(h:HandoruStore,rulebooks:RulebookManager,policy:Ag
       const a=audits(b.id,owner),context=a.context(ownerActor(req));
       return {...b,connections:(h.db.prepare('SELECT * FROM handoru_connections WHERE business_id=?').all(b.id) as {scopes_json:string;ready_json:string|null}[]).map(({scopes_json,ready_json,...c})=>({...c,scopes:JSON.parse(scopes_json),readiness:ready_json?JSON.parse(ready_json):null})),relay:h.db.prepare('SELECT id,endpoint,inbox,probe_passed FROM handoru_relays WHERE business_id=?').get(b.id)??null,publications:h.db.prepare('SELECT id,state,verified_at,rulebook_hash FROM handoru_publications WHERE business_id=?').all(b.id),handoffs:(h.db.prepare('SELECT * FROM handoru_handoffs WHERE business_id=?').all(b.id) as {external_json:string}[]).map(({external_json,...v})=>({...v,external_access:JSON.parse(external_json)})),...context,cases:(h.db.prepare('SELECT payload_json FROM agent_cases').all() as {payload_json:string}[]).map(v=>JSON.parse(v.payload_json)).filter(c=>(c.business_id??'pneu007')===b.id).map(c=>({...c,quote:c.quote_id?policy.store.getQuote(c.quote_id):null,order:c.order_id?policy.store.getOrder(c.order_id):null,payment:c.order_id?policy.store.listPaymentIntents().filter(i=>i.order_id===c.order_id).map(i=>({intent_id:i.intent_id,state:i.state,provider:i.provider,order_id:i.order_id,input_hash:i.input_hash,identifier_from_purchaser:i.identifier_from_purchaser,provider_payment_id:i.observation?.provider_payment_id})):[]})),operations:h.db.prepare('SELECT id,kind,connection_id,execution_epoch FROM handoru_operations WHERE business_id=?').all(b.id),approvals:policy.listApprovals(ownerActor(req)).filter(a=>(policy.getCase(ownerActor(req),a.case_id).business_id??'pneu007')===b.id).map(a=>({...a,quote:policy.store.getQuote(a.quote_id)}))};
     });
-    const requests=h.db.prepare("SELECT o.id,o.legacy_url,o.state,o.expires_at,p.runtime FROM handoru_onboarding o JOIN handoru_principals p ON p.id=o.principal_id WHERE o.expires_at>? AND o.state='pending'").all(h.time());
+    const requests=(h.db.prepare("SELECT o.*,p.runtime FROM handoru_onboarding o JOIN handoru_principals p ON p.id=o.principal_id WHERE o.expires_at>? AND o.state='pending' AND NOT EXISTS (SELECT 1 FROM handoru_businesses b JOIN handoru_memberships m ON m.business_id=b.id WHERE b.legacy_url=o.legacy_url AND NOT EXISTS (SELECT 1 FROM handoru_memberships own WHERE own.business_id=b.id AND own.owner_id=?))").all(h.time(),owner.id) as (Onboarding&{runtime:string})[]).map(row=>ownerRequest(row,owner));
     res.json({businesses,requests});
   });
+  function ownerRequest(row:Onboarding&{runtime:string},owner:Owner) {
+    return {id:row.id,legacy_url:row.legacy_url,state:row.state,expires_at:row.expires_at,runtime:row.runtime,ownership_verification:h.ownershipVerification(row,owner)};
+  }
   const b='/businesses/:businessId';
   r.post(`${b}/connections/:connectionId/credentials/rotate`,(req,res)=>res.json(h.rotate(bearer(req),param(req,'businessId'),param(req,'connectionId'))));
   r.post(`${b}/relay`,(req,res)=>{const a=connection(req,'relay.provision');res.status(201).json(provisionRelay(h,a,a.business_id!,text(req.header('idempotency-key'),'Idempotency-Key'),env.HANDORU_RELAY_PUBLIC_URL??h.publicUrl));});
@@ -183,7 +192,7 @@ export function handoruRoutes(h:HandoruStore,rulebooks:RulebookManager,policy:Ag
   r.get(`${b}/events`,(req,res)=>{const a=connection(req,'context.read'),after=readCursor(a.business_id!,req.query.after);const events=h.db.prepare('SELECT id,kind,actor_id,payload_json,created_at FROM handoru_events WHERE business_id=? AND id>? ORDER BY id LIMIT 100').all(a.business_id!,after) as {id:number;payload_json:string}[];res.json({events:events.map(({payload_json,...v})=>({...v,payload:JSON.parse(payload_json)})),cursor:cursor(a.business_id!,events.at(-1)?.id??after)});});
   r.get(`${b}/operations/:operationId`,(req,res)=>{const a=connection(req,'context.read'),row=h.db.prepare('SELECT id,kind,result_json FROM handoru_operations WHERE business_id=? AND id=?').get(a.business_id!,param(req,'operationId')) as {id:string;kind:string;result_json:string}|undefined;if(!row)fail('NOT_FOUND','Unknown operation.',404);res.json({id:row.id,kind:row.kind,result:JSON.parse(row.result_json)});});
   r.post(`${b}/website-publications`,(req,res)=>{
-    const a=connection(req,'website.agent-card.publish',true),rulebookHash=activeHash(a.business_id!),descriptor=agentCardDescriptor(h,a.business_id!,rulebookHash,businessRules(a.business_id!).getActive().params.allowed_services,env.DEMO_PUBLIC_A2A==='true'&&a.business_id==='pneu007',env.DEMO_CHAT_APPROVAL==='true'&&a.business_id==='pneu007',env.DEMO_OPEN_BUSINESS==='true'&&a.business_id==='pneu007');const key=text(req.header('idempotency-key'),'Idempotency-Key');
+    const a=connection(req,'website.agent-card.publish',true),rulebookHash=activeHash(a.business_id!),descriptor=agentCardDescriptor(h,a.business_id!,rulebookHash,businessRules(a.business_id!).getActive().params.allowed_services,env.DEMO_PUBLIC_A2A==='true'&&a.business_id==='pneu007',env.DEMO_CHAT_APPROVAL==='true'&&a.business_id==='pneu007',env.DEMO_OPEN_BUSINESS==='true'&&a.business_id==='pneu007'&&!h.isManagedContext());const key=text(req.header('idempotency-key'),'Idempotency-Key');
     h.db.prepare('INSERT INTO handoru_publications(id,business_id,operation_key,descriptor_json,state,rulebook_hash) VALUES(?,?,?,?,?,?) ON CONFLICT(business_id,operation_key) DO NOTHING').run(id('publication'),a.business_id!,key,JSON.stringify(descriptor),'prepared',rulebookHash);
     const p=h.db.prepare('SELECT id,state,descriptor_json,rulebook_hash FROM handoru_publications WHERE business_id=? AND operation_key=?').get(a.business_id!,key) as {rulebook_hash:string};if(p.rulebook_hash!==rulebookHash)fail('IDEMPOTENCY_CONFLICT','Publication key belongs to an older rulebook.',409);res.status(201).json(p);
   });

@@ -65,7 +65,7 @@ const I18N = {
     // approval dialog
     scopes: { 'audit.read': 'Číst audit a firemní podklady', 'audit.propose': 'Navrhovat audit a pravidla', 'questions.create': 'Klást vám otázky', 'relay.provision': 'Zřídit firemní schránku pro zprávy', 'context.read': 'Číst firemní kontext a historii', 'inbox.claim': 'Přebírat konverzace se zákazníky', 'inbox.reply': 'Odpovídat zákazníkům', 'cases.quote': 'Vydávat cenové nabídky', 'orders.checkout': 'Dokončit objednávku a platbu', 'registry.publish': 'Zapsat firmu do registru agentů', 'website.agent-card.publish': 'Zveřejnit kontakt pro agenty na webu' },
     rule: { services: (v) => `Agent nabízí jen: ${v}.`, auto: (v) => `Slevu do ${v} smí agent dát sám.`, owner: (v) => `Slevu do ${v} smí dát jen s vaším schválením.`, hard: (v) => `Slevu nad ${v} nedá nikdy.`, ttl: (v) => `Nabídka platí ${v} minut.`, deposit: (v) => `Záloha při rezervaci je ${v}.`, extrasYes: 'Smí přidávat doplňkové služby.', extrasNo: 'Žádné doplňkové služby navíc.', currency: (v) => `Ceny jsou v ${v}.`, masumi: (v) => `Platby jdou přes Masumi (${v}).`, simulated: 'Platby jsou jen zkušební (simulace).', suppliers: (v) => `Dodavatelům smí jen: ${v}.`, and: ' a ' },
-    verify: { required: 'Nejdřív ověřte, že web patří vám. Přihlásíte se do administrace webu a povolíte jednorázové ověření. Teprve potom schválíte agenta.', verified: 'Web je ověřený. Teď porovnejte kód od agenta a schvalte přístup.', notRequired: 'Web už je ověřený pro váš účet. Porovnejte kód a schvalte přístup.', stale: 'Tuto žádost už nelze schválit. Agent ji musí obnovit a poslat nový odkaz.', button: 'Ověřit web', check: 'Zkontrolovat ověření', title: 'Ověřit web', text: 'Přihlašujete se do administrace webu, ne do Handle. Heslo jde jen webu; agent ho nedostane.', note: 'Ověření platí jen pro tuto žádost. Agenta schválíte zvlášť.', user: 'Uživatelské jméno správce webu', pass: 'Heslo do administrace webu', already: 'V prohlížeči už jste přihlášeni jako správce webu.', allow: 'Povoluji zveřejnit jednorázové ověření tohoto webu pro tuto žádost.', submit: 'Ověřit web', done: 'Web je ověřený. Teď porovnejte kód a schvalte agenta.', doneBefore: 'Web už je ověřený. Můžete schválit agenta.', badLogin: 'Přihlášení do administrace se nepodařilo. Zkontrolujte jméno a heslo.', needOwner: 'Ověření potřebuje přihlášení správce webu.', wrongSite: 'Tento web nelze ověřit přihlášením do jeho administrace.', mismatch: 'Veřejné ověření zatím nesedí. Zkuste to znovu.', notReady: 'Žádost už není připravená ke schválení. Obnovte stránku.' },
+    verify: { required: 'Nejdřív ověřte, že web patří vám. Přihlásíte se do administrace webu a povolíte jednorázové ověření. Teprve potom schválíte agenta.', verified: 'Web je ověřený. Teď porovnejte kód od agenta a schvalte přístup.', notRequired: 'Web už je ověřený pro váš účet. Porovnejte kód a schvalte přístup.', stale: 'Tuto žádost už nelze schválit. Agent ji musí obnovit a poslat nový odkaz.', button: 'Ověřit web Pneu', check: 'Zkontrolovat ověření', title: 'Ověřit web', text: 'Přihlašujete se do administrace webu, ne do Handle. Heslo jde jen webu; agent ho nedostane.', note: 'Ověření platí jen pro tuto žádost. Agenta schválíte zvlášť.', user: 'Uživatelské jméno správce webu', pass: 'Heslo do administrace webu', already: 'V prohlížeči už jste přihlášeni jako správce webu.', allow: 'Povoluji zveřejnit jednorázové ověření tohoto webu pro tuto žádost.', submit: 'Ověřit web', done: 'Web je ověřený. Teď porovnejte kód a schvalte agenta.', doneBefore: 'Web už je ověřený. Můžete schválit agenta.', badLogin: 'Přihlášení do administrace se nepodařilo. Zkontrolujte jméno a heslo.', needOwner: 'Ověření potřebuje přihlášení správce webu.', wrongSite: 'Tento web nelze ověřit přihlášením do jeho administrace.', mismatch: 'Veřejné ověření zatím nesedí. Zkuste to znovu.', notReady: 'Žádost už není připravená ke schválení. Obnovte stránku.' },
     lines: { tyre_change: 'Přezutí pneumatik', wheel_swap: 'Výměna kompletních kol', personal: 'Osobní auto', suv: 'SUV', van: 'Dodávka', steel: 'Plechové disky', alu: 'Hliníkové disky', diameter: 'Velikost kol', runflat: 'Run-flat pneumatiky', tpms: 'Senzory tlaku (TPMS)' }, wheels: (n, d) => `${n} kola · ${d}″`,
     exceptionKicker: (v) => `Cenová výjimka · pravidla v${v}`, exceptionTitle: (p) => `Schválit slevu ${p}?`, total: 'Celkem', case: 'Služba', slot: 'Termín', expires: 'Vyprší', deposit: 'Záloha',
     confirmException: 'Rozhoduji jen o této nabídce a této ceně.', approveException: 'Schválit výjimku', expired: 'Nabídka vypršela. Agent musí připravit novou.', discountLine: (p) => `Sleva ${p}`,
@@ -283,7 +283,7 @@ async function api(path, body) {
     const code = data.error?.code || data.code || `HTTP_${response.status}`;
     const friendly = I18N[state.lang].errors[code];
     const error = new Error(friendly || `${data.error?.message || data.message || (typeof data.error === 'string' ? data.error : 'Request failed.')} (${code})`);
-    error.status = response.status; throw error;
+    error.status = response.status; error.code = code; throw error;
   }
   return data;
 }
@@ -371,19 +371,19 @@ function renderAuth() {
 }
 
 // ---------- shared: connection request ----------
-// Older backends send no ownership_verification; then the server alone decides at consent time.
-const consentReady = request => request.ownership_verification ? request.ownership_verification.ready_for_consent === true && new Date(request.expires_at).getTime() > Date.now() : true;
+// Ownership readiness must be explicit; absent or stale metadata cannot enable consent.
+const consentReady = request => request?.state === 'pending' && request.ownership_verification?.ready_for_consent === true && new Date(request.expires_at).getTime() > Date.now();
 function requestCards() {
   return pendingRequests().map(request => {
     const id = request.id || request.request_id, proof = request.ownership_verification?.state, ready = consentReady(request);
-    const status = !request.ownership_verification ? '' : !ready && proof !== 'required' ? note('warn', esc(t('verify.stale'))) : proof === 'required' ? `${note('warn', esc(t('verify.required')))}<div class="hd-actions">${button(t('verify.button'), { attrs: `data-action="verify-website" data-request="${esc(id)}"` })}${button(t('verify.check'), { variant: 'secondary', attrs: 'data-action="refresh"' })}</div>` : note('ok', esc(proof === 'verified' ? t('verify.verified') : t('verify.notRequired')));
+    const status = new Date(request.expires_at).getTime() <= Date.now() || !request.ownership_verification || (!ready && proof !== 'required') ? note('warn', esc(t('verify.stale'))) : proof === 'required' ? `${note('warn', esc(t('verify.required')))}<div class="hd-actions">${button(t('verify.button'), { attrs: `data-action="verify-website" data-request="${esc(id)}"` })}${button(t('verify.check'), { variant: 'secondary', attrs: 'data-action="refresh"' })}</div>` : note('ok', esc(proof === 'verified' ? t('verify.verified') : t('verify.notRequired')));
     return panel(esc(t('requestTitle', request.runtime || t('colAgent'))), `<div class="hc-split">
       <div>${meta([[t('requestFrom'), esc(request.runtime || '—')], [t('website'), link(request.legacy_url)], [t('validUntil'), esc(date(request.expires_at))]])}${status}</div>
       <form class="hc-form" data-form="consent" data-request="${esc(id)}">
         ${field(t('codeLabel'), `<input class="hd-input is-mono" name="user_code" inputmode="numeric" autocomplete="off" pattern="[0-9]{6}" maxlength="6" required placeholder="${esc(t('codePh'))}">`)}
         <fieldset class="hc-opts" style="display:block"><legend>${esc(t('wantsTo'))}</legend><div class="hc-scopes">${AUDIT_SCOPES.map(scope => `<label class="hc-scope"><input type="checkbox" name="scopes" value="${esc(scope)}" checked><span class="l">${esc(scopeLabel(scope))}</span><span class="hc-code">${esc(scope)}</span></label>`).join('')}</div></fieldset>
         ${check('reviewed', t('confirmAgent'), t('confirmAgentHint'))}
-        <div class="hd-actions">${button(t('approveConnection'), { type: 'submit', attrs: `name="decision" value="approved" ${ready ? '' : 'disabled'}` })}${button(t('reject'), { variant: 'secondary', type: 'submit', attrs: 'name="decision" value="rejected" formnovalidate' })}</div>
+        <div class="hd-actions">${button(t('approveConnection'), { type: 'submit', attrs: `name="decision" value="approved" ${ready ? '' : 'disabled data-ownership-blocked="true" aria-disabled="true"'}` })}${button(t('reject'), { variant: 'secondary', type: 'submit', attrs: 'name="decision" value="rejected" formnovalidate' })}</div>
       </form></div>`, { cls: 'is-ask', sub: chip('pending', 'escalation', `${t('validUntil')} ${new Date(request.expires_at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Prague' })}`) });
   }).join('');
 }
@@ -640,8 +640,10 @@ document.addEventListener('submit', async event => {
     if (kind === 'login' || kind === 'signup') {
       const account = { email: data.get('email'), password: data.get('password'), ...(kind === 'signup' ? { setup_secret: data.get('setup_secret') } : {}) };
       form.querySelectorAll('input[type=password], input[name=setup_secret]').forEach(input => input.value = '');
-      await api(`/owner/${kind}`, account); message = t(`msg.${kind}`);
+      try { await api(`/owner/${kind}`, account); } finally { account.password = ''; if ('setup_secret' in account) account.setup_secret = ''; }
+      message = t(`msg.${kind}`);
     } else if (kind === 'consent') {
+      if (submitter?.value !== 'rejected' && !consentReady(list(state.dashboard.requests).find(request => (request.id || request.request_id) === form.dataset.request))) throw new Error(t('errors.OWNERSHIP_PROOF_REQUIRED'));
       await api(`/owner/onboarding/${encodeURIComponent(form.dataset.request)}/decide`, { user_code: data.get('user_code'), decision: submitter?.value || 'approved', scopes: data.getAll('scopes') });
       message = submitter?.value === 'rejected' ? t('msg.consentNo') : t('msg.consentOk');
     } else if (!current) throw new Error(t('msg.gone'));
@@ -661,8 +663,8 @@ document.addEventListener('submit', async event => {
     }
     state.feedback = { tone: 'ok', text: message }; await load();
     if (rotated?.replacement_password) showPassword(rotated);
-  } catch (error) { state.feedback = { tone: 'bad', text: error.message }; if (dialog.open) dialog.close(); render(); }
-  finally { state.busy = false; buttons.forEach(item => { if (item.isConnected) item.disabled = false; }); }
+  } catch (error) { state.feedback = { tone: 'bad', text: error.message }; if (dialog.open) dialog.close(); if (['OWNERSHIP_PROOF_REQUIRED', 'ONBOARDING_UNAVAILABLE'].includes(error.code)) await load(); else render(); }
+  finally { state.busy = false; buttons.forEach(item => { if (item.isConnected) item.disabled = item.dataset.ownershipBlocked === 'true'; }); }
 });
 function showPassword(rotated) {
   dialog.innerHTML = `<div class="hd-dlg"><div><h2 id="dialog-title">${esc(t('passwordTitle'))}</h2></div><div class="hd-dlg-b"><p>${esc(t('passwordText'))}</p>${field(t('newPw'), '<input class="hd-input is-mono" type="password" readonly autocomplete="off" data-password>')}<p class="hc-small hc-muted" data-evidence></p></div><div class="hd-dlg-f">${button(t('showHide'), { variant: 'secondary', attrs: 'data-show-password' })}${button(t('done'), { attrs: 'data-action="close-dialog"' })}</div></div>`;
