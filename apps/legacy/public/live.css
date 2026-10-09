@@ -3,6 +3,34 @@
 
 .p7 header .live-session .btn-q{color:var(--gold)}
 
+/* One public navigation layout, including the header over the home-page hero. */
+.p7 .site-header{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:24px;padding:26px 32px;background:#061611;color:var(--silver);font-family:var(--sans)}
+.p7 .site-header nav,.p7 .site-header-secondary{display:flex;align-items:center;gap:28px}
+.p7 .site-header-secondary{justify-content:flex-end}
+.p7 .site-header-brand{justify-self:center}
+.p7 .site-header a.site-header-link{display:inline-flex;align-items:center;min-height:44px;padding:0;color:var(--gold);font:500 12px/1.2 var(--sans);letter-spacing:.2em;text-transform:uppercase;text-decoration:none;white-space:nowrap;border-bottom:1px solid transparent}
+.p7 .site-header a.site-header-link:hover,.p7 .site-header a.site-header-link[aria-current=page]{color:#EFE2C2;border-bottom-color:var(--gold)}
+.p7 .site-header .live-session{flex-shrink:0;font-size:12px;line-height:1.4;color:var(--silver);gap:12px}
+.p7 .site-header .live-session .btn-q{white-space:nowrap}
+@media(max-width:1200px){
+  .p7 .site-header{grid-template-columns:minmax(0,1fr) auto;gap:4px 24px;padding:16px 24px}
+  .p7 .site-header-secondary{display:contents}
+  .p7 .site-header-brand{grid-column:1;grid-row:1;justify-self:start}
+  .p7 .site-header .live-session{grid-column:2;grid-row:1;justify-self:end;max-width:240px}
+  .p7 .site-header .live-session span{overflow-wrap:anywhere;min-width:0}
+  .p7 .site-header-primary{grid-column:1;grid-row:2}
+  .p7 .site-header-secondary nav{grid-column:2;grid-row:2;justify-content:flex-end}
+}
+@media(max-width:600px){
+  .p7 .site-header{padding:12px 16px;column-gap:12px}
+  .p7 .site-header .wm-a,.p7 .site-header .wm-b{font-size:16px}
+  .p7 .site-header .live-session{flex-wrap:wrap;justify-content:flex-end;gap:0 8px;max-width:140px}
+  .p7 .site-header .live-session .btn-q{font-size:13px}
+  .p7 .site-header-primary{grid-column:1 / -1;justify-content:center}
+  .p7 .site-header-secondary nav{grid-column:1 / -1;grid-row:3;justify-content:center;gap:24px}
+  .p7 .site-header a.site-header-link{font-size:11px;letter-spacing:.16em}
+}
+
 .p7 .btn-link-pay,.p7 a.btn-link-pay{background:#00d66f;border-color:#00d66f;color:#071c17}.p7 .btn-link-pay:hover,.p7 a.btn-link-pay:hover{background:#36e58f;border-color:#36e58f;color:#071c17}.p7 .live-payment-methods{border:0;padding:0;margin:0}
 
 .p7 .live-form .live-slot{display:flex;align-items:center;gap:12px;line-height:1.5}.p7 .live-form input[type=radio]{width:20px;min-height:20px;height:20px;flex:0 0 20px;padding:0;margin:0}.live-dialog input[type=checkbox]{width:20px;min-height:20px;height:20px}
