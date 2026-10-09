@@ -52,6 +52,8 @@ První den nevyžaduje ruční založení hostingového projektu nebo relay endp
 
 Plný auditovaný průchod používá explicitní managed bootstrap `/.well-known/handle-managed.json` a instrukce `/handle/agents.md`. Může koexistovat s odděleným připraveným veřejným `open_demo`, které používá existující demo pravidla a přeskočí nový audit i owner pairing. Připravené demo není důkazem nového auditu, nových pravidel, lidské aktivace ani clean-start onboardingu a nesmí tento výslovně požadovaný výsledek tiše nahradit. Volba managed vstupu nemění ochrany žádné operace ani nepřiděluje přístup k neveřejným datům.
 
+Pokud stejná instalace přejde na managed kontext aktivací auditovaných pravidel nebo převzetím vlastním připojením, veřejné business nástroje připraveného dema se uzavřou a výchozí discovery odkazuje na managed průchod. Veřejná fasáda nesmí převzít soukromé důkazy, pravidla ani oprávnění aktivního firemního agenta. Nová veřejná karta vyžaduje samostatnou autorizovanou publikaci aktuálního descriptoru.
+
 ### 1.2 Požadované důkazy
 
 `Fresh GrokBot + legacy + instrukce → registrace → lidské ověření → automatický relay → skutečný audit → návrh pravidel → lidské schválení → agentem publikovaná karta a odkaz.`

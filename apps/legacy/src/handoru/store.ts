@@ -61,6 +61,16 @@ export class HandoruStore {
     return row??fail('BUSINESS_NOT_FOUND','Unknown business.',404);
   }
   installation():Business|undefined { return this.db.prepare('SELECT b.* FROM handoru_businesses b JOIN handoru_meta m ON m.key=\'installation_business\' AND m.value=b.id').get() as Business|undefined; }
+  /** A prepared public facade must never inherit a managed firm's private authority. */
+  isManagedContext():boolean {
+    const business=this.installation();
+    if(!business)return false;
+    if(business.id!=='pneu007'||business.active_connection_id&&business.active_connection_id!=='compatibility-pneu007')return true;
+    if(!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='audit_rulebook_versions'").get())return false;
+    const active=this.db.prepare("SELECT payload_json FROM audit_rulebook_versions WHERE business_id=? AND record_kind='rulebook' AND status='active'").get(business.id) as {payload_json:string}|undefined;
+    if(!active)return false;
+    try{return Object.hasOwn(JSON.parse(active.payload_json),'governance');}catch{return true;}
+  }
   connection(connectionId:string):Connection {
     const row=this.db.prepare('SELECT * FROM handoru_connections WHERE id=?').get(connectionId) as Connection|undefined;
     return row??fail('CONNECTION_NOT_FOUND','Unknown connection.',404);

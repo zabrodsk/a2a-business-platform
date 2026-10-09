@@ -86,7 +86,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
   try {
     legacy = createLegacy(cfg, {
       ...options,
-      agentCard: () => AgentCard.toJSON(buildAgentCard(relayConfig)),
+      agentCard: () => AgentCard.toJSON(buildAgentCard({...relayConfig,demoOpenBusiness:relayConfig.demoOpenBusiness&&!legacy.handoru.isManagedContext()})),
       validateRelayTask: async (actor, taskId) => {
         if (actor.role !== 'customer_agent' || typeof taskId !== 'string') return false;
         const managedRow=legacy?.store.db.prepare('SELECT id FROM handoru_relays WHERE business_id=?').get(legacy.handoru.installation()?.id??'') as {id:string}|undefined;
@@ -100,6 +100,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     await relay.close();
     throw error;
   }
+  Object.defineProperty(relayConfig,'demoOpenBusiness',{enumerable:true,get:()=>cfg.env.DEMO_OPEN_BUSINESS==='true'&&!legacy.handoru.isManagedContext()});
   if (cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true') relayConfig.demoCustomerId = session => demoCustomer(legacy.store, session).customer_id!;
   const resolveIdentity=(token:string,businessId?:string):Identity|undefined=>{
     if(!businessId&&token===cfg.env.LEGACY_RELAY_ADMIN_TOKEN)return {id:'relay-admin',role:'admin'};
@@ -147,7 +148,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     if(!resource)throw new BusinessError('RELAY_NOT_FOUND','Unknown relay.',404);
     pending=(async()=>{
       const dbPath=resolve(dirname(cfg.dbPath),`${resource.id}.db`);await migrateRelayDatabase(dbPath);
-      const resourceConfig:Config={...relayConfig,demoPublicA2a:relayConfig.demoPublicA2a && resource.business_id==='pneu007',dbPath,publicUrl:resource.endpoint.replace(/\/a2a$/,''),a2aPath:'/a2a',a2aEndpointUrl:resource.endpoint,businessId:resource.business_id,tokens:new Map(),lookupToken:token=>resolveIdentity(token,resource.business_id),checkIdentity,isActive:()=>active(resource.business_id),
+      const resourceConfig:Config={...relayConfig,demoOpenBusiness:false,demoPublicA2a:relayConfig.demoPublicA2a && resource.business_id==='pneu007',dbPath,publicUrl:resource.endpoint.replace(/\/a2a$/,''),a2aPath:'/a2a',a2aEndpointUrl:resource.endpoint,businessId:resource.business_id,tokens:new Map(),lookupToken:token=>resolveIdentity(token,resource.business_id),checkIdentity,isActive:()=>active(resource.business_id),
         ...authorityHooks(resource.business_id),
       };
       return createRelay(resourceConfig);
@@ -162,7 +163,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
   const openDemoInbox = botRouter({ ...relayConfig, demoOnlyOwners: true }, relay.db, relay.doorbell, relay.executor);
   legacy.app.use('/demo-business/bot', (req, res, next) => {
     if (cfg.env.DEMO_OPEN_BUSINESS !== 'true' || cfg.env.DEMO_CHAT_APPROVAL !== 'true' || cfg.env.DEMO_PUBLIC_A2A !== 'true'
-      || cfg.env.HANDORU_FRESH === 'true' || legacy.handoru.installation()?.id !== 'pneu007') return void res.status(404).json({ error: 'DEMO_DISABLED' });
+      || cfg.env.HANDORU_FRESH === 'true' || legacy.handoru.installation()?.id !== 'pneu007' || legacy.handoru.isManagedContext()) return void res.status(404).json({ error: 'DEMO_DISABLED' });
     const routes: Record<string, string> = { '/inbox': 'GET', '/wait': 'GET', '/reply': 'POST', '/scheduled-check-in': 'POST', '/availability': 'GET' };
     if (routes[req.path] !== req.method) return void res.status(404).json({ error: 'Unknown open demo operation' });
     // Use the already configured fictional shop internally; never return its credential.

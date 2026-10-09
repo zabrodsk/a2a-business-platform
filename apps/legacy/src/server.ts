@@ -81,6 +81,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     const b=handoru.installation();if(!b?.active_connection_id)return;
     const c=handoru.connection(b.active_connection_id);return {id:c.principal_id,role:'business_agent',business_id:b.id,connection_id:c.id,execution_epoch:b.execution_epoch,scopes:JSON.parse(c.scopes_json)};
   };
+  const openBusinessDemo=()=>cfg.env.DEMO_OPEN_BUSINESS==='true'&&!handoru.isManagedContext();
   const provider = options.paymentProvider ?? createPaymentProvider(cfg.env, { now });
   const processor = new PaymentWorkflow(store, provider);
   const stripe = new StripeCheckoutWorkflow(store, { env: cfg.env, publicUrl: cfg.publicUrl, fetch: options.stripeFetch, now });
@@ -100,10 +101,10 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.set('Link', `</agents.md>; rel="describedby"; type="text/markdown", </.well-known/handle.json>; rel="service-desc"; type="application/json", </.well-known/agent-card.json>; rel="agent-card"; type="application/json"`);
     next();
   });
-  app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true', cfg.env.DEMO_OPEN_BUSINESS === 'true')));
+  app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(handoru.isManagedContext()?renderManagedAgentGuide(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true'):renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true', openBusinessDemo())));
   app.get('/handle/agents.md', (_req, res) => res.set('Cache-Control', 'no-store').type('text/markdown').send(renderManagedAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true')));
   app.use('/demo-business', openDemoBusinessRouter({ store, policy, handoru, publicUrl: cfg.publicUrl, actor: currentBusinessIdentity,
-    enabled: () => cfg.env.DEMO_OPEN_BUSINESS === 'true' && cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true' && cfg.env.HANDORU_FRESH !== 'true' && handoru.installation()?.id === 'pneu007' }));
+    enabled: () => openBusinessDemo() && cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true' && cfg.env.HANDORU_FRESH !== 'true' && handoru.installation()?.id === 'pneu007' }));
   const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now: () => now().getTime() });
   const discoveryJson = express.json({ limit: '32kb' });
   app.post('/discovery/websites', (req, res, next) => {
@@ -129,7 +130,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.use('/api', (_req,_res,next)=>{const b=handoru.installation();if(b)rulebooks.useBusiness(b.id,{genericEvidence:b.id!=='pneu007'});next();});
   app.use(['/api/handle/v1','/api/handoru/v1'],handoruApi.router);
   app.use('/mcp',pneuMcp(auth,handoru));
-  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true',cfg.env.DEMO_OPEN_BUSINESS==='true')));
+  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoru.isManagedContext()?managedHandoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true'):handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true',openBusinessDemo())));
   app.get('/.well-known/handle-managed.json',(_req,res)=>res.set('Cache-Control','no-store').json(managedHandoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true')));
   app.get(['/handle/onboarding','/handoru/onboarding'],(_req,res)=>res.sendFile(join(repoRoot,'docs/handoru-onboarding.html')));
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
@@ -571,7 +572,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/.well-known/agent-card.json', (_req, res) => {
     const b=handoru.installation();if(b)rulebooks.useBusiness(b.id,{genericEvidence:b.id!=='pneu007'});
     const published=store.db.prepare("SELECT value FROM handoru_meta WHERE key='site_agent_card'").get() as {value:string}|undefined;
-    if(b&&(!b.active_connection_id||(!published&&b.id!=='pneu007')))return void res.set('Cache-Control','no-store').status(503).json({error:'AGENT_NOT_PUBLISHED'});
+    if(b&&(!b.active_connection_id||(!published&&(b.id!=='pneu007'||handoru.isManagedContext()))))return void res.set('Cache-Control','no-store').status(503).json({error:'AGENT_NOT_PUBLISHED'});
     if(published){try{rulebooks.getActive();}catch{return void res.status(503).json({error:'AGENT_INACTIVE'});}const site=JSON.parse(published.value);if(site.rulebook_hash!==rulebooks.getActive().payload_hash)return void res.status(503).json({error:'PUBLICATION_STALE'});const card=site.descriptor;const etag='"'+createHash('sha256').update(JSON.stringify(card)).digest('hex')+'"';return void res.set('Cache-Control','no-cache, max-age=0, must-revalidate').set('ETag',etag).json(card);}
     try { rulebooks.getActive(); } catch (error) { if (!(error instanceof BusinessError)) throw error; return void res.status(503).json({ error: 'AGENT_INACTIVE', message: 'Majitel zatím neaktivoval aktuální auditovaný rulebook.' }); }
     if (!options.agentCard) return void res.status(503).json({ error: 'A2A_NOT_CONFIGURED', message: 'Spusťte sjednocený server pro A2A komunikaci.' });

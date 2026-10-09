@@ -18,15 +18,16 @@ type Pending = { resolve: (value: any) => void; reject: (reason: Error) => void;
 async function browser(t: TestContext) {
   assert.ok(chromePath);
   const profile = mkdtempSync(join(tmpdir(), 'handle-synthetic-browser-'));
-  const child = spawn(chromePath, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
+  // A separate process group lets teardown stop only this fixture's Chrome helpers.
+  const child = spawn(chromePath, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', detached: true });
   let socket: WebSocket | undefined;
   const pending = new Map<number, Pending>();
   t.after(async () => {
+    await stop(child, socket);
     socket?.close();
     for (const entry of pending.values()) { clearTimeout(entry.timer); entry.reject(new Error('Browser closed')); }
     pending.clear();
-    await stop(child);
-    // Linux Chrome helpers can finish profile writes just after the parent exits.
+    // Allow final filesystem operations after all fixture writers have stopped.
     rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
   let port = '';
@@ -78,12 +79,30 @@ async function browser(t: TestContext) {
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `Date.now = () => ${clock().getTime()};` });
   return { send, evaluate, waitFor, fill, click, screenshot };
 }
-async function stop(child: ChildProcess) {
-  if (child.exitCode !== null || child.signalCode !== null) return;
-  const exited = new Promise<void>(resolve => child.once('exit', () => resolve()));
-  child.kill('SIGTERM');
-  const timeout = setTimeout(() => child.kill('SIGKILL'), 3000);
-  await exited; clearTimeout(timeout);
+async function stop(child: ChildProcess, socket?: WebSocket) {
+  if (!child.pid) return;
+  const signalGroup = (signal: NodeJS.Signals | 0) => {
+    try { process.kill(-child.pid!, signal); return true; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false; throw error; }
+  };
+  if (child.exitCode === null && child.signalCode === null) {
+    // Browser.close drains Chrome's own children; closing the socket or killing
+    // only its parent first can orphan Linux helpers that still write Default/.
+    const exited = new Promise<void>(resolve => child.once('exit', () => resolve()));
+    const terminate = setTimeout(() => signalGroup('SIGTERM'), 3000);
+    const kill = setTimeout(() => signalGroup('SIGKILL'), 6000);
+    try {
+      if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ id: 0, method: 'Browser.close' }));
+      else signalGroup('SIGTERM');
+      await exited;
+    } finally { clearTimeout(terminate); clearTimeout(kill); }
+  }
+  // Parent exit alone is insufficient: stop any remaining fixture subprocesses.
+  if (signalGroup('SIGTERM')) {
+    const until = Date.now() + 3000;
+    while (signalGroup(0) && Date.now() < until) await delay(50);
+    if (signalGroup(0)) signalGroup('SIGKILL');
+  }
 }
 async function registered(t: TestContext) {
   const fixture = await freshFixture(t);
