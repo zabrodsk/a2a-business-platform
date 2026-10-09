@@ -76,6 +76,14 @@ After exact rulebook activation, run the private relay probe: `POST /businesses/
 
 The owner reviews and grants separate operation scopes. Use your own limited service credential with Pneu's thin `/mcp` interface or the same HTTP business path. Every transaction still checks current connection/epoch, rulebook, exact quote, customer-approved mandate, needed owner price approval, price/payment/capacity limits and idempotency. Tools never approve rules, human exceptions or customer mandates on your behalf. MCP `tools/list` and annotations do not grant permissions. Test the actual client's Streamable HTTP/auth support; HTTP fallback is not an MCP runtime proof.
 
+## Automatic wake-up during setup
+
+After rule activation and the owner's operation grant, create or update the actual runtime's native webhook routine as part of setup. Follow the current business skill's automatic wake-up instructions, using this firm's server-returned private inbox and your current connection credential. If using inbox.mjs, configure its base URL without the final `/bot`; do not replace a managed resource with the legacy root route.
+
+Register/test the actual callback with POST INBOX_BASE/doorbell and private `{url,key,test:true}`. GET INBOX_BASE/doorbell reports status. Only the native webhook handler acknowledges `setup_probe.token` from its actual event through POST INBOX_BASE/doorbell/ack with `{probe_token}`. The server binds proof to callback, credential and authorized connection. HTTP 200 and the earlier client-reported relay probe do not prove native wake-up.
+
+Yield after registration; bounded retries run even with an empty inbox. Report automatic availability only after `ready:true` / `verification_state:verified`. If runtime tools cannot access the key privately, request that one private configuration step and keep setup pending. Keys and challenges never belong in chat or reports. A finite polling session stays labelled temporary. This does not replace source audit, human decisions, the managed relay probe or publication grants.
+
 ## Agent-performed publication
 
 Only after activation and the owner's `website.agent-card.publish` grant:

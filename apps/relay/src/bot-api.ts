@@ -1,7 +1,7 @@
 import express, { type Router } from 'express';
 import type { Task } from '@a2a-js/sdk';
 import { agentMessage, REPLY_STATES, stateName, summarizeMessage, type ReplyStateName } from './a2a-helpers.js';
-import { identify, identityAllowed, requireRole } from './auth.js';
+import { hashToken, identify, identityAllowed, requireRole } from './auth.js';
 import type { Config, Identity, RelayOperation } from './config.js';
 import type { RelayDb, WorkItem } from './db.js';
 import type { Doorbell } from './doorbell.js';
@@ -113,6 +113,21 @@ export function botRouter(cfg: Config, db: RelayDb, doorbell: Doorbell, executor
     res.json({ ok: true, task_id: item.task_id, state: stateKey, delivered: outcome });
   });
 
+  const credentialHash = (req: express.Request) => hashToken(req.header('authorization')!.replace(/^Bearer\s+/i, '').trim());
+
+  r.get('/doorbell', (req, res) => {
+    allowed(req.identity!, 'doorbell.write', req.header('authorization'));
+    res.set('Cache-Control', 'no-store').json(doorbell.status(credentialHash(req)));
+  });
+
+  r.post('/doorbell/ack', (req, res) => {
+    allowed(req.identity!, 'doorbell.write', req.header('authorization'));
+    if (!doorbell.acknowledge(req.body?.probe_token, credentialHash(req))) {
+      return void res.status(400).json({ error: 'invalid or expired setup probe' });
+    }
+    res.json({ ok: true, ...doorbell.status(credentialHash(req)) });
+  });
+
   // The Business bot registers its own wake-up webhook (e.g. a Grok Bot routine), so its key never
   // has to pass through a human. Only HTTPS hosts on the allowlist; the key is never echoed or logged.
   r.post('/doorbell', async (req, res) => {
@@ -125,23 +140,24 @@ export function botRouter(cfg: Config, db: RelayDb, doorbell: Doorbell, executor
     }
     const host = parsed.hostname.toLowerCase();
     const local = host === '127.0.0.1' || host === 'localhost';
-    if (!cfg.pushHostAllowlist.includes(host) || (parsed.protocol !== 'https:' && !local)) {
+    if (!cfg.pushHostAllowlist.includes(host) || parsed.username || parsed.password || parsed.hash ||
+      (local ? !['http:', 'https:'].includes(parsed.protocol) : parsed.protocol !== 'https:' || (parsed.port && parsed.port !== '443'))) {
       return void res.status(400).json({ error: `host ${host} not allowed (allowed: ${cfg.pushHostAllowlist.join(', ')}, https only)` });
     }
     if (typeof key !== 'string' || key.length < 8 || key.length > 512) {
       return void res.status(400).json({ error: 'key is required (the webhook bearer key)' });
     }
     allowed(req.identity!, 'doorbell.write', req.header('authorization'));
-    db.setSetting('business_webhook', JSON.stringify({ url: parsed.toString(), key, identity: req.identity }));
-    db.logEvent({ actor: req.identity!.id, kind: 'doorbell_configured', detail: { host, path: parsed.pathname } });
-    const ring = test ? await doorbell.testRing() : undefined;
+    doorbell.configure({ url: parsed.toString(), key, identity: req.identity }, credentialHash(req));
+    db.logEvent({ actor: req.identity!.id, kind: 'doorbell_configured', detail: { host } });
+    const ring = test ? await doorbell.testRing(credentialHash(req)) : undefined;
     allowed(req.identity!, 'doorbell.write', req.header('authorization'));
-    res.json({ ok: true, host, ...(ring ? { test_ring: ring } : {}) });
+    res.json({ ok: true, host, ...(ring ? { test_ring: ring } : {}), wakeup: doorbell.status(credentialHash(req)) });
   });
 
   r.delete('/doorbell', (req, res) => {
     allowed(req.identity!, 'doorbell.write', req.header('authorization'));
-    db.setSetting('business_webhook', undefined);
+    doorbell.clear();
     db.logEvent({ actor: req.identity!.id, kind: 'doorbell_cleared' });
     res.json({ ok: true });
   });
