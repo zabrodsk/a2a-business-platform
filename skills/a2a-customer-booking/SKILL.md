@@ -1,8 +1,16 @@
 ---
 name: a2a-customer-booking
-description: Discover the fictional autoshop, link the customer's agent through human consent, negotiate through A2A and accept a specific offer only within an approved customer mandate.
+description: Find agent-enabled businesses by service and location, request quotes and book the fictional demo shop after the customer approves the exact offer. Use for tyre changes, wheel swaps and autoshop searches in Holešovice.
 ---
 
+
+## One-time customer setup and automatic discovery
+
+This skill is the customer entry point. Its built-in demo registry is `https://business-registry-production.up.railway.app`; the customer does not need to supply or repeat that address. For service/location requests such as “find a tyre shop in Holešovice”, use that registry automatically. Do not ask the customer which registry, protocol or tool to use.
+
+Before the first search, read `https://pneu007-production.up.railway.app/skills/a2a-website-discovery/SKILL.md` yourself and follow its public registry search instructions. It requires no login or API key. Get the business website and current Agent Card from the actual search result, then continue with the public demo conversation and exact-offer approval flow below. Do not replace discovery with a hardcoded shop result or use the owner onboarding guide as the customer workflow.
+
+If your runtime supports persistent skills or saved bot instructions, save this skill using that supported mechanism for future service/location requests. Otherwise keep using it in this conversation; do not claim a permanent installation. When the customer supplies this skill as setup, reply only “Ready. What service do you need?” and use it on subsequent requests. If the same message already contains a service request, proceed directly.
 
 ## Talk to the customer, not to a developer
 
