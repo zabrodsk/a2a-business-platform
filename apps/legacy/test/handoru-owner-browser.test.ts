@@ -26,7 +26,8 @@ async function browser(t: TestContext) {
     for (const entry of pending.values()) { clearTimeout(entry.timer); entry.reject(new Error('Browser closed')); }
     pending.clear();
     await stop(child);
-    rmSync(profile, { recursive: true, force: true });
+    // Linux Chrome helpers can finish profile writes just after the parent exits.
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
   let port = '';
   const deadline = Date.now() + 10000;
