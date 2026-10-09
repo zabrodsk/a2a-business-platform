@@ -329,8 +329,8 @@ function render() {
   const initials = (name.match(/[A-Za-zÀ-ž0-9]/g) || ['H']).slice(0, 2).join('').toUpperCase();
   app.innerHTML = `<div class="hc-shell">
     <aside class="hd-rail" aria-label="Handle">${wordmark()}<p class="hd-rail-l">${esc(t('console'))}</p>
-      <nav aria-label="${esc(t('manage'))}">${TABS.map(id => `<button type="button" data-tab="${id}" ${state.tab === id ? 'aria-current="page"' : ''}>${esc(t(`tabs.${id}`))}${count[id] ? `<span class="hd-rail-badge">${count[id]}</span>` : ''}</button>`).join('')}</nav>
-      <div class="hd-rail-f"><p>${esc(t('footer'))}</p><div class="hc-rail-links">${b ? `<a href="${esc(safeUrl(b.legacy_url) || '/')}" target="_blank" rel="noopener">${esc(t('openWeb'))} ↗</a>` : ''}<a href="/handle/get-started">${esc(t('getStarted'))} ↗</a><a href="/handle/onboarding" target="_blank" rel="noopener">${esc(t('guide'))} ↗</a></div></div>
+      <nav aria-label="${esc(t('manage'))}"><a class="hd-btn hd-btn-ghost hc-start-link" href="/handle/get-started">${esc(t('getStarted'))}</a>${TABS.map(id => `<button type="button" data-tab="${id}" ${state.tab === id ? 'aria-current="page"' : ''}>${esc(t(`tabs.${id}`))}${count[id] ? `<span class="hd-rail-badge">${count[id]}</span>` : ''}</button>`).join('')}</nav>
+      <div class="hd-rail-f"><p>${esc(t('footer'))}</p><div class="hc-rail-links">${b ? `<a href="${esc(safeUrl(b.legacy_url) || '/')}" target="_blank" rel="noopener">${esc(t('openWeb'))} ↗</a>` : ''}<a href="/handle/onboarding" target="_blank" rel="noopener">${esc(t('guide'))} ↗</a></div></div>
     </aside>
     <div class="hc-work">
       <header class="hc-top">

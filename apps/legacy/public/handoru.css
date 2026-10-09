@@ -18,6 +18,7 @@ h1, h2, h3, p { margin: 0; }
 .hc-shell { min-height: 100vh; display: flex; }
 .hc-shell > .hd-rail { flex: none; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .hd-rail .hd-wm { text-decoration: none; }
+.hd-rail nav .hc-start-link { justify-content: flex-start; flex: none; padding: 0 var(--space-12); color: var(--ink-2); }
 .hc-rail-links { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .hc-rail-links a { color: var(--ink-2); text-decoration: none; }
 .hc-rail-links a:hover { color: var(--ink); text-decoration: underline; }
