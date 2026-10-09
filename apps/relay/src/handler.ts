@@ -1,13 +1,13 @@
 import { TaskState, type SendMessageRequest, type TaskPushNotificationConfig } from '@a2a-js/sdk';
 import { DefaultRequestHandler, type ServerCallContext } from '@a2a-js/sdk/server';
-import { RequestMalformedError, UnsupportedOperationError } from '@a2a-js/sdk/errors';
+import { PushNotificationNotSupportedError, UnsupportedOperationError } from '@a2a-js/sdk/errors';
 import type { Config } from './config.js';
 
 /**
  * DefaultRequestHandler plus three relay rules:
  * - a customer may only speak when it is their turn (task not SUBMITTED/WORKING),
  * - a re-delivered message (same messageId) returns the current task instead of a second turn,
- * - push-notification targets must be HTTPS hosts on the allowlist (no SSRF into our network).
+ * - public push notifications remain disabled, matching the advertised capability.
  */
 export class RelayRequestHandler extends DefaultRequestHandler {
   cfg!: Config;
@@ -35,20 +35,7 @@ export class RelayRequestHandler extends DefaultRequestHandler {
     return super.createTaskPushNotificationConfig(params, context);
   }
 
-  private checkPushTarget(cfg: TaskPushNotificationConfig) {
-    let url: URL;
-    try {
-      url = new URL(cfg.url);
-    } catch {
-      throw new RequestMalformedError('taskPushNotificationConfig.url is not a valid URL');
-    }
-    const host = url.hostname.toLowerCase();
-    const local = host === 'localhost' || host === '127.0.0.1';
-    const allowed = this.cfg.pushHostAllowlist.includes(host);
-    if (!allowed || (url.protocol !== 'https:' && !local)) {
-      throw new RequestMalformedError(
-        `Push notification host ${host} is not allowed. Allowed: ${this.cfg.pushHostAllowlist.join(', ') || '(none)'} over https.`,
-      );
-    }
+  private checkPushTarget(_cfg: TaskPushNotificationConfig): never {
+    throw new PushNotificationNotSupportedError('Public push notifications are not supported.');
   }
 }

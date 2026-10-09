@@ -1,10 +1,30 @@
-// Relay configuration, read once from the environment. Secrets live only here.
+// Relay configuration. Managed authority is resolved live for every request.
+import type { Message, TaskState } from '@a2a-js/sdk';
 
 export interface Identity {
   id: string;
   role: 'customer' | 'business' | 'admin' | 'unclaimed';
   /** Server-verified local account binding, never taken from an A2A message. */
   customer_id?: string;
+  business_id?: string;
+  connection_id?: string;
+  execution_epoch?: number;
+  scopes?: string[];
+}
+
+export type RelayOperation = 'inbox.read' | 'inbox.reply' | 'doorbell.write' | 'tasks.read' | 'a2a';
+
+/** Durable acceptance record; the platform may store it in its authority DB before relay delivery. */
+export interface AcceptedReply {
+  work_item_id: string;
+  task_id: string;
+  context_id: string;
+  owner: string;
+  business_id: string;
+  connection_id?: string;
+  execution_epoch?: number;
+  message_id: string;
+  reply: { state: TaskState; message?: Message };
 }
 
 export interface Config {
@@ -30,6 +50,16 @@ export interface Config {
   /** Credentials managed by the business adapter, shared by tools and A2A. */
   lookupAgentToken?: (token: string) => Identity | undefined;
   authResourceMetadataUrl?: string;
+  /** One isolated transport DB per managed resource. Absent for the legacy standalone relay. */
+  businessId?: string;
+  /** Authoritative resolver: when supplied no environment/enrollment token fallback is permitted. */
+  lookupToken?: (token: string) => Identity | undefined;
+  checkIdentity?: (identity: Identity, operation?: RelayOperation) => boolean;
+  isActive?: () => boolean;
+  /** Synchronous acceptance, without an await between authority check and durable commit. */
+  acceptReply?: (record: AcceptedReply, identity: Identity) => AcceptedReply;
+  pendingReplies?: () => AcceptedReply[];
+  markReplyDelivered?: (workItemId: string) => void;
 }
 
 function parseTokens(env: NodeJS.ProcessEnv): Map<string, Identity> {
@@ -56,7 +86,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const publicUrl = (env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, '');
   const a2aPath = env.A2A_PATH ?? '/a2a/jsonrpc';
   const tokens = parseTokens(env);
-  if (![...tokens.values()].some((i) => i.role === 'business')) {
+  if ((env.HANDLE_FRESH ?? env.HANDORU_FRESH) !== 'true' && ![...tokens.values()].some((i) => i.role === 'business')) {
     throw new Error('BUSINESS_TOKEN is required');
   }
   const webhookUrl = env.BUSINESS_WEBHOOK_URL;

@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import type { User } from '@a2a-js/sdk/server';
-import type { Config, Identity } from './config.js';
+import type { Config, Identity, RelayOperation } from './config.js';
 
 export class RelayUser implements User {
   constructor(readonly identity: Identity) {}
@@ -17,7 +17,9 @@ export class RelayUser implements User {
 export function identify(cfg: Config, header: string | undefined): Identity | undefined {
   const m = /^Bearer\s+(.+)$/i.exec(header ?? '');
   if (!m) return undefined;
-  const given = Buffer.from(m[1].trim());
+  const tokenValue = m[1].trim();
+  if (cfg.lookupToken) return cfg.lookupToken(tokenValue);
+  const given = Buffer.from(tokenValue);
   for (const [token, identity] of cfg.tokens) {
     const expected = Buffer.from(token);
     if (expected.length === given.length && timingSafeEqual(expected, given)) return identity;
@@ -34,6 +36,11 @@ declare module 'express-serve-static-core' {
   }
 }
 
+export function identityAllowed(cfg: Config, identity: Identity, operation?: RelayOperation): boolean {
+  if (cfg.businessId && identity.role === 'business' && identity.business_id !== cfg.businessId) return false;
+  return cfg.checkIdentity?.(identity, operation) !== false;
+}
+
 export function requireRole(cfg: Config, ...roles: Identity['role'][]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const identity = identify(cfg, req.header('authorization'));
@@ -44,6 +51,10 @@ export function requireRole(cfg: Config, ...roles: Identity['role'][]) {
     }
     if (!roles.includes(identity.role)) {
       res.status(403).json({ error: `role ${identity.role} may not call this endpoint` });
+      return;
+    }
+    if (!identityAllowed(cfg, identity)) {
+      res.status(403).json({ error: 'connection is no longer authorized' });
       return;
     }
     req.identity = identity;

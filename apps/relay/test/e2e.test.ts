@@ -250,25 +250,21 @@ test('late reply after the executor stopped waiting is still delivered (stored p
   assert.match(fin.out, /state: TASK_STATE_COMPLETED/);
 });
 
-test('push notification goes to an allowlisted webhook with the given bearer key', async () => {
+test('disabled push capability rejects requests before destination validation', async () => {
   const r = await cli(A2A, ['send', base, 'notify me', '--push-url', `http://127.0.0.1:${(hookServer.address() as AddressInfo).port}/customer-hook`, '--push-key-env', 'HOOK'], {
-    A2A_CREDENTIALS_FILE: join(tmp, 'cred-a.json'),
-    HOOK: HOOK_KEY,
+    A2A_CREDENTIALS_FILE: join(tmp, 'cred-a.json'), HOOK: HOOK_KEY,
   });
-  assert.equal(r.code, 0, r.err);
-  const item = itemIdOf((await biz(['read'])).out);
-  await biz(['reply', item, 'Here is your update.']);
-  await sleep(500);
-  const pushes = hookCalls.filter((c) => c.path === '/customer-hook');
-  assert.ok(pushes.length > 0, 'no push received');
-  assert.ok(pushes.every((p) => p.auth === `Bearer ${HOOK_KEY}`));
-  assert.ok(pushes.some((p) => JSON.stringify(p.body).includes('Here is your update.')));
-
-  const bad = await cli(A2A, ['send', base, 'x', '--push-url', 'https://evil.example/hook'], {
-    A2A_CREDENTIALS_FILE: join(tmp, 'cred-a.json'),
+  assert.notEqual(r.code, 0);
+  assert.match(r.err, /does not declare push notification support/);
+  assert.ok(!hookCalls.some((call) => call.path === '/customer-hook'));
+  const denied = await fetch(`${base}/a2a/jsonrpc`, {
+    method: 'POST', headers: { authorization: `Bearer ${TOK.a}`, 'content-type': 'application/json', 'A2A-Version': '1.0' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'bad-push', method: 'SendMessage', params: {
+      message: { messageId: 'bad-push-message', role: 'ROLE_USER', parts: [{ text: 'x' }] },
+      configuration: { returnImmediately: true, taskPushNotificationConfig: { url: 'https://evil.example/hook' } },
+    } }),
   });
-  assert.notEqual(bad.code, 0);
-  assert.match(bad.err, /not allowed/);
+  assert.match(JSON.stringify(await denied.json()), /not supported/i);
 });
 
 test('turn limit fails the task after MAX_AGENT_TURNS business messages', async () => {

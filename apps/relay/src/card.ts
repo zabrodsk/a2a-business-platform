@@ -19,10 +19,11 @@ export function loadProfile(id: string): BusinessProfile {
 }
 
 // Public card. Declares only what the relay actually implements: JSON-RPC binding,
-// v1.0, bearer auth, push notifications (to allowlisted hosts), no streaming.
+// v1.0, bearer auth, no streaming or advertised push notifications.
 // No internal rules, prices or keys belong here (scope-of-work §5.2).
 export function buildAgentCard(cfg: Config): AgentCard {
   const p = loadProfile(cfg.businessProfile);
+  const authDocs = cfg.authResourceMetadataUrl ? new URL('/auth.md', cfg.authResourceMetadataUrl).toString() : undefined;
   return {
     name: p.name,
     description: p.description,
@@ -31,8 +32,8 @@ export function buildAgentCard(cfg: Config): AgentCard {
     ],
     provider: { organization: p.organization, url: cfg.publicUrl },
     version: '0.1.0',
-    documentationUrl: cfg.authResourceMetadataUrl ? `${cfg.publicUrl}/auth.md` : undefined,
-    capabilities: { streaming: false, pushNotifications: true, extensions: [], extendedAgentCard: false },
+    documentationUrl: authDocs,
+    capabilities: { streaming: false, pushNotifications: false, extensions: [], extendedAgentCard: false },
     securitySchemes: {
       bearer: {
         scheme: {
@@ -40,9 +41,9 @@ export function buildAgentCard(cfg: Config): AgentCard {
           value: {
             scheme: 'Bearer',
             bearerFormat: 'opaque',
-            description: cfg.authResourceMetadataUrl
-              ? `Register and link a customer agent at ${cfg.publicUrl}/auth.md. A signed-in customer must confirm access; booking and payment require separate customer authorization.`
-              : 'Pre-issued demo token per customer identity (sandbox).',
+            description: authDocs
+              ? `Register and link a customer agent at ${authDocs}. A signed-in customer must confirm access; booking and payment require separate customer authorization.`
+              : 'Obtain a customer-bound credential through the website authentication flow (sandbox).',
           },
         },
       },

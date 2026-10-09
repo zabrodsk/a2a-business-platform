@@ -1,8 +1,9 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { Kysely, SqliteDialect } from 'kysely';
+import type { AcceptedReply, Identity } from './config.js';
 
 // One SQLite file holds the SDK's A2A tables (created by `npm run db:migrate`)
 // and the relay's own work queue and event log (created here).
@@ -11,6 +12,14 @@ export type WorkStatus = 'pending' | 'claimed' | 'done' | 'cancelled';
 
 export interface WorkItem {
   id: string;
+  business_id: string;
+  claimed_by_connection_id: string | null;
+  claim_epoch: number | null;
+  claim_generation: number;
+  lease_token_hash: string | null;
+  lease_until: number | null;
+  /** Returned only when claimed; never persisted in plaintext. */
+  lease_token?: string;
   task_id: string;
   context_id: string;
   owner: string;
@@ -38,7 +47,7 @@ export class RelayDb {
   readonly sqlite: Database.Database;
   readonly kysely: Kysely<unknown>;
 
-  constructor(path: string) {
+  constructor(path: string, readonly businessId = 'standalone') {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
     this.sqlite = new Database(path);
     this.sqlite.pragma('journal_mode = WAL');
@@ -66,8 +75,22 @@ export class RelayDb {
     if (!cols.some((c) => c.name === 'message_json')) {
       this.sqlite.exec(`ALTER TABLE work_items ADD COLUMN message_json TEXT NOT NULL DEFAULT '{}'`);
     }
+    const additions: Record<string, string> = {
+      business_id: "TEXT NOT NULL DEFAULT 'standalone'",
+      claimed_by_connection_id: 'TEXT', claim_epoch: 'INTEGER',
+      claim_generation: 'INTEGER NOT NULL DEFAULT 0', lease_token_hash: 'TEXT', lease_until: 'INTEGER',
+    };
+    for (const [name, type] of Object.entries(additions)) {
+      if (!cols.some((c) => c.name === name)) this.sqlite.exec(`ALTER TABLE work_items ADD COLUMN ${name} ${type}`);
+    }
     this.sqlite.exec(`
       CREATE INDEX IF NOT EXISTS work_items_status ON work_items (status, created_at);
+      CREATE TABLE IF NOT EXISTS reply_outbox (
+        work_item_id TEXT PRIMARY KEY,
+        payload_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        delivered_at INTEGER
+      );
       CREATE TABLE IF NOT EXISTS enrollments (
         code_hash TEXT PRIMARY KEY,
         identity_id TEXT NOT NULL,
@@ -95,6 +118,28 @@ export class RelayDb {
         detail_json TEXT NOT NULL
       );
     `);
+    const bound = this.getSetting('business_id');
+    const nativeMigration = businessId === 'pneu007' && (!bound || bound === 'standalone');
+    const existingBusinesses = this.sqlite.prepare('SELECT DISTINCT business_id FROM work_items').all() as { business_id: string }[];
+    if ((bound && bound !== businessId && !nativeMigration)
+      || existingBusinesses.some((row) => row.business_id !== businessId && !(nativeMigration && row.business_id === 'standalone'))) {
+      this.sqlite.close();
+      throw new Error('Relay database belongs to another business');
+    }
+    this.sqlite.transaction(() => {
+      if (nativeMigration) {
+        this.sqlite.prepare("UPDATE work_items SET business_id = 'pneu007' WHERE business_id = 'standalone'").run();
+        const replies = this.sqlite.prepare('SELECT work_item_id,payload_json FROM reply_outbox').all() as {work_item_id:string;payload_json:string}[];
+        for (const row of replies) {
+          const record = JSON.parse(row.payload_json) as AcceptedReply;
+          if (record.business_id !== 'standalone' && record.business_id !== 'pneu007') throw new Error('Relay reply belongs to another business');
+          record.business_id = 'pneu007';
+          this.sqlite.prepare('UPDATE reply_outbox SET payload_json = ? WHERE work_item_id = ?').run(JSON.stringify(record), row.work_item_id);
+        }
+      }
+      this.setSetting('business_id', businessId);
+    })();
+
   }
 
   assertA2aTables() {
@@ -108,72 +153,130 @@ export class RelayDb {
   ): WorkItem {
     this.sqlite
       .prepare(
-        `INSERT INTO work_items (id, task_id, context_id, owner, customer_message_id, message_json, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+        `INSERT INTO work_items (id, business_id, task_id, context_id, owner, customer_message_id, message_json, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
          ON CONFLICT (task_id, customer_message_id) DO NOTHING`,
       )
-      .run(randomUUID(), item.task_id, item.context_id, item.owner, item.customer_message_id, item.message_json, Date.now());
+      .run(randomUUID(), this.businessId, item.task_id, item.context_id, item.owner, item.customer_message_id, item.message_json, Date.now());
     return this.sqlite
-      .prepare(`SELECT * FROM work_items WHERE task_id = ? AND customer_message_id = ?`)
-      .get(item.task_id, item.customer_message_id) as WorkItem;
+      .prepare(`SELECT * FROM work_items WHERE business_id = ? AND task_id = ? AND customer_message_id = ?`)
+      .get(this.businessId, item.task_id, item.customer_message_id) as WorkItem;
   }
 
   getWorkItem(id: string): WorkItem | undefined {
-    return this.sqlite.prepare(`SELECT * FROM work_items WHERE id = ?`).get(id) as WorkItem | undefined;
+    return this.sqlite.prepare(`SELECT * FROM work_items WHERE id = ? AND business_id = ?`).get(id, this.businessId) as WorkItem | undefined;
   }
 
-  /** Claims every pending item plus claimed items whose lease ran out. */
-  claimAvailable(leaseMs: number): WorkItem[] {
+  /** Managed claims have opaque, expiring fences. Only the current connection can renew work. */
+  claimAvailable(leaseMs: number, identity?: Identity): WorkItem[] {
     const now = Date.now();
     return this.sqlite.transaction(() => {
-      const items = this.sqlite
-        .prepare(
-          `SELECT * FROM work_items
-           WHERE status = 'pending' OR (status = 'claimed' AND claimed_at < ?)
-           ORDER BY created_at`,
-        )
-        .all(now - leaseMs) as WorkItem[];
-      const claim = this.sqlite.prepare(`UPDATE work_items SET status = 'claimed', claimed_at = ? WHERE id = ?`);
-      for (const item of items) claim.run(now, item.id);
-      return items.map((i) => ({ ...i, status: 'claimed' as const, claimed_at: now }));
+      const managed = this.businessId !== 'standalone';
+      if (managed && (!identity?.connection_id || identity.business_id !== this.businessId || identity.execution_epoch === undefined)) {
+        throw new Error('managed claim requires a business connection and epoch');
+      }
+      if (managed) {
+        // A handover need not wait for old leases to expire. Authority was checked by the caller.
+        this.sqlite.prepare(`UPDATE work_items SET status = 'pending' WHERE business_id = ? AND status = 'claimed'
+          AND (claimed_by_connection_id IS NOT ? OR claim_epoch IS NOT ?)`)
+          .run(this.businessId, identity!.connection_id!, identity!.execution_epoch!);
+      }
+      if (managed && this.sqlite.prepare(`SELECT 1 FROM work_items WHERE business_id = ? AND status = 'claimed'
+        AND claimed_by_connection_id = ? AND claim_epoch = ? AND lease_until > ? LIMIT 1`)
+        .get(this.businessId, identity!.connection_id!, identity!.execution_epoch!, now)) return [];
+      const items = this.sqlite.prepare(`SELECT * FROM work_items WHERE business_id = ?
+        AND (status = 'pending' OR (status = 'claimed' AND COALESCE(lease_until, claimed_at + ?) <= ?))
+        ORDER BY created_at LIMIT ?`).all(this.businessId, leaseMs, now, managed ? 1 : -1) as WorkItem[];
+      const update = this.sqlite.prepare(`UPDATE work_items SET status = 'claimed', claimed_at = ?,
+        claimed_by_connection_id = ?, claim_epoch = ?, claim_generation = claim_generation + 1,
+        lease_token_hash = ?, lease_until = ? WHERE id = ? AND business_id = ?`);
+      return items.map((item) => {
+        const leaseToken = randomBytes(32).toString('base64url');
+        update.run(now, identity?.connection_id ?? null, identity?.execution_epoch ?? null,
+          tokenHash(leaseToken), now + leaseMs, item.id, this.businessId);
+        return { ...item, status: 'claimed' as const, claimed_at: now,
+          claimed_by_connection_id: identity?.connection_id ?? null, claim_epoch: identity?.execution_epoch ?? null,
+          claim_generation: item.claim_generation + 1, lease_token_hash: tokenHash(leaseToken),
+          lease_until: now + leaseMs, lease_token: managed ? leaseToken : undefined };
+      });
     })();
   }
 
-  countAvailable(leaseMs: number): number {
-    const row = this.sqlite
-      .prepare(
-        `SELECT COUNT(*) AS n FROM work_items
-         WHERE status = 'pending' OR (status = 'claimed' AND claimed_at < ?)`,
-      )
-      .get(Date.now() - leaseMs) as { n: number };
+  countAvailable(leaseMs: number, identity?: Identity): number {
+    const row = this.sqlite.prepare(`SELECT COUNT(*) AS n FROM work_items WHERE business_id = ?
+      AND (status = 'pending' OR (status = 'claimed' AND (COALESCE(lease_until, claimed_at + ?) <= ?
+        OR (? IS NOT NULL AND (claimed_by_connection_id IS NOT ? OR claim_epoch IS NOT ?)))))`)
+      .get(this.businessId, leaseMs, Date.now(), identity?.connection_id ?? null,
+        identity?.connection_id ?? null, identity?.execution_epoch ?? null) as { n: number };
     return row.n;
   }
 
-  /** Marks an item done exactly once. Returns false if it was already finished. */
+  validLease(item: WorkItem, identity: Identity, leaseToken: unknown, generation: unknown): boolean {
+    return item.business_id === this.businessId && item.status === 'claimed'
+      && item.claimed_by_connection_id === identity.connection_id && item.claim_epoch === identity.execution_epoch
+      && item.lease_until !== null && item.lease_until > Date.now()
+      && typeof leaseToken === 'string' && tokenHash(leaseToken) === item.lease_token_hash
+      && generation === item.claim_generation;
+  }
+
+  /** Full payload and delivery intent are one transaction; a crash never reoffers accepted work. */
+  storeAcceptedReply(record: AcceptedReply): boolean {
+    if (record.business_id !== this.businessId) throw new Error('reply belongs to another business');
+    return this.sqlite.transaction(() => {
+      const result = this.sqlite.prepare(`UPDATE work_items SET status = 'done', reply_json = ?
+        WHERE id = ? AND business_id = ? AND status IN ('pending','claimed')`)
+        .run(JSON.stringify(record.reply), record.work_item_id, this.businessId);
+      if (result.changes !== 1 && !this.getWorkItem(record.work_item_id)) throw new Error('unknown work item');
+      this.sqlite.prepare(`INSERT INTO reply_outbox (work_item_id, payload_json, created_at)
+        VALUES (?, ?, ?) ON CONFLICT(work_item_id) DO NOTHING`)
+        .run(record.work_item_id, JSON.stringify(record), Date.now());
+      return result.changes === 1;
+    })();
+  }
+
+  pendingReplies(): AcceptedReply[] {
+    return (this.sqlite.prepare(`SELECT payload_json FROM reply_outbox WHERE delivered_at IS NULL ORDER BY created_at`)
+      .all() as Array<{ payload_json: string }>).map((row) => JSON.parse(row.payload_json));
+  }
+
+  /** Keep accepted state protected from delayed SDK progress writes even after acknowledgement. */
+  latestAcceptedReplyForTask(taskId: string): { record: AcceptedReply; delivered: boolean } | undefined {
+    const row = this.sqlite.prepare(`SELECT o.payload_json, o.delivered_at FROM work_items w
+      JOIN reply_outbox o ON o.work_item_id = w.id WHERE w.id =
+        (SELECT id FROM work_items WHERE task_id = ? AND business_id = ? ORDER BY rowid DESC LIMIT 1)
+      AND w.status = 'done'`).get(taskId, this.businessId) as { payload_json: string; delivered_at: number | null } | undefined;
+    return row ? { record: JSON.parse(row.payload_json), delivered: row.delivered_at !== null } : undefined;
+  }
+
+  markReplyDelivered(id: string) {
+    this.sqlite.prepare(`UPDATE reply_outbox SET delivered_at = ? WHERE work_item_id = ? AND delivered_at IS NULL`)
+      .run(Date.now(), id);
+  }
+
+  /** Compatibility method retained for existing internal callers. */
   completeWorkItem(id: string, reply: unknown): boolean {
-    const res = this.sqlite
-      .prepare(`UPDATE work_items SET status = 'done', reply_json = ? WHERE id = ? AND status IN ('pending', 'claimed')`)
-      .run(JSON.stringify(reply), id);
-    return res.changes === 1;
+    return this.sqlite.prepare(`UPDATE work_items SET status = 'done', reply_json = ?
+      WHERE id = ? AND business_id = ? AND status IN ('pending','claimed')`)
+      .run(JSON.stringify(reply), id, this.businessId).changes === 1;
   }
 
   cancelOpenItemsForTask(taskId: string): number {
     return this.sqlite
-      .prepare(`UPDATE work_items SET status = 'cancelled' WHERE task_id = ? AND status IN ('pending', 'claimed')`)
-      .run(taskId).changes;
+      .prepare(`UPDATE work_items SET status = 'cancelled' WHERE task_id = ? AND business_id = ? AND status IN ('pending', 'claimed')`)
+      .run(taskId, this.businessId).changes;
   }
 
   countRepliesForTask(taskId: string): number {
     const row = this.sqlite
-      .prepare(`SELECT COUNT(*) AS n FROM work_items WHERE task_id = ? AND status = 'done'`)
-      .get(taskId) as { n: number };
+      .prepare(`SELECT COUNT(*) AS n FROM work_items WHERE task_id = ? AND business_id = ? AND status = 'done'`)
+      .get(taskId, this.businessId) as { n: number };
     return row.n;
   }
 
   hasOpenItemForTask(taskId: string): boolean {
     return !!this.sqlite
-      .prepare(`SELECT 1 FROM work_items WHERE task_id = ? AND status IN ('pending', 'claimed')`)
-      .get(taskId);
+      .prepare(`SELECT 1 FROM work_items WHERE task_id = ? AND business_id = ? AND status IN ('pending', 'claimed')`)
+      .get(taskId, this.businessId);
   }
 
   /** Pending items nobody has picked up and that were not rung recently. */
@@ -182,9 +285,9 @@ export class RelayDb {
     return this.sqlite
       .prepare(
         `SELECT * FROM work_items
-         WHERE status = 'pending' AND created_at < ? AND COALESCE(last_rung_at, 0) < ? AND ring_count < 5`,
+         WHERE business_id = ? AND status = 'pending' AND created_at < ? AND COALESCE(last_rung_at, 0) < ? AND ring_count < 5`,
       )
-      .all(cutoff, cutoff) as WorkItem[];
+      .all(this.businessId, cutoff, cutoff) as WorkItem[];
   }
 
   markRung(ids: string[]) {
@@ -248,3 +351,5 @@ export class RelayDb {
     return rows.map(({ detail_json, ...r }) => ({ ...r, detail: JSON.parse(detail_json) }));
   }
 }
+
+const tokenHash = (value: string) => createHash('sha256').update(value).digest('hex');
