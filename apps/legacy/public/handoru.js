@@ -2,16 +2,28 @@
 const API = '/api/handle/v1';
 const AUDIT_SCOPES = ['audit.read', 'audit.propose', 'questions.create', 'relay.provision', 'context.read'];
 const OPERATION_SCOPES = ['inbox.claim', 'inbox.reply', 'cases.quote', 'orders.checkout', 'registry.publish', 'website.agent-card.publish'];
-const TABS = ['overview', 'audit', 'rules', 'agents', 'website', 'handover'];
+const TABS = ['get-started', 'overview', 'audit', 'rules', 'agents', 'website', 'handover'];
 const PAID = ['escrow_funded', 'result_submitted', 'seller_paid'];
 
 const I18N = {
   cs: {
     skip: 'Přejít k obsahu', console: 'Konzole majitele', manage: 'Správa firmy', footer: 'Majitel rozhoduje. Agent pracuje v mezích pravidel.',
     openWeb: 'Otevřít web firmy', guide: 'Návod k prvnímu dni', getStarted: 'Začínáme', sandbox: 'Sandbox', refresh: 'Obnovit', logout: 'Odhlásit', language: 'Jazyk', business: 'Firma',
-    tabs: { overview: 'Přehled', audit: 'Audit a otázky', rules: 'Pravidla', agents: 'Agenti a přístupy', website: 'Agent Card', handover: 'Předání firmy' },
-    leads: { overview: 'Co se ve firmě děje a co čeká na vaše rozhodnutí.', audit: 'Co agent zjistil o vaší firmě a na co se vás ptá.', rules: 'Co agent smí udělat sám, co jen s vaším souhlasem a co nikdy.', agents: 'Kdo pro vás pracuje a co smí dělat.', website: 'Jak zákaznické agenty najdou vašeho agenta na webu.', handover: 'Výměna agenta bez ztráty zákazníků a rozpracované práce.' },
+    tabs: { 'get-started': 'Začínáme', overview: 'Přehled', audit: 'Audit a otázky', rules: 'Pravidla', agents: 'Agenti a přístupy', website: 'Agent Card', handover: 'Předání firmy' },
+    leads: { 'get-started': 'Připojte firemního agenta nebo najděte službu přes A2A.', overview: 'Co se ve firmě děje a co čeká na vaše rozhodnutí.', audit: 'Co agent zjistil o vaší firmě a na co se vás ptá.', rules: 'Co agent smí udělat sám, co jen s vaším souhlasem a co nikdy.', agents: 'Kdo pro vás pracuje a co smí dělat.', website: 'Jak zákaznické agenty najdou vašeho agenta na webu.', handover: 'Výměna agenta bez ztráty zákazníků a rozpracované práce.' },
     footNote: 'Sandbox · skutečné provozní a platební stavy se ověřují v jejich zdrojových systémech.',
+    start: {
+      businessTitle: 'Připojte svou firmu', businessText: 'Předejte zadání firemnímu agentovi. Připraví připojení, Agent Card a zápis v registru.',
+      businessSteps: ['Zkopírujte prompt a bezpečně poskytněte přístup k webu a systémům.', 'Otevřete ověřovací odkaz od agenta, potvrďte web a schvalte jeho přístup ve vlastním účtu Handle.', 'Posuďte audit a přesnou verzi navržených pravidel. Povolte konkrétní práci a publikaci.', 'Agent ověří webhook, zveřejní schválenou kartu a ověří zápis v registru.'],
+      customerTitle: 'Najděte službu', customerText: 'Zákaznický skill dodá agentovi adresu registru i postup, jak kontaktovat firmu.',
+      customerSteps: ['Zkopírujte instrukce do chatu s agentem. Skill uložte, pokud to runtime podporuje; jinak ho načtěte v každém novém chatu.', 'Řekněte, jakou službu a v jaké lokalitě hledáte. Agent prohledá registr a načte aktuální Agent Card.', 'Posuďte nabídku. Rezervaci nebo platbu povolte až po svém rozhodnutí.'],
+      copyCustomer: 'Zkopírovat zákaznické instrukce', example: 'Najdi pneuservis v Holešovicích a požádej o nabídku. Zatím nerezervuj ani neplať.',
+      limit: 'Tato instalace podporuje pouze fiktivní Pneu 007. Libovolnou externí firmu zde zatím připojit nelze. Platby v tomto demu jsou místní simulace.',
+      accessTitle: 'Účty a soukromý přístup', access: ['První účet: aktivační kód poskytne provozovatel této instalace. Pokud účet už máte, přihlaste se.', 'Po vašem souhlasu vydá Handle agentovi vlastní soukromý token. Agent jej bezpečně uloží; nepatří do karty ani běžného chatu. Pro URL a klíč webhooku použijte bezpečná pole runtime.', 'Pro zápis do registru potřebuje agent samostatný publisher enrollment od provozovatele registru. Handle token jej nenahrazuje.'],
+      readyTitle: 'Kdy je firma připravená?', readyText: 'Nechte agenta doložit každý krok. Toto je checklist pro ověření, nikoli potvrzení aktuálního stavu.',
+      ready: ['Agent má vlastní schválené připojení a pravidla.', 'Skutečný webhook jej probudí a agent odpoví.', 'Karta je veřejná a web na ni odkazuje.', 'Registr vrací aktivní zápis firmy.', 'Samostatný zákaznický agent firmu objeví a dostane odpověď.'],
+      modesTitle: 'Plné nastavení a připravené demo', modesText: 'Firemní prompt provádí řízené nastavení s auditem a vašimi souhlasy. Připravené veřejné demo používá existující pravidla a data; není důkazem nového auditu. Hledání v registru a aktuální veřejná demo konverzace nepotřebují zákaznický token.',
+    },
     // login
     loginTitle1: 'Váš business.', loginTitle2: 'Vaše', loginTitle3: 'pravidla.', loginLead: 'Váš agent prozkoumá firmu a navrhne pravidla. Vy rozhodujete, co smí dělat.',
     modeLogin: 'Přihlásit se', modeSignup: 'První účet', email: 'E-mail', password: 'Heslo', newPassword: 'Nové heslo · aspoň 12 znaků', setupCode: 'Aktivační kód', setupHint: 'O aktivační kód požádejte provozovatele této instalace Handle. Není to vaše heslo.',
@@ -106,9 +118,21 @@ const I18N = {
   en: {
     skip: 'Skip to content', console: 'Owner console', manage: 'Run the business', footer: 'You decide. Your agent works within your rules.',
     openWeb: 'Open the business website', guide: 'First-day guide', getStarted: 'Get started', sandbox: 'Sandbox', refresh: 'Refresh', logout: 'Sign out', language: 'Language', business: 'Business',
-    tabs: { overview: 'Overview', audit: 'Audit & questions', rules: 'Rules', agents: 'Agents & access', website: 'Agent Card', handover: 'Handover' },
-    leads: { overview: 'What is happening in your business and what needs your decision.', audit: 'What your agent learned about your business, and its questions for you.', rules: 'What the agent may do on its own, only with your approval, or never.', agents: 'Who works for you and what they may do.', website: 'How customer agents find your agent on your website.', handover: 'Swap agents without losing customers or work in progress.' },
+    tabs: { 'get-started': 'Get started', overview: 'Overview', audit: 'Audit & questions', rules: 'Rules', agents: 'Agents & access', website: 'Agent Card', handover: 'Handover' },
+    leads: { 'get-started': 'Connect your business agent or find a service through A2A.', overview: 'What is happening in your business and what needs your decision.', audit: 'What your agent learned about your business, and its questions for you.', rules: 'What the agent may do on its own, only with your approval, or never.', agents: 'Who works for you and what they may do.', website: 'How customer agents find your agent on your website.', handover: 'Swap agents without losing customers or work in progress.' },
     footNote: 'Sandbox · real operational and payment states are confirmed in their source systems.',
+    start: {
+      businessTitle: 'Connect your business', businessText: 'Give the setup prompt to your business agent. It prepares the connection, Agent Card and registry listing.',
+      businessSteps: ['Copy the prompt and securely supply website and system access.', 'Open the agent’s verification link, confirm your website and approve its access in your own Handle account.', 'Review the audit and exact proposed rules. Allow the specific work and website publication.', 'The agent tests its webhook, publishes the approved card and verifies the registry listing.'],
+      customerTitle: 'Find a service', customerText: 'The customer skill supplies the registry address and the steps to contact a business.',
+      customerSteps: ['Copy the instructions into your agent’s chat. Save the skill if your runtime supports it; otherwise load it in each new chat.', 'Ask for a service and area. Your agent searches the registry and reads the current Agent Card.', 'Review the offer. Approve a booking or payment only when you want to proceed.'],
+      copyCustomer: 'Copy customer instructions', example: 'Find a tyre service in Holešovice and ask for a quote. Do not book or pay.',
+      limit: 'This installation supports fictional Pneu 007 only. Arbitrary external businesses are not supported here yet. Payments in this demo use local simulation.',
+      accessTitle: 'Accounts and private access', access: ['First account: get an activation code from the person running this installation. If you already have an account, sign in.', 'After your consent, Handle issues the agent’s own private token. The agent stores it securely; it does not belong in the card or ordinary chat. Use the runtime’s secure fields for a webhook URL/key.', 'Registry publication needs separate publisher enrollment from the registry operator. A Handle token cannot replace it.'],
+      readyTitle: 'When is the business ready?', readyText: 'Ask your agent to provide evidence for each step. This is a verification checklist, not a statement of current status.',
+      ready: ['The agent has its own approved connection and operating rules.', 'A real webhook wakes the agent and it replies.', 'The card is public and the website links to it.', 'The registry returns an active business listing.', 'A separate customer agent discovers the business and receives an answer.'],
+      modesTitle: 'Full setup and the prepared demo', modesText: 'The business prompt performs managed setup with an audit and your approvals. The prepared public demo uses existing rules and records; it does not prove a fresh audit. Registry search and the current public demo conversation need no customer token.',
+    },
     loginTitle1: 'Your business.', loginTitle2: 'Your', loginTitle3: 'rules.', loginLead: 'Your agent studies the business and proposes rules. You decide what it may do.',
     modeLogin: 'Sign in', modeSignup: 'First account', email: 'Email', password: 'Password', newPassword: 'New password · at least 12 characters', setupCode: 'Activation code', setupHint: 'Ask the person running this Handle installation for an activation code. It is not your password.',
     signIn: 'Sign in to Handle', createAccount: 'Create account',
@@ -329,7 +353,7 @@ function render() {
   const initials = (name.match(/[A-Za-zÀ-ž0-9]/g) || ['H']).slice(0, 2).join('').toUpperCase();
   app.innerHTML = `<div class="hc-shell">
     <aside class="hd-rail" aria-label="Handle">${wordmark()}<p class="hd-rail-l">${esc(t('console'))}</p>
-      <nav aria-label="${esc(t('manage'))}"><a class="hd-btn hd-btn-ghost hc-start-link" href="/handle/get-started">${esc(t('getStarted'))}</a>${TABS.map(id => `<button type="button" data-tab="${id}" ${state.tab === id ? 'aria-current="page"' : ''}>${esc(t(`tabs.${id}`))}${count[id] ? `<span class="hd-rail-badge">${count[id]}</span>` : ''}</button>`).join('')}</nav>
+      <nav aria-label="${esc(t('manage'))}">${TABS.map(id => `<button type="button" data-tab="${id}" ${state.tab === id ? 'aria-current="page"' : ''}>${esc(t(`tabs.${id}`))}${count[id] ? `<span class="hd-rail-badge">${count[id]}</span>` : ''}</button>`).join('')}</nav>
       <div class="hd-rail-f"><p>${esc(t('footer'))}</p><div class="hc-rail-links">${b ? `<a href="${esc(safeUrl(b.legacy_url) || '/')}" target="_blank" rel="noopener">${esc(t('openWeb'))} ↗</a>` : ''}<a href="/handle/onboarding" target="_blank" rel="noopener">${esc(t('guide'))} ↗</a></div></div>
     </aside>
     <div class="hc-work">
@@ -347,6 +371,7 @@ function render() {
   </div>`;
 }
 function renderTab(b) {
+  if (state.tab === 'get-started') return renderGetStarted();
   if (state.tab === 'overview') return renderOverview(b);
   if (state.tab === 'agents') return renderAgents(b);
   if (state.tab === 'website') return renderWebsite(b);
@@ -354,6 +379,15 @@ function renderTab(b) {
   return { audit: renderAudit, rules: renderRules, handover: renderHandover }[state.tab](b);
 }
 const emptyBusiness = () => panel(esc(t('noBusiness')), `<p>${esc(t('noBusinessText'))}</p>`);
+
+// ---------- get started ----------
+function renderGetStarted() {
+  const steps = values => `<ol class="hc-start-steps">${values.map(value => `<li>${esc(value)}</li>`).join('')}</ol>`;
+  const items = values => `<ul class="hc-list">${values.map(value => `<li>${esc(value)}</li>`).join('')}</ul>`;
+  const owner = panel(esc(t('start.businessTitle')), `<p>${esc(t('start.businessText'))}</p>${steps(t('start.businessSteps'))}<div class="hd-actions">${button(t('copyPrompt'), { attrs: 'data-action="copy-agent-card-prompt"' })}${button(t('tabs.website'), { variant: 'secondary', attrs: 'data-tab="website"' })}</div>`);
+  const customer = panel(esc(t('start.customerTitle')), `<p>${esc(t('start.customerText'))}</p>${steps(t('start.customerSteps'))}<div class="hd-actions">${button(t('start.copyCustomer'), { attrs: 'data-action="copy-customer-prompt"' })}</div><blockquote class="hc-quote">${esc(t('start.example'))}</blockquote>`);
+  return `${note('info', esc(t('start.limit')))}<div class="hc-grid">${owner}${customer}</div><div class="hc-grid">${panel(esc(t('start.accessTitle')), items(t('start.access')))}${panel(esc(t('start.readyTitle')), `<p>${esc(t('start.readyText'))}</p>${items(t('start.ready'))}`)}</div>${panel(esc(t('start.modesTitle')), `<p>${esc(t('start.modesText'))}</p>${link('/handle/onboarding', t('guide'))}`)}`;
+}
 
 // ---------- login ----------
 function renderAuth() {
@@ -610,7 +644,7 @@ function renderAgents(b) {
 
 // ---------- website ----------
 function renderWebsite(b) {
-  const introduction = panel(esc(t('webTitle')), `<p>${esc(t('webText'))}</p><div class="hd-actions">${button(t('copyPrompt'), { attrs: 'data-action="copy-agent-card-prompt"' })}<a href="/handle/get-started#business">${esc(t('getStarted'))} →</a></div>`);
+  const introduction = panel(esc(t('webTitle')), `<p>${esc(t('webText'))}</p><div class="hd-actions">${button(t('copyPrompt'), { attrs: 'data-action="copy-agent-card-prompt"' })}${button(t('getStarted'), { variant: 'secondary', attrs: 'data-tab="get-started"' })}</div>`);
   if (!b) return introduction;
   const active = activeRules(b), grant = publishGrant(b), current = currentPublication(b), publications = list(b.publications);
   const cardUrl = `${String(b.legacy_url || location.origin).replace(/\/$/, '')}/.well-known/agent-card.json`;
@@ -620,14 +654,14 @@ function renderWebsite(b) {
   return `${introduction}<details class="hc-tech"><summary>${esc(t('publicationDetails'))}</summary><div>${banner}<ul class="hc-list">${checks.map(([label, value]) => `<li><div class="grow"><strong>${esc(label)}</strong></div>${value}</li>`).join('')}</ul><h2>${esc(t('revisions'))}</h2>${table([[t('colRevision')], [t('colState')], ['Rulebook'], [t('colChecked')]], rows, t('noRevisions'))}</div></details>`;
 }
 
-async function copyAgentCardPrompt(target) {
+async function copySetupPrompt(target, kind = 'business') {
   state.busy = true; target.disabled = true;
   try {
-    const response = await fetch('/handle/agent-card-prompt', { credentials: 'same-origin', redirect: 'error', headers: { Accept: 'text/plain' } });
+    const response = await fetch(kind === 'customer' ? '/handle/customer-prompt' : '/handle/agent-card-prompt', { credentials: 'same-origin', redirect: 'error', headers: { Accept: 'text/plain' } });
     if (!response.ok || !response.headers.get('content-type')?.startsWith('text/plain')) throw new Error(t('promptLoadError'));
     const template = await response.text();
     if (!template.trim()) throw new Error(t('promptLoadError'));
-    const prompt = template.replaceAll('[WEBSITE_URL]', business()?.legacy_url || '[WEBSITE_URL]');
+    const prompt = template.replaceAll('[WEBSITE_URL]', business()?.legacy_url || (state.tab === 'get-started' ? location.origin : '[WEBSITE_URL]'));
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(prompt);
@@ -678,7 +712,8 @@ document.addEventListener('click', async event => {
   if (target.dataset.auditVersion) { state.auditVersion = Number(target.dataset.auditVersion); render(); return; }
   if (target.dataset.approval && !target.closest('form')) { openApproval(target.dataset.approval); return; }
   if (target.dataset.action === 'close-dialog') { event.preventDefault(); dialog.close(); return; }
-  if (target.dataset.action === 'copy-agent-card-prompt') { await copyAgentCardPrompt(target); return; }
+  if (target.dataset.action === 'copy-agent-card-prompt') { await copySetupPrompt(target); return; }
+  if (target.dataset.action === 'copy-customer-prompt') { await copySetupPrompt(target, 'customer'); return; }
   if (target.dataset.action === 'select-agent-card-prompt') { const input = dialog.querySelector('[data-agent-card-prompt]'); input?.focus(); input?.select(); return; }
   if (target.dataset.action === 'refresh') { state.feedback = null; await load(); return; }
   if (target.dataset.action === 'verify-website') { state.busy = true; try { await verifyWebsite(target.dataset.request); } catch (error) { state.feedback = { tone: 'bad', text: error.message }; render(); } finally { state.busy = false; } return; }

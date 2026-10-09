@@ -845,7 +845,7 @@ U každého externího výsledku zaznamenat skutečný runtime/účet bez tajems
 
 ## 15. Konzole a dvouminutové demo
 
-Veřejná stránka `/handle/get-started` je dostupná před přihlášením. Odděluje firemní managed onboarding a zákaznické registry discovery, nabízí kanonické kopírovatelné instrukce, uvádí potřebné lidské souhlasy, vlastní token agenta, oddělený publisher přístup, ověřený webhook a omezení Pneu-only. Checklist připravenosti je vysvětlení, nikoli automatické potvrzení neprovedených živých testů. Připravené open demo je označená alternativa, ne náhrada auditu.
+Veřejná stránka `/handle/get-started` je dostupná před přihlášením. Přihlášený majitel otevírá Začínáme jako interní záložku `/handle#get-started` se stejným shellem jako ostatní záložky, bez přechodu na samostatnou stránku. Odděluje firemní managed onboarding a zákaznické registry discovery, nabízí kanonické kopírovatelné instrukce, uvádí potřebné lidské souhlasy, vlastní token agenta, oddělený publisher přístup, ověřený webhook a omezení Pneu-only. Checklist připravenosti je vysvětlení, nikoli automatické potvrzení neprovedených živých testů. Připravené open demo je označená alternativa, ne náhrada auditu.
 
 Záložka Agent Card obsahuje jednoduchý popis a tlačítko pro zkopírování kanonického zadání. Prompt doplní aktuální website/Handle URL a zachová soukromý token mimo veřejnou kartu. Stav a historie publikace jsou ve sbalitelném detailu.
 
