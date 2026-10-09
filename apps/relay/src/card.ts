@@ -34,7 +34,7 @@ export function buildAgentCard(cfg: Config): AgentCard {
     provider: { organization: p.organization, url: cfg.publicUrl },
     version: '0.2.0',
     documentationUrl: new URL('/agents.md', cfg.publicUrl).toString(),
-    capabilities: { streaming: false, pushNotifications: false, extensions: [{ uri: new URL('/agents.md', cfg.publicUrl).toString(), description: 'Customer conversation and business-owner onboarding instructions, including tools, registry and automatic wake-up.', required: false, params: agentEntryPoints(cfg.publicUrl, cfg.demoPublicA2a) }], extendedAgentCard: false },
+    capabilities: { streaming: false, pushNotifications: false, extensions: [{ uri: new URL('/agents.md', cfg.publicUrl).toString(), description: 'Customer conversation and business-owner onboarding instructions, including tools, registry and automatic wake-up.', required: false, params: agentEntryPoints(cfg.publicUrl, cfg.demoPublicA2a, cfg.demoChatApproval) }], extendedAgentCard: false },
     securitySchemes: cfg.demoPublicA2a ? {} : {
       bearer: {
         scheme: {

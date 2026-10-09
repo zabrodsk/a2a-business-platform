@@ -23,7 +23,7 @@ export interface Actor { id: string; role: ActorRole; customer_id?: string; busi
 export type PaymentMode = 'deposit' | 'full';
 export type PaymentProviderName = 'local_demo' | 'masumi';
 export interface PurchaseAuthorization {
-  kind: 'human_checkout' | 'agent_mandate';
+  kind: 'human_checkout' | 'agent_mandate' | 'demo_chat';
   actor_id: string;
   customer_id: string;
   quote_id: string;

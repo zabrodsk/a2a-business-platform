@@ -11,7 +11,7 @@ import { promisify } from 'node:util';
 import { AgentCard, Role, TaskState } from '@a2a-js/sdk';
 import { ClientFactory, ClientFactoryOptions, JsonRpcTransportFactory } from '@a2a-js/sdk/client';
 import { ALL_SCOPES } from '../src/handoru/store.js';
-import type { Actor } from '../../../packages/contracts/index.js';
+import type { Actor, ServiceSpec } from '../../../packages/contracts/index.js';
 import type { Citation, RulebookProposal, SourceRegistry } from '../../../packages/audit/index.js';
 import { loadLegacyConfig } from '../src/config.js';
 import { createUnifiedSystem, unifiedRelayConfig } from '../src/system.js';
@@ -445,5 +445,72 @@ test('site-only bootstrap and token-free demo conversations preserve private bus
     }
     assert.equal(linkedWork?.owner, 'customer-agent-a');
     assert.equal(JSON.parse(linkedWork!.message_json).authenticated_sender.acting_for.id, 'customer-001');
+  } finally { await closeServer(server); await system.close(); rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('demo chat yes approves only the exact owned offer and creates one locally simulated reservation', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pneu-chat-approval-'));
+  const probe = createServer();
+  await new Promise<void>(done => probe.listen(0, '127.0.0.1', done));
+  const port = (probe.address() as AddressInfo).port; await closeServer(probe);
+  const base = `http://127.0.0.1:${port}`, cfg = config(dir, base);
+  cfg.env.DEMO_PUBLIC_A2A = 'true'; cfg.env.DEMO_CHAT_APPROVAL = 'true';
+  let externalCalls = 0;
+  const external = async (): Promise<never> => { externalCalls++; throw new Error('External payments must never be reached'); };
+  const system = await createUnifiedSystem(cfg, { paymentProvider: { name: 'masumi', start: external, observe: external, submitResult: external, requestRefund: external } });
+  const server = system.app.listen(port, '127.0.0.1'); await new Promise<void>(done => server.once('listening', done));
+  const session = crypto.randomUUID(), other = crypto.randomUUID();
+  const call = (path: string, body?: unknown, selected = session) => fetch(base + path, { method: body ? 'POST' : 'GET', headers: { 'X-Demo-Session': selected, 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const service: ServiceSpec = { service_id: 'tyre_change', vehicle_type: 'personal', wheel_size_inches: 18, rim_type: 'alu', runflat: false, tpms: false, wheel_count: 4 };
+  try {
+    assert.equal((await call('/demo/cases', {})).status, 404);
+    const rules = system.policy.rulebooks, proposed = rules.propose({ id: 'garage-demo', role: 'business_agent' }, fixtureProposal(rules.sources));
+    rules.activate({ id: 'staff-owner', role: 'owner' }, proposed.version);
+    system.handoru.db.prepare("UPDATE handoru_connections SET state='active',scopes_json=? WHERE id='compatibility-pneu007'").run(JSON.stringify(ALL_SCOPES));
+    system.handoru.db.prepare("UPDATE handoru_businesses SET active_connection_id='compatibility-pneu007',execution_epoch=1 WHERE id='pneu007'").run();
+    const sent = await fetch(base + '/a2a/jsonrpc', { method: 'POST', headers: { 'X-Demo-Session': session, 'content-type': 'application/json', 'A2A-Version': '1.0' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'demo-task', method: 'SendMessage', params: { message: { messageId: crypto.randomUUID(), role: 'ROLE_USER', parts: [{ text: 'Synthetic chat approval workflow' }] }, configuration: { returnImmediately: true } } }) });
+    const task = (await sent.json()).result.task;
+    // Wait for SDK executor to persist ownership before correlation.
+    for (let attempt = 0; attempt < 30 && !system.relay.db.sqlite.prepare('SELECT 1 FROM work_items WHERE task_id=?').get(task.id); attempt++) await new Promise(done => setTimeout(done, 20));
+    assert.equal((await call('/demo/cases', { service_spec: service, relay_task_id: task.id }, other)).status, 403);
+    const opened = await call('/demo/cases', { service_spec: service, relay_task_id: task.id }); assert.equal(opened.status, 201);
+    const c = (await opened.json()).case;
+    assert.equal(c.customer_agent_id, `demo:${session}`);
+    const duplicate = await call('/demo/cases', { service_spec: service, relay_task_id: task.id }); assert.equal((await duplicate.json()).case.id, c.id);
+    assert.equal((await call(`/demo/cases/${c.id}`, undefined, other)).status, 403);
+    assert.equal((await call(`/demo/cases/${c.id}/approve`, { confirmation: 'yes_i_approve', simulation: true })).status, 400);
+    const slot = system.store.availability({ service_id: service.service_id })[0]; assert.ok(slot);
+    const quote = await fetch(`${base}/api/agent/cases/${c.id}/quotes`, { method: 'POST', headers: { authorization: `Bearer ${tokens.business}`, 'content-type': 'application/json' }, body: JSON.stringify({ slot_id: slot.id, discount_bps: 0 }) }); assert.equal(quote.status, 201, await quote.clone().text());
+    const offer = await (await call(`/demo/cases/${c.id}`)).json(); assert.equal(offer.simulation, true); assert.ok(offer.slot.start_at);
+    const approval = offer.approval_request;
+    const demoActor: Actor = { id: `demo:${session}`, role: 'customer_agent', customer_id: c.customer_id };
+    const competing = system.policy.createCase(demoActor, { service_spec: service });
+    system.policy.quote({ id: 'garage-demo', role: 'business_agent' }, competing.id, { slot_id: slot.id, discount_bps: 0 });
+    const competingApproval = (await (await call(`/demo/cases/${competing.id}`)).json()).approval_request;
+    const ownerCase = system.policy.createCase(demoActor, { service_spec: service });
+    system.policy.quote({ id: 'garage-demo', role: 'business_agent' }, ownerCase.id, { slot_id: slot.id, discount_bps: rules.getActive().params.auto_discount_bps + 1 });
+    const ownerOffer = await (await call(`/demo/cases/${ownerCase.id}`)).json();
+    assert.equal((await call(`/demo/cases/${ownerCase.id}/approve`, ownerOffer.approval_request)).status, 403, 'chat approval must not bypass owner discount consent');
+    assert.equal((await call(`/demo/cases/${c.id}/approve`, { ...approval, confirmation: 'no' })).status, 403);
+    for (const change of [{ total_minor: approval.total_minor + 1 }, { deposit_minor: 0 }, { slot_id: 'slot-other' }, { quote_hash: 'wrong' }, { quote_version: 99 }]) assert.equal((await call(`/demo/cases/${c.id}/approve`, { ...approval, ...change })).status, 409);
+    const result = await call(`/demo/cases/${c.id}/approve`, approval); assert.equal(result.status, 200, await result.clone().text());
+    const booked = await result.json(); assert.equal(booked.booking.status, 'confirmed'); assert.equal(booked.actual_money_charged, false); assert.equal(booked.intent.provider, 'local_demo'); assert.equal(booked.intent.authorization.kind, 'demo_chat'); assert.equal(booked.independent_human_verification, false);
+    const repeated = await (await call(`/demo/cases/${c.id}/approve`, approval)).json(); assert.equal(repeated.booking.id, booked.booking.id); assert.equal(repeated.intent.intent_id, booked.intent.intent_id);
+    assert.equal((await call(`/demo/cases/${c.id}/approve`, { ...approval, total_minor: 1 })).status, 409);
+    assert.equal((await call(`/demo/cases/${competing.id}/approve`, competingApproval)).status, 409, 'the same slot cannot be booked twice');
+    assert.equal(system.store.calendar(c.customer_id).length, 1); assert.equal(system.store.listPaymentIntents().length, 1); assert.equal(externalCalls, 0);
+    const intent = booked.intent;
+    assert.throws(() => system.store.prepareCheckout(booked.order.id, { authorization: { ...intent.authorization, network: 'Preprod' }, provider: 'masumi', sku: intent.sku, asset_quantity: intent.asset_quantity, max_network_fee: '0', seller_id: intent.seller_id }), /local simulation/);
+    assert.equal((await call('/api/agent/mandates', {})).status, 401, 'chat consent cannot approve a human mandate');
+    cfg.env.DEMO_CHAT_APPROVAL = 'false'; assert.equal((await call(`/demo/cases/${c.id}`)).status, 404);
+    cfg.env.DEMO_CHAT_APPROVAL = 'true';
+    // Exercise the installed customer helper with the same persistent A2A session.
+    const credentials = join(dir, 'cli.json');
+    writeFileSync(credentials + '.demo-sessions.json', JSON.stringify({ [`${base}/a2a/jsonrpc`]: session }));
+    const env = { ...process.env, A2A_CREDENTIALS_FILE: credentials }, cli = resolve(root, 'packages/agent-client/dist/a2a.mjs');
+    const read = await run(process.execPath, [cli, 'demo-offer', base, c.id], { env, timeout: 15000 }); assert.equal(JSON.parse(read.stdout).booking.id, booked.booking.id);
+    const approvalFile = join(dir, 'approval.json'); writeFileSync(approvalFile, JSON.stringify(approval));
+    const approved = await run(process.execPath, [cli, 'demo-approve', base, c.id, '--data-file', approvalFile], { env, timeout: 15000 }); assert.equal(JSON.parse(approved.stdout).booking.id, booked.booking.id);
+    assert.equal(externalCalls, 0);
   } finally { await closeServer(server); await system.close(); rmSync(dir, { recursive: true, force: true }); }
 });

@@ -1,14 +1,14 @@
 /** Public bootstrap; operational policy and credentials remain in private tools. */
-export function agentEntryPoints(base: string, demo = false) {
+export function agentEntryPoints(base: string, demo = false, chat = false) {
   const origin = new URL(base).origin;
   return {
     instructions_url: `${origin}/agents.md`,
     business: { bootstrap_url: `${origin}/.well-known/handle.json`, skill_url: `${origin}/skills/pneu007-business/SKILL.md`, onboarding_skill_url: `${origin}/skills/handle-onboarding/SKILL.md`, human_console: `${origin}/handle` },
-    customer: { card_url: `${origin}/.well-known/agent-card.json`, skill_url: `${origin}/skills/a2a-customer-booking/SKILL.md`, authentication_url: `${origin}/auth.md`, demo_public_a2a: demo, ...(demo ? { session_header: 'X-Demo-Session', session_format: 'random UUID v4, reused for this conversation', account_authority: false } : {}) },
+    customer: { card_url: `${origin}/.well-known/agent-card.json`, skill_url: `${origin}/skills/a2a-customer-booking/SKILL.md`, authentication_url: `${origin}/auth.md`, demo_public_a2a: demo, ...(demo ? { demo_chat_approval: chat, ...(chat ? { demo_api_base: `${origin}/demo`, consent_source: 'agent_relayed_demo_chat', funding: 'local_simulation_only' } : {}), session_header: 'X-Demo-Session', session_format: 'random UUID v4, reused for this conversation', account_authority: false } : {}) },
   };
 }
 
-export function renderAgentGuide(base: string, demo = false): string {
+export function renderAgentGuide(base: string, demo = false, chat = false): string {
   const origin = new URL(base).origin;
   return `# Agent entry point
 
@@ -29,11 +29,23 @@ If the person says "set up my business for this site", treat this as an onboardi
 
 The owner supplies business access and makes consent/policy decisions. You handle discovery, registration, configuration, tools, wake-up and publication. Report each pending dependency honestly. A website without a compatible backend or authorized admin access cannot be onboarded just by reading its HTML.
 
+${chat && demo ? `## Demo chat approval: no website login
+
+Use the same session as the A2A task. With /cli/a2a.mjs:
+1. Send the service request normally and save task.id.
+2. Run demo-case WEBSITE --data-file case.json with {relay_task_id,service_spec}. Include the returned case ID in the same A2A conversation so the business agent can use its existing quote tool.
+3. Run demo-offer WEBSITE CASE_ID. Show the business name, full service, returned appointment (Europe/Prague), total and simulated deposit. Explain that this is a fictional reservation and no funds are transferred.
+4. Ask the customer to approve this exact offer. Only after an explicit affirmative answer, save the returned approval_request unchanged and run demo-approve WEBSITE CASE_ID --data-file approval.json. Do not submit this because the customer merely asked for prices.
+5. Read the persisted order/booking and report confirmed only when booking.status is confirmed. Retries reuse the same case and exact approval. Changed price, appointment, expired offer, unavailable capacity or missing owner price approval requires a new valid offer and renewed customer agreement.
+
+These commands call POST /demo/cases, GET /demo/cases/:id and POST /demo/cases/:id/approve with X-Demo-Session. Consent is labelled agent_relayed_demo_chat and independent_human_verification:false. Funding uses local_demo only, even if the deployment also supports Stripe or Masumi. Never describe it as a real or on-chain payment. Business management, human mandates and other businesses are unaffected.
+` : ''}
+
 ## Customer agent
 
 Fetch ${origin}/.well-known/agent-card.json every new run and use its supportedInterfaces JSONRPC URL. Never send customer traffic to /bot or owner onboarding endpoints. Read ${origin}/skills/a2a-customer-booking/SKILL.md for confirmed booking/payment flows.
 
-${demo ? `This demo's A2A conversation requires no login or bearer token. Generate a random UUID v4 and send X-Demo-Session with every request, keeping it stable for send/get/follow-up/cancel. If omitted, the response supplies X-Demo-Session; save it before continuing. The bundled /cli/a2a.mjs persists this session automatically. This is an isolated sandbox conversation, not a verified customer account. Do not send real personal details. Account-bound booking and payment still require the separate customer authorization flow at ${origin}/auth.md. After linking, the client uses --authenticated and starts a new authenticated task; an anonymous task is not reassigned. Business tools, database changes and private inbox access remain protected.` : `Follow the Agent Card's security requirements and ${origin}/auth.md. Your agent handles credential exchange privately after the customer's authorization; never ask them to paste bearer tokens.`}
+${demo ? `This demo's A2A conversation requires no login or bearer token. Generate a random UUID v4 and send X-Demo-Session with every request, keeping it stable for send/get/follow-up/cancel. If omitted, the response supplies X-Demo-Session; save it before continuing. The bundled /cli/a2a.mjs persists this session automatically. This is an isolated sandbox conversation, not a verified customer account. Do not send real personal details. When demo_chat_approval is advertised, follow the chat-approval section below for a fictional reservation with simulated deposit. Other account-bound booking and payment still require the separate customer authorization flow at ${origin}/auth.md. After linking, the client uses --authenticated and starts a new authenticated task; an anonymous task is not reassigned. Business tools, database changes and private inbox access remain protected.` : `Follow the Agent Card's security requirements and ${origin}/auth.md. Your agent handles credential exchange privately after the customer's authorization; never ask them to paste bearer tokens.`}
 
 SendMessage and GetTask use A2A 1.0 JSON-RPC with Content-Type: application/json and A2A-Version: 1.0. Example (replace the UUID with your generated session ID when public demo access is advertised):
 

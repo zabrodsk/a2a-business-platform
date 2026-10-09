@@ -228,7 +228,8 @@ export class LegacyStore {
       if(input.purchaser_identifier!==undefined&&(typeof input.purchaser_identifier!=='string'||!/^[a-f0-9]{14,26}$/.test(input.purchaser_identifier)))fail('INVALID_PURCHASER_IDENTIFIER','Purchaser identifier must contain 14–26 lowercase hex characters.');
       if(input.input_hash!==undefined&&(typeof input.input_hash!=='string'||!/^[a-f0-9]{64}$/.test(input.input_hash)))fail('INVALID_INPUT_HASH','Input hash must contain 64 lowercase hex characters.');
       const order=this.getOrder(orderId),quote=this.getQuote(order.quote_id),auth=input.authorization;
-      if(!auth||!['human_checkout','agent_mandate'].includes(auth.kind)||!auth.actor_id||!auth.mapping_version||!auth.approved_at||!Number.isFinite(Date.parse(auth.approved_at)))fail('INVALID_AUTHORIZATION','A persisted server authorization is required.',403);
+      if(!auth||!['human_checkout','agent_mandate','demo_chat'].includes(auth.kind)||!auth.actor_id||!auth.mapping_version||!auth.approved_at||!Number.isFinite(Date.parse(auth.approved_at)))fail('INVALID_AUTHORIZATION','A persisted server authorization is required.',403);
+      if(auth.kind==='demo_chat'&&(input.provider!=='local_demo'||auth.network!=='local'||!auth.actor_id.startsWith('demo:')||!auth.customer_id.startsWith('demo-customer-')))fail('DEMO_ONLY','Chat consent permits local simulation only.',403);
       if(!Number.isSafeInteger(auth.max_total_minor)||auth.max_total_minor<0||!Number.isSafeInteger(auth.max_deposit_minor)||auth.max_deposit_minor<0)fail('INVALID_AUTHORIZATION','Authorization limits must be nonnegative integer minor amounts.',403);
       if(auth.kind==='agent_mandate'&&(!auth.mandate_id||!auth.rulebook_version))fail('INVALID_AUTHORIZATION','Agent authorization requires a mandate and rulebook.',403);
       if(!['deposit','full'].includes(auth.payment_mode))fail('INVALID_PAYMENT_MODE','Choose deposit or full.');

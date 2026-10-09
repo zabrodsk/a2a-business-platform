@@ -10,6 +10,7 @@ export interface Identity {
   connection_id?: string;
   execution_epoch?: number;
   scopes?: string[];
+  demo?: boolean;
 }
 
 export type RelayOperation = 'inbox.read' | 'inbox.reply' | 'doorbell.write' | 'tasks.read' | 'a2a';
@@ -52,6 +53,8 @@ export interface Config {
   authResourceMetadataUrl?: string;
   /** Explicit sandbox opt-in: unauthenticated A2A conversations, never business tools. */
   demoPublicA2a?: boolean;
+  demoChatApproval?: boolean;
+  demoCustomerId?: (session: string) => string;
   /** One isolated transport DB per managed resource. Absent for the legacy standalone relay. */
   businessId?: string;
   /** Authoritative resolver: when supplied no environment/enrollment token fallback is permitted. */

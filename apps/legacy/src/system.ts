@@ -7,6 +7,7 @@ import { AgentCard } from '@a2a-js/sdk';
 import type { Request, Response, NextFunction } from 'express';
 import { buildAgentCard } from '../../relay/src/card.js';
 import type { Config, Identity } from '../../relay/src/config.js';
+import { demoCustomer } from './demo-chat.js';
 import { requireRole } from '../../relay/src/auth.js';
 import { createRelay } from '../../relay/src/server.js';
 import { RulebookManager, SourceRegistry } from '../../../packages/audit/index.js';
@@ -53,6 +54,7 @@ export function unifiedRelayConfig(cfg: LegacyConfig): Config {
     a2aEndpointUrl: `${cfg.publicUrl}/a2a/jsonrpc`, dbPath, tokens,
     businessProfile: 'pneu007',
     demoPublicA2a: cfg.env.DEMO_PUBLIC_A2A === 'true',
+    demoChatApproval: cfg.env.DEMO_CHAT_APPROVAL === 'true',
     ...(cfg.env.HANDORU_FRESH==='true'?{}:{businessId:'pneu007'}),
     businessWebhook: webhookUrl && webhookKey ? { url: webhookUrl, key: webhookKey } : undefined,
     pushHostAllowlist: (cfg.env.LEGACY_PUSH_HOST_ALLOWLIST ?? 'api2.cursor.sh')
@@ -96,6 +98,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     await relay.close();
     throw error;
   }
+  if (cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true') relayConfig.demoCustomerId = session => demoCustomer(legacy.store, session).customer_id!;
   const resolveIdentity=(token:string,businessId?:string):Identity|undefined=>{
     if(!businessId&&token===cfg.env.LEGACY_RELAY_ADMIN_TOKEN)return {id:'relay-admin',role:'admin'};
     const dynamic=legacy.handoru.identify(token)??legacy.agentAuth.identify(token);

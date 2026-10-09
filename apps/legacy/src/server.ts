@@ -18,6 +18,7 @@ import { handoruRoutes } from './handoru/routes.js';
 import { assertCapabilities } from './handoru/capabilities.js';
 import { handoruManifest } from './handoru/manifest.js';
 import { pneuMcp } from './mcp.js';
+import { demoChatRouter } from './demo-chat.js';
 import { AgentPolicy } from './agent-policy.js';
 import { PaymentWorkflow } from './payment-workflow.js';
 import { StripeCheckoutWorkflow } from './stripe-checkout.js';
@@ -66,7 +67,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   const registry = options.registry ?? new SourceRegistry(repoRoot);
   const rulebooks = new RulebookManager(store.db, registry);
   const businessIdentity = [...cfg.auth.agentTokens.values()].find(value => value.role === 'business_agent');
-  const policy = new AgentPolicy(store, rulebooks, { now, businessActorId: businessIdentity?.id ?? 'garage-demo', businessId:()=>handoru.installation()?.id??'pneu007', authorizeBusiness: a=>handoru.authorize(a,handoru.installation()?.id??'pneu007','inbox.claim',true),onEvent:(entity,entityId,kind,a,data)=>{const b=handoru.installation();if(b)handoru.event(b.id,`native.${entity}.${kind}`,a.id,{entity_id:entityId,detail:data});} });
+  const policy = new AgentPolicy(store, rulebooks, { now, businessActorId: businessIdentity?.id ?? 'garage-demo', businessId:()=>handoru.installation()?.id??'pneu007', demoChatEnabled:()=>cfg.env.DEMO_CHAT_APPROVAL==='true'&&cfg.env.DEMO_PUBLIC_A2A==='true'&&handoru.installation()?.id==='pneu007', authorizeBusiness: a=>handoru.authorize(a,handoru.installation()?.id??'pneu007','inbox.claim',true),onEvent:(entity,entityId,kind,a,data)=>{const b=handoru.installation();if(b)handoru.event(b.id,`native.${entity}.${kind}`,a.id,{entity_id:entityId,detail:data});} });
   handoru.validateActive=(a,b,c,scope)=>{
     const active=new RulebookManager(store.db,new SourceRegistry(registry.rootDir,registry.webSources,registry.includeFixtures),{businessId:b.id,genericEvidence:b.id!=='pneu007'}).getActive();
     assertCapabilities(active.governance?.required_capabilities??[],Boolean(store.db.prepare('SELECT 1 FROM handoru_meta WHERE key=?').get(`mcp_verified:${c.id}`)));
@@ -97,7 +98,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.set('Link', `</agents.md>; rel="describedby"; type="text/markdown", </.well-known/handle.json>; rel="service-desc"; type="application/json", </.well-known/agent-card.json>; rel="agent-card"; type="application/json"`);
     next();
   });
-  app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true')));
+  app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true')));
   const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now: () => now().getTime() });
   const discoveryJson = express.json({ limit: '32kb' });
   app.post('/discovery/websites', (req, res, next) => {
@@ -112,6 +113,8 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.status(result.status).json(result.body);
   });
 
+  app.use('/demo', (req, _res, next) => { try { auth.checkOrigin(req); next(); } catch (error) { next(error); } }, demoChatRouter({ store, policy, processor, enabled:()=>cfg.env.DEMO_CHAT_APPROVAL==='true'&&cfg.env.DEMO_PUBLIC_A2A==='true'&&handoru.installation()?.id==='pneu007'&&Boolean(handoru.installation()?.active_connection_id), validateTask:options.validateRelayTask }));
+
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '256kb' }), async (req, res) => {
     if (!Buffer.isBuffer(req.body)) fail('INVALID_STRIPE_WEBHOOK', 'Stripe webhook requires an unmodified JSON body.');
     await stripe.webhook(req.body, req.get('stripe-signature'));
@@ -121,7 +124,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.use('/api', (_req,_res,next)=>{const b=handoru.installation();if(b)rulebooks.useBusiness(b.id,{genericEvidence:b.id!=='pneu007'});next();});
   app.use(['/api/handle/v1','/api/handoru/v1'],handoruApi.router);
   app.use('/mcp',pneuMcp(auth,handoru));
-  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true')));
+  app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true')));
   app.get(['/handle/onboarding','/handoru/onboarding'],(_req,res)=>res.sendFile(join(repoRoot,'docs/handoru-onboarding.html')));
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});

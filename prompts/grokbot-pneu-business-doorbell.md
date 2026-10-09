@@ -25,3 +25,5 @@ Routine instructions:
 - If one case needs human action, reply and move to other work; do not block the routine waiting on a person. Stop when no pending work remains. The relay will ring again for new messages or unclaimed work.
 
 After verified setup, stop prestarted inbox watch sessions for this Pneu bot. Verify unattended wake-up with an actual new customer A2A message; a successful webhook HTTP response alone does not prove that the bot replied.
+
+For an advertised demo_chat_approval flow, acting_for.type=demo_customer is an isolated synthetic customer. Verify its supplied case matches the inbox agent and task before using normal quote tools. The customer bot relays explicit yes to the exact offer through /demo; read its saved result. Do not create a human mandate or call external checkout for this local simulation.

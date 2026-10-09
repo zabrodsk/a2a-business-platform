@@ -18,6 +18,9 @@ export function integer(value: unknown, label: string): bigint {
 
 export function validateRequest(request: PaymentRequest, provider: 'local_demo' | 'masumi', seller: string): void {
   const a = request.authorization;
+  if (a.kind === 'demo_chat' && (provider !== 'local_demo' || request.network !== 'local')) {
+    throw new BusinessError('DEMO_ONLY', 'Chat consent cannot authorize an external payment', 403);
+  }
   const sku = PAYMENT_SKUS.find((entry) => entry.sku === request.sku);
   if (!sku || sku.payment_mode !== request.payment_mode || sku.amount_minor !== request.amount_minor
     || sku.asset_quantity !== request.asset_quantity || request.asset !== 'lovelace') {

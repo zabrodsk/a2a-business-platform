@@ -1,3 +1,4 @@
+import { validateRequest } from '../src/common.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -696,4 +697,11 @@ test('local job preparation is explicitly synthetic and deterministic', async ()
   assert.equal(job.simulation, true); assert.equal(job.provider, 'local_demo');
   assert.match(job.blockchainIdentifier, /^demo:/); assert.match(job.agentIdentifier, /^demo:/);
   assert.deepEqual(await provider.prepareJob(request('local_demo')), job);
+});
+
+test('chat consent is rejected by the external payment boundary even with otherwise valid Preprod data', () => {
+  const attempted = request('masumi'); attempted.authorization.kind = 'demo_chat';
+  assert.throws(() => validateRequest(attempted, 'masumi', seller), /cannot authorize an external payment/);
+  const local = request('local_demo'); local.authorization.kind = 'demo_chat';
+  assert.doesNotThrow(() => validateRequest(local, 'local_demo', 'pneu007-demo'));
 });

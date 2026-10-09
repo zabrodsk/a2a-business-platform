@@ -25,6 +25,10 @@ Usage:
   a2a get <website-url> <task-id>                  Show task state and conversation
   a2a wait <website-url> <task-id> [--timeout SEC] Wait until it is your turn or the task ends
   a2a cancel <website-url> <task-id>               Cancel a task
+  a2a demo-case <website-url> --data-file case.json     Open a fictional case for your A2A task
+  a2a demo-offer <website-url> <case-id>                 Read the exact offer for customer approval
+  a2a demo-approve <website-url> <case-id> --data-file approval.json
+                                                   Relay explicit chat consent; local simulation only
   a2a login <endpoint-origin>                      Store a token for an endpoint (reads stdin)
   a2a enroll <redeem-url>                          Redeem a one-time enrollment code from the agent's operator
 
@@ -113,6 +117,17 @@ async function discover(websiteUrl: string) {
   return { card, cardUrl, foundVia, iface, endpointOrigin: new URL(iface.url).origin };
 }
 
+function demoSession(endpoint: string): string {
+  const path = `${credentialsPath()}.demo-sessions.json`;
+  const sessions: Record<string, string> = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
+  const session = sessions[endpoint] ?? randomUUID();
+  sessions[endpoint] = session;
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  writeFileSync(path, JSON.stringify(sessions), { mode: 0o600 });
+  chmodSync(path, 0o600);
+  return session;
+}
+
 async function connect(websiteUrl: string, authenticated = false): Promise<{ client: Client; card: AgentCard; endpoint: string }> {
   const d = await discover(websiteUrl);
   const requiresAuth = authenticated || (d.card.securityRequirements ?? []).some(requirement => Object.keys(requirement.schemes ?? {}).length > 0);
@@ -126,13 +141,7 @@ async function connect(websiteUrl: string, authenticated = false): Promise<{ cli
     (extension.params?.customer as { demo_public_a2a?: boolean } | undefined)?.demo_public_a2a === true);
   let session: string | undefined;
   if (demo && !requiresAuth) {
-    const path = `${credentialsPath()}.demo-sessions.json`;
-    const sessions: Record<string, string> = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
-    session = sessions[d.iface.url] ?? randomUUID();
-    sessions[d.iface.url] = session;
-    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-    writeFileSync(path, JSON.stringify(sessions), { mode: 0o600 });
-    chmodSync(path, 0o600);
+    session = demoSession(d.iface.url);
   }
   const authFetch: typeof fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
@@ -213,6 +222,7 @@ async function main() {
     options: {
       task: { type: 'string' },
       data: { type: 'string' },
+      'data-file': { type: 'string' },
       'no-wait': { type: 'boolean', default: false },
       timeout: { type: 'string' },
       json: { type: 'boolean', default: false },
@@ -228,6 +238,30 @@ async function main() {
   if (!cmd || values.help) return void console.log(HELP);
 
   switch (cmd) {
+    case 'demo-case':
+    case 'demo-offer':
+    case 'demo-approve': {
+      const [website, caseId] = args;
+      if (!website || (cmd !== 'demo-case' && (!caseId || !/^case-[a-f0-9-]{36}$/.test(caseId)))) throw new CliError('Use demo-case WEBSITE or demo-offer/demo-approve WEBSITE CASE_ID');
+      const d = await discover(website);
+      const customer = d.card.capabilities?.extensions?.map(e => e.params?.customer as Record<string, unknown> | undefined).find(c => c?.demo_chat_approval === true);
+      if (!customer || !customer.demo_public_a2a) throw new CliError('This card does not enable demo chat approval.');
+      const api = new URL(String(customer.demo_api_base));
+      if (api.origin !== d.endpointOrigin || api.pathname !== '/demo' || api.search || api.hash || api.username || api.password) throw new CliError('Invalid demo API origin');
+      const path = cmd === 'demo-case' ? '/cases' : `/cases/${caseId}${cmd === 'demo-approve' ? '/approve' : ''}`;
+      let data: unknown;
+      if (cmd !== 'demo-offer') {
+        if (Boolean(values.data) === Boolean(values['data-file'])) throw new CliError('Supply exactly one --data or --data-file');
+        const raw = values['data-file'] ? readFileSync(values['data-file'], 'utf8') : values.data!;
+        if (Buffer.byteLength(raw) > 16384) throw new CliError('Demo request too large');
+        data = JSON.parse(raw);
+      }
+      const response = await fetch(api.href + path, { method: cmd === 'demo-offer' ? 'GET' : 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
+        headers: { 'content-type': 'application/json', 'X-Demo-Session': demoSession(d.iface.url) }, ...(data ? { body: JSON.stringify(data) } : {}) });
+      const body = await response.json();
+      if (!response.ok) throw new CliError(`Demo request failed (${response.status}): ${JSON.stringify(body)}`);
+      console.log(JSON.stringify(body, null, 2)); return;
+    }
     case 'discover': {
       const [url] = args;
       if (!url) throw new CliError('usage: a2a discover <website-url>');

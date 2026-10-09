@@ -53,6 +53,7 @@ export function requireRole(cfg: Config, ...roles: Identity['role'][]) {
         return;
       }
       identity = req.identity?.id.startsWith('demo:') ? req.identity : { id: `demo:${session ?? randomUUID()}`, role: 'customer' };
+      if (cfg.demoCustomerId) identity = { ...identity, demo: true, customer_id: cfg.demoCustomerId(identity.id.slice(5)) };
       res.set('X-Demo-Session', identity.id.slice(5)).set('Cache-Control', 'no-store');
     }
     if (!identity) {

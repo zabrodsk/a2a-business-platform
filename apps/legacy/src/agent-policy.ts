@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { BusinessError, type Actor, type ServiceSpec, type PurchaseAuthorization } from '../../../packages/contracts/index.js';
-import { LegacyStore, validateServiceSpec, type Quote, type Order, type Slot } from '../../../packages/demo-garage/index.js';
+import { LegacyStore, BOOKING_CONFIG, validateServiceSpec, type Quote, type Order, type Slot } from '../../../packages/demo-garage/index.js';
+import { selectPaymentSku } from '../../../packages/payments/index.js';
 import { RulebookManager, type RulebookVersion } from '../../../packages/audit/index.js';
 
 export interface AgentCase {
@@ -67,7 +68,8 @@ const mandateFields = ['case_id','mode','service_spec','max_total_minor','max_de
 export class AgentPolicy {
   readonly now: () => Date;
   readonly businessActorId: string;
-  constructor(readonly store: LegacyStore, readonly rulebooks: RulebookManager, readonly options: {now?:()=>Date;businessActorId?:string;businessId?:()=>string;authorizeBusiness?:(actor:Actor)=>void;onEvent?:(entity:string,id:string,kind:string,actor:Actor,data:unknown)=>void} = {}) {
+  constructor(readonly store: LegacyStore, readonly rulebooks: RulebookManager, readonly options: {now?:()=>Date;businessActorId?:string;businessId?:()=>string;authorizeBusiness?:(actor:Actor)=>void;demoChatEnabled?:()=>boolean;onEvent?:(entity:string,id:string,kind:string,actor:Actor,data:unknown)=>void} = {}) {
+    store.db.exec('CREATE TABLE IF NOT EXISTS demo_chat_acceptances(case_id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,intent_id TEXT NOT NULL,consent_json TEXT NOT NULL,approved_at TEXT NOT NULL)');
     this.now = options.now ?? (()=>new Date()); this.businessActorId = options.businessActorId ?? 'garage-demo';
     store.db.exec(`CREATE TABLE IF NOT EXISTS agent_cases (
       id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES customers(id), customer_agent_id TEXT NOT NULL,
@@ -81,6 +83,28 @@ export class AgentPolicy {
       id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES agent_cases(id), quote_id TEXT NOT NULL UNIQUE REFERENCES quotes(id),
       status TEXT NOT NULL, payload_json TEXT NOT NULL, decided_by TEXT, decided_at TEXT, created_at TEXT NOT NULL
     );`);
+  }
+  acceptDemoChat(actor: Actor, caseId: string, input: {quote_id:string;quote_hash:string;quote_version:number;slot_id:string;total_minor:number;deposit_minor:number;currency:string;confirmation:string;simulation:boolean}) {
+    if (!this.options.demoChatEnabled?.() || !/^demo:[a-f0-9-]{36}$/.test(actor.id) || actor.customer_id !== `demo-customer-${actor.id.slice(5)}`) fail('DEMO_ONLY','Chat approval is available only for an isolated fictional demo session.',403);
+    role(actor,'customer_agent');
+    object(input,['quote_id','quote_hash','quote_version','slot_id','total_minor','deposit_minor','currency','confirmation','simulation']);
+    if (input.confirmation!=='yes_i_approve'||input.simulation!==true) fail('CHAT_APPROVAL_REQUIRED','Relay explicit customer approval of this exact simulated offer.',403);
+    const fingerprint=createHash('sha256').update(JSON.stringify(['demo_chat',...['quote_id','quote_hash','quote_version','slot_id','total_minor','deposit_minor','currency','confirmation','simulation'].map(k=>input[k as keyof typeof input])])).digest('hex');
+    return this.store.db.transaction(()=>{
+      const c=this.getCase(actor,caseId);
+      const prior=this.store.db.prepare('SELECT fingerprint,intent_id FROM demo_chat_acceptances WHERE case_id=?').get(c.id) as {fingerprint:string;intent_id:string}|undefined;
+      if (prior) { if(prior.fingerprint!==fingerprint)fail('APPROVAL_CONFLICT','This case already has a different immutable approval.',409);return {case:c,order:this.store.getOrder(c.order_id!),intent:this.store.getPaymentIntent(prior.intent_id)}; }
+      const q=this.store.getQuote(input.quote_id),active=this.rulebooks.getActive();this.verifyQuote(c,q,active);this.verifyDiscount(q);
+      if(c.status==='accepted'||c.business_id!=='pneu007'||input.quote_hash!==c.quote_hash||input.quote_version!==q.version||input.slot_id!==q.slot_id||input.total_minor!==q.price.total_minor||input.currency!==q.price.currency||input.deposit_minor!==active.params.deposit_minor||input.deposit_minor!==BOOKING_CONFIG.deposit_minor)fail('OFFER_CHANGED','Approval must match the exact current quote, slot, price and deposit.',409);
+      const mapping=selectPaymentSku({payment_mode:'deposit',amount_minor:input.deposit_minor,max_network_fee:'0',network:'local'},{});
+      const order=this.store.createOrder(q.id),approved_at=this.time();
+      const authorization:PurchaseAuthorization={kind:'demo_chat',actor_id:actor.id,customer_id:c.customer_id,quote_id:q.id,quote_version:q.version,payment_mode:'deposit',max_total_minor:q.price.total_minor,max_deposit_minor:input.deposit_minor,network:'local',seller_id:mapping.seller_id,asset:mapping.asset,asset_quantity:mapping.asset_quantity,max_network_fee:'0',mapping_version:mapping.mapping_version,rulebook_version:active.version,approved_at};
+      const intent=this.store.prepareCheckout(order.id,{authorization,provider:'local_demo',sku:mapping.sku,asset_quantity:mapping.asset_quantity,max_network_fee:'0',seller_id:mapping.seller_id});
+      const next:AgentCase={...c,status:'accepted',order_id:order.id,accepted_by:actor.id,accepted_at:approved_at,updated_at:approved_at};this.saveCase(next);
+      this.store.db.prepare('INSERT INTO demo_chat_acceptances VALUES(?,?,?,?,?)').run(c.id,fingerprint,intent.intent_id,JSON.stringify({consent_source:'agent_relayed_demo_chat',independent_human_verification:false,simulation:true,offer:input}),approved_at);
+      this.event('agent_case',c.id,'demo_chat_approved',actor,{quote_id:q.id,order_id:order.id,consent_source:'agent_relayed_demo_chat',independent_human_verification:false,simulation:true});
+      return {case:next,order,intent};
+    }).immediate();
   }
   private time() { return this.now().toISOString(); }
   private event(entity: string, id: string, kind: string, actor: Actor, data: unknown) {

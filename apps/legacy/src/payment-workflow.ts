@@ -1,3 +1,4 @@
+import { LocalDemoProvider } from '../../../packages/payments/index.js';
 import { createHash } from 'node:crypto';
 import type { LegacyStore, PaymentIntent } from '../../../packages/demo-garage/index.js';
 import { BusinessError, type PaymentProvider } from '../../../packages/contracts/index.js';
@@ -11,6 +12,12 @@ export interface Receipt {
 }
 /** The database is local/atomic. Every provider step is separate and restart-safe. */
 export class PaymentWorkflow {
+  private readonly demoProvider = new LocalDemoProvider();
+  private paymentProvider(intent: PaymentIntent): PaymentProvider {
+    if (intent.authorization.kind !== 'demo_chat') return this.provider;
+    if (intent.provider !== 'local_demo' || intent.network !== 'local') throw new BusinessError('DEMO_ONLY', 'Chat consent cannot reach an external provider.', 403);
+    return this.demoProvider;
+  }
   private readonly inFlight = new Map<string, Promise<PaymentIntent>>();
   private timer?: ReturnType<typeof setInterval>;
   constructor(readonly store: LegacyStore, readonly provider: PaymentProvider) {
@@ -47,22 +54,23 @@ export class PaymentWorkflow {
   private async process(intentId: string): Promise<PaymentIntent> {
     let intent = this.store.getPaymentIntent(intentId);
     if (['failed', 'refunded', 'seller_paid'].includes(intent.state)) return intent;
+    const provider = this.paymentProvider(intent);
     try {
       if (intent.state === 'created') {
         intent = this.store.markPurchaseRequested(intentId);
-        intent = this.store.recordPaymentObservation(intentId, await this.provider.start(intent));
+        intent = this.store.recordPaymentObservation(intentId, await provider.start(intent));
       } else {
-        intent = this.store.recordPaymentObservation(intentId, await this.provider.observe(intent, intent.observation));
+        intent = this.store.recordPaymentObservation(intentId, await provider.observe(intent, intent.observation));
       }
       const order = this.store.getOrder(intent.order_id);
       if (['cancel_requested', 'refund_pending', 'cancelled'].includes(order.status) && intent.observation
         && ['escrow_funded', 'result_submitted'].includes(intent.observation.state)) {
-        intent = this.store.recordPaymentObservation(intentId, await this.provider.requestRefund(intent, intent.observation));
+        intent = this.store.recordPaymentObservation(intentId, await this.paymentProvider(intent).requestRefund(intent, intent.observation));
       } else if (order.status === 'refund_pending' && intent.observation?.state === 'seller_paid') {
         throw new BusinessError('MANUAL_COMPENSATION_REQUIRED', 'Výplata prodejci již proběhla; majitel musí vyřešit samostatnou kompenzaci.', 409);
       } else if (intent.state === 'escrow_funded' && intent.observation) {
         const result = this.receipt(intent);
-        if (result) intent = this.store.recordPaymentObservation(intentId, await this.provider.submitResult(intent, intent.observation, result.hash));
+        if (result) intent = this.store.recordPaymentObservation(intentId, await provider.submitResult(intent, intent.observation, result.hash));
       }
       this.store.db.prepare('DELETE FROM payment_workflow_errors WHERE intent_id=?').run(intentId);
       return intent;
@@ -87,24 +95,25 @@ export class PaymentWorkflow {
     if (intent.state === 'refunded' || intent.state === 'refund_requested') return intent;
     if (intent.observation.state === 'seller_paid') throw new BusinessError('MANUAL_COMPENSATION_REQUIRED', 'Vyplacené prostředky vyžadují samostatnou kompenzaci majitelem.', 409);
     if (!['escrow_funded', 'result_submitted'].includes(intent.observation.state)) throw new BusinessError('PAYMENT_UNCERTAIN', 'Refund vyžaduje ověřené financované escrow.', 409);
-    return this.store.recordPaymentObservation(intentId, await this.provider.requestRefund(intent, intent.observation));
+    return this.store.recordPaymentObservation(intentId, await this.paymentProvider(intent).requestRefund(intent, intent.observation));
   }
   ownerOperation(intentId: string, action: 'resume' | 'authorize_refund'): Promise<PaymentIntent> {
     const previous = this.inFlight.get(intentId);
     const perform = async () => {
       let intent = this.store.getPaymentIntent(intentId);
+      const provider = this.paymentProvider(intent);
       if (action === 'resume') {
-        if (!this.provider.resumePurchase) throw new BusinessError('RESUME_UNSUPPORTED', 'Provider nepodporuje bezpečné obnovení.', 409);
+        if (!provider.resumePurchase) throw new BusinessError('RESUME_UNSUPPORTED', 'Provider nepodporuje bezpečné obnovení.', 409);
         if (!['purchase_requested', 'reconciliation_required'].includes(intent.state)) throw new BusinessError('RESUME_FORBIDDEN', 'Obnovit lze jen nevyřešené zahájení nákupu.', 409);
         const order = this.store.getOrder(intent.order_id);
         if (['cancel_requested', 'cancelled', 'refund_pending', 'refunded'].includes(order.status)) throw new BusinessError('RESUME_FORBIDDEN', 'Stornovaný nákup se znovu nespouští.', 409);
         if (intent.provider === 'masumi' && this.store.listPaymentIntents().some(other => other.intent_id !== intentId && other.provider === 'masumi' && !['created', 'failed', 'refunded', 'seller_paid'].includes(other.state))) {
           throw new BusinessError('MASUMI_BUYER_WALLET_BUSY', 'Jiný nákup stále vlastní lifecycle peněženky.', 409);
         }
-        intent = this.store.recordPaymentObservation(intentId, await this.provider.resumePurchase(intent, intent.observation));
+        intent = this.store.recordPaymentObservation(intentId, await provider.resumePurchase(intent, intent.observation));
       } else {
-        if (!this.provider.authorizeRefund || !intent.observation || intent.observation.state !== 'refund_requested') throw new BusinessError('REFUND_AUTHORIZATION_UNAVAILABLE', 'Autorizace vyžaduje ověřenou žádost o refund.', 409);
-        intent = this.store.recordPaymentObservation(intentId, await this.provider.authorizeRefund(intent, intent.observation));
+        if (!provider.authorizeRefund || !intent.observation || intent.observation.state !== 'refund_requested') throw new BusinessError('REFUND_AUTHORIZATION_UNAVAILABLE', 'Autorizace vyžaduje ověřenou žádost o refund.', 409);
+        intent = this.store.recordPaymentObservation(intentId, await provider.authorizeRefund(intent, intent.observation));
       }
       return intent;
     };
@@ -115,6 +124,7 @@ export class PaymentWorkflow {
   private acceptedForDispatch(intent:PaymentIntent):boolean {
     // A restart may occur after native acceptance and before provider dispatch.
     // Seller-only MIP jobs are not buyer-dispatch authorizations.
+    if (intent.authorization.kind === 'demo_chat' && this.store.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='demo_chat_acceptances'").get()) return Boolean(this.store.db.prepare('SELECT 1 FROM demo_chat_acceptances WHERE intent_id=?').get(intent.intent_id));
     const tables=this.store.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('handoru_operations','human_checkout_authorizations')").all() as {name:string}[];
     if(tables.some(t=>t.name==='handoru_operations')&&this.store.db.prepare("SELECT 1 FROM handoru_operations WHERE kind='orders.checkout' AND json_extract(result_json,'$.intent_id')=?").get(intent.intent_id))return true;
     return tables.some(t=>t.name==='human_checkout_authorizations')&&Boolean(this.store.db.prepare('SELECT 1 FROM human_checkout_authorizations WHERE order_id=?').get(intent.order_id));

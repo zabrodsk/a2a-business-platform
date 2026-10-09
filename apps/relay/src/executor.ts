@@ -119,7 +119,7 @@ export class RelayExecutor implements AgentExecutor {
       ...summarizeMessage(userMessage),
       authenticated_sender: {
         agent_id: owner,
-        acting_for: identity?.customer_id ? { type: 'customer', id: identity.customer_id } : null,
+        acting_for: identity?.customer_id ? { type: identity.demo ? 'demo_customer' : 'customer', id: identity.customer_id } : null,
       },
     };
     const now = () => new Date().toISOString();
