@@ -126,34 +126,35 @@ document.addEventListener('click',async event=>{
     const dialog=modal('Autorizace nákupu',`<p>Záloha je částí celkové ceny ${money(orderData.quote.price.total_minor)}.</p><form><label>Režim<select name="payment_mode"><option value="deposit" ${paymentSKU('deposit',50000)?'':'disabled'}>Záloha 500 Kč</option><option value="full" ${paymentSKU('full',orderData.quote.price.total_minor)?'':'disabled'}>Plná úhrada</option></select></label><p>Testovací platba bez skutečné služby. Maximální rozpočet síťového poplatku ${networkFeeLabel()}. Jde o schválený limit, ne skutečný poplatek.</p><label><input type="checkbox" required> Výslovně autorizuji nákup a maximální síťový rozpočet ${networkFeeLabel()}.</label><p class="live-error" role="alert"></p><div class="live-actions"><button type="submit">Autorizovat a koupit</button><button type="button" data-dialog-close>Zavřít</button></div></form>`);dialog.querySelector('form').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('[type=submit]');button.disabled=true;try{await api(`/api/orders/${encodeURIComponent(orderId)}/checkout`,{method:'POST',body:{payment_mode:new FormData(e.target).get('payment_mode'),confirm:true,max_network_fee:checkoutNetworkFee()}});dialog.close();await checkout();}catch(error){dialog.querySelector('.live-error').textContent=error.message;}finally{button.disabled=false;}};
   }
 });
+async function renderAgentCard() {
+  const root=document.querySelector('[data-agent-card]');if(!root)return;
+  const status=document.querySelector('[data-agent-status]'),statusNote=document.querySelector('[data-agent-status-note]'),detail=document.querySelector('.tech .tb');
+  const set=(key,value)=>{const el=root.querySelector(`[data-ac="${key}"]`);if(el&&value)el.textContent=value;};
+  let card;
+  try{card=await api('/.well-known/agent-card.json');}catch(error){
+    if(status){status.className='chip warn';status.textContent='Agent je dočasně nedostupný';}
+    if(statusNote)statusNote.textContent='Agent Card se zobrazí po aktivaci schválených pravidel.';
+    if(detail)detail.textContent=JSON.stringify({error:error.code ?? error.message},null,2);
+    return;
+  }
+  const iface=card.supportedInterfaces?.[0] ?? {url:card.url,protocolBinding:card.preferredTransport,protocolVersion:card.protocolVersion};
+  const scheme=Object.values(card.securitySchemes ?? {})[0];const http=scheme?.httpAuthSecurityScheme ?? scheme;
+  set('name',card.name);set('description',card.description);set('url',iface?.url);
+  set('protocol',[iface?.protocolVersion&&`A2A ${iface.protocolVersion}`,iface?.protocolBinding].filter(Boolean).join(' · '));
+  set('auth',http?.scheme?`${http.scheme} token · propojení potvrzuje přihlášený zákazník`:'Demo konverzace bez přihlášení · nákup potvrzuje zákazník');
+  set('skills',(card.skills ?? []).map(skill=>skill.name).join(', '));
+  set('modes',[...new Set([...(card.defaultInputModes ?? []),...(card.defaultOutputModes ?? [])])].join(' · '));
+  set('version',card.version);
+  if(card.documentationUrl)root.querySelector('a[href="/auth.md"]')?.setAttribute('href',card.documentationUrl);
+  if(status){status.className='chip ok';status.textContent=`Agent online · A2A ${iface?.protocolVersion ?? ''}`.trim();}
+  if(statusNote)statusNote.textContent='Ověřeno z publikovaného Agent Card.';
+  if(detail)detail.textContent=JSON.stringify(card,null,2);
+}
 async function initialize() {
   const nav=document.querySelector('header[data-dc-tpl]');if(!nav)return false;
-  if(location.pathname==='/'){
-    const actions=document.querySelector('a.btn-gold[href="/kalkulator"]')?.parentElement;
-    if(actions&&!actions.querySelector('.btn-link-pay')){
-      const link=document.createElement('a');link.className='btn btn-link-pay';link.href='/objednavka?payment=link';link.textContent='Zaplatit přes Link';actions.append(link);
-    }
-  }
   await refreshSession().catch(()=>{});
-  const profile=['/','/kontakt','/pro-agenty'].includes(location.pathname)?await api('/api/agent/profile').catch(()=>null):null;
-  if(profile?.location?.address){
-    const address=[...document.querySelectorAll('.ph')].find(element=>element.textContent.includes('[PLACEHOLDER: testovací adresa]'));
-    if(address){address.textContent=profile.location.address;address.classList.remove('ph');}
-    const eyebrow=document.querySelector('#hero-h')?.previousElementSibling;
-    if(eyebrow)eyebrow.textContent=`${eyebrow.textContent} · ${profile.location.address}`;
-  }
   if(location.pathname.startsWith('/objednavka'))await checkout();
-  if(location.pathname==='/pro-agenty'){
-    const detail=document.querySelector('.tech .tb');
-    if(profile&&detail){
-      const card=profile.active&&profile.transport_configured?await api('/.well-known/agent-card.json').catch(()=>null):null;
-      detail.textContent=JSON.stringify(card ?? profile,null,2);
-      const panel=document.createElement('section');panel.className='live-section';
-      panel.innerHTML=`<h2 class="live-subtitle">Aktuální stav rozhraní</h2><p><strong>${profile.active?'Aktivní auditovaný rulebook':'Agent zatím není aktivní'}</strong></p><p>${profile.active?'Majitel aktivoval aktuální návrh pravidel.':'Autonomní obchodování čeká na audit zdrojů a lidskou aktivaci rulebooku. Lidské objednání funguje samostatně.'}</p><p>Transport: ${profile.transport_configured?'Nakonfigurován; kompatibilitu dokládá samostatný test.':'Dosud nenakonfigurován.'}</p><p>Platby: ${profile.payment?.simulation?'Lokální simulace, bez on-chain transakce.':esc(profile.payment?.network ?? 'Stav není dostupný.')}</p>${card?'<a href="/.well-known/agent-card.json">Otevřít publikovaný Agent Card</a>':''}`;
-      document.querySelector('[aria-labelledby="ac-h"]').prepend(panel);
-      const note=detail.closest('section').querySelector('p.small.mute');if(note)note.textContent='Technický detail zobrazuje aktuální serverový stav. Agent Card neobsahuje interní pravidla, soukromá data ani klíče.';
-    }
-  }
+  if(location.pathname==='/pro-agenty')await renderAgentCard();
   return true;
 }
 // DC renders the supplied template after DOMContentLoaded; wait for its actual content.
