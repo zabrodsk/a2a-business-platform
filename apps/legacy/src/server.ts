@@ -13,10 +13,10 @@ import { LegacyAuth } from './auth.js';
 import { AgentAuth } from './agent-auth.js';
 import { HandoruStore } from './handoru/store.js';
 import { importCompatibility } from './handoru/onboarding.js';
-import { renderAgentGuide } from '../../relay/src/agent-guide.js';
+import { renderAgentGuide, renderManagedAgentGuide } from '../../relay/src/agent-guide.js';
 import { handoruRoutes } from './handoru/routes.js';
 import { assertCapabilities } from './handoru/capabilities.js';
-import { handoruManifest } from './handoru/manifest.js';
+import { handoruManifest, managedHandoruManifest } from './handoru/manifest.js';
 import { pneuMcp } from './mcp.js';
 import { hasPublicDemoContent, renderPublicDemoContent } from './public-demo-content.js';
 import { demoChatRouter } from './demo-chat.js';
@@ -101,6 +101,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     next();
   });
   app.get('/agents.md', (_req, res) => res.set('Cache-Control', 'no-cache').type('text/markdown').send(renderAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true', cfg.env.DEMO_OPEN_BUSINESS === 'true')));
+  app.get('/handle/agents.md', (_req, res) => res.set('Cache-Control', 'no-store').type('text/markdown').send(renderManagedAgentGuide(cfg.publicUrl, cfg.env.DEMO_PUBLIC_A2A === 'true', cfg.env.DEMO_CHAT_APPROVAL === 'true')));
   app.use('/demo-business', openDemoBusinessRouter({ store, policy, handoru, publicUrl: cfg.publicUrl, actor: currentBusinessIdentity,
     enabled: () => cfg.env.DEMO_OPEN_BUSINESS === 'true' && cfg.env.DEMO_CHAT_APPROVAL === 'true' && cfg.env.DEMO_PUBLIC_A2A === 'true' && cfg.env.HANDORU_FRESH !== 'true' && handoru.installation()?.id === 'pneu007' }));
   const scanWebsites = createHostedDiscovery({ fetchDocument: options.discoveryFetchDocument, now: () => now().getTime() });
@@ -129,6 +130,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.use(['/api/handle/v1','/api/handoru/v1'],handoruApi.router);
   app.use('/mcp',pneuMcp(auth,handoru));
   app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true',cfg.env.DEMO_OPEN_BUSINESS==='true')));
+  app.get('/.well-known/handle-managed.json',(_req,res)=>res.set('Cache-Control','no-store').json(managedHandoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true')));
   app.get(['/handle/onboarding','/handoru/onboarding'],(_req,res)=>res.sendFile(join(repoRoot,'docs/handoru-onboarding.html')));
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});

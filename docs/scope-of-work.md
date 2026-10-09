@@ -50,6 +50,8 @@ První den nevyžaduje ruční založení hostingového projektu nebo relay endp
 
 Úvodní instrukce mají být jednorázové zadání celého průchodu. Zahrnují povolení pouze omezeného zápisu jednorázové ownership challenge dané žádosti; nejsou souhlasem k libovolným legacy mutacím ani lidskou aktivací. Agent tento zápis provede s již schváleným legacy přístupem, nebo nabídne vrácený bezpečný ověřovací odkaz. Na téže stránce Handle člověk nejprve ověří web Pneu přes jeho samostatné legacy přihlášení a výslovné povolení tohoto zápisu; teprve potom zvlášť schválí agentí připojení. Samotný Handle účet neprokazuje vlastnictví webu. Dokud server hlásí chybějící ověření, konzole nezpřístupní schválení a agent neříká, že už stačí pouze souhlas. Člověk nemá psát další technické instrukce nebo kopírovat hesla/tokeny do chatu; bezpečné přihlášení a skutečná lidská rozhodnutí zůstávají potřebná.
 
+Plný auditovaný průchod používá explicitní managed bootstrap `/.well-known/handle-managed.json` a instrukce `/handle/agents.md`. Může koexistovat s odděleným připraveným veřejným `open_demo`, které používá existující demo pravidla a přeskočí nový audit i owner pairing. Připravené demo není důkazem nového auditu, nových pravidel, lidské aktivace ani clean-start onboardingu a nesmí tento výslovně požadovaný výsledek tiše nahradit. Volba managed vstupu nemění ochrany žádné operace ani nepřiděluje přístup k neveřejným datům.
+
 ### 1.2 Požadované důkazy
 
 `Fresh GrokBot + legacy + instrukce → registrace → lidské ověření → automatický relay → skutečný audit → návrh pravidel → lidské schválení → agentem publikovaná karta a odkaz.`

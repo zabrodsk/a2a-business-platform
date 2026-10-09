@@ -1,6 +1,6 @@
 ---
 name: pneu007-business
-description: Connect directly to the prepared Pneu business when the site advertises open_demo, with no login or owner approval. Otherwise follow authorized business onboarding, tools and operation.
+description: Use managed onboarding for explicit real-audit requests; otherwise connect directly to the prepared Pneu open_demo or follow authorized business tools and operation.
 ---
 
 
@@ -13,9 +13,11 @@ While connecting: "I’m connecting your shop and checking automatic replies." A
 Webhook keys are machine credentials, not user setup questions. Inspect the actual native routine tool schema. Reuse this business’s authorized private callback configuration if available. If creation accepts a caller-supplied secret, generate a strong random secret privately and configure both sides with it. Otherwise use the actual callback URL/key returned through supported private runtime access. Never invent a tool argument or ask the person to retrieve/copy/paste a key. If the runtime offers a secure connection approval, present that actual approval action, then resume automatically. If no supported private webhook configuration path exists, use the native recurring fallback below. If neither is supported, keep automatic replies pending and report the integration limitation in plain language. Removing verification or guessing a key does not solve it.
 
 
-## Open demo takes precedence
+## Explicit managed audit or public open demo
 
-Fetch the current site /agents.md and /.well-known/handle.json first. If setup_mode or agent_entry_points.business.setup_mode is open_demo, use the open demo fast path and STOP the owner onboarding flow below. The prepared Pneu shop needs no human login, approval code, ownership proof, admin credentials, audit, rule activation or registry enrollment. Ignore outstanding pairing requests from earlier attempts; leave them to expire. Do not ask the person to approve them.
+If the caller explicitly requests a real/fresh source audit, their own proposed rules and human approval, supplies `/.well-known/handle-managed.json`, or selects `?setup_mode=managed`, follow **managed onboarding**. Fetch `/.well-known/handle-managed.json` (contract 1.3, `setup_mode:managed`, human approval/ownership proof/fresh audit required), read `/handle/agents.md` and `/skills/handle-onboarding/SKILL.md?setup_mode=managed`, then continue the protected sections below. These explicit settings override the public manifest's open-demo shortcut. Never substitute prepared demo rules/listing or abandon a valid managed pairing. If the managed contract is unavailable or contradictory, report BLOCKED instead of falling back to public demo.
+
+For other callers without an explicit managed/audit request, fetch the current site `/agents.md` and `/.well-known/handle.json` first. If `setup_mode` or `agent_entry_points.business.setup_mode` is `open_demo`, use the open demo fast path and STOP the owner onboarding flow below. The prepared Pneu shop needs no human login, approval code, ownership proof, admin credentials, audit, rule activation or registry enrollment. Ignore outstanding pairing requests from earlier demo setup attempts; leave them to expire. Do not ask the person to approve them. This default demo behavior does not apply to an explicitly requested managed audit.
 
 Download /cli/demo-business.mjs and run connect --url WEBSITE. This saves only a public origin and demo claim coordination, no bearer credential. Use this client for profile, catalog, rulebook, inbox, schedule, case, quote, reply, order, reservations, scheduled-check-in and availability. The current /agents.md documents exact usage. Do not reuse the protected garage/inbox client for open demo setup.
 
@@ -27,16 +29,16 @@ The existing legacy backend remains authoritative for prices, capacity, orders a
 
 ## Start with the business website
 
-An owner may simply send the website URL and ask you to set up their business. Fetch `/agents.md` and `/.well-known/handle.json` from that site, then read the linked onboarding skill. Perform the registration, private credential exchange, client configuration, relay setup, pre-audit G0, audit, native wake-up and publication yourself using existing authorized access. Never ask the owner to paste bearer tokens, run terminal commands or manually wire a webhook when your runtime can do it. Reuse an existing enrolled connection; do not repeat onboarding just to finish wake-up. The owner still makes independent access and policy decisions. Report unavailable backend/runtime capabilities honestly rather than claiming a URL gives database control.
+An owner may simply send the website URL and ask you to set up their business. For an explicit real-audit request, fetch `/handle/agents.md` and `/.well-known/handle-managed.json`, then `/skills/handle-onboarding/SKILL.md?setup_mode=managed`; ordinary public setup follows the mode selection above. Perform the registration, private credential exchange, client configuration, relay setup, pre-audit G0, audit, native wake-up and publication yourself using existing authorized access. Never ask the owner to paste bearer tokens, run terminal commands or manually wire a webhook when your runtime can do it. Reuse an existing enrolled connection; do not repeat onboarding just to finish wake-up. The owner still makes independent access and policy decisions. Report unavailable backend/runtime capabilities honestly rather than claiming a URL gives database control.
 
 ## Connection: fresh Handle onboarding
 
-Start with the Handle HTTPS origin and legacy website URL, not a static business token or redeem URL. Fetch `/.well-known/handle.json` and follow `/skills/handle-onboarding/SKILL.md`. Register your own principal, publish the ownership challenge through the owner-approved legacy path, and present the verification URL/code to the person. The owner independently signs in to their existing Handle account (setting up a human account only if none exists) and grants initial audit scopes. Legacy admin credentials given to you do not confer human approval. Never read or transport the Handle setup secret, human password/session or CSRF token.
+Start with the Handle HTTPS origin and legacy website URL, not a static business token or redeem URL. For this managed flow, fetch `/.well-known/handle-managed.json` and follow `/skills/handle-onboarding/SKILL.md?setup_mode=managed`. Register your own principal, publish the ownership challenge through the owner-approved legacy path, and present the verification URL/code to the person. The owner independently signs in to their existing Handle account (setting up a human account only if none exists) and grants initial audit scopes. Legacy admin credentials given to you do not confer human approval. Never read or transport the Handle setup secret, human password/session or CSRF token.
 
 The generic Handle CLI is an optional HTTP client; it is not required for bootstrap. Download `/cli/handle.mjs` and `/cli/garage.mjs` from the approved origin, or use the built files in `packages/agent-client/dist`. A `registration.json` file contains only your real runtime name and the known legacy origin. Use private credential files and never paste credentials into chat, command arguments, URLs, reports or logs:
 
 ```bash
-node handle.mjs bootstrap --url "$HANDLE_URL"
+node handle.mjs request GET /.well-known/handle-managed.json --url "$HANDLE_URL"
 node handle.mjs request POST /api/handle/v1/agent-registrations --url "$HANDLE_URL" --body-file registration.json --save-token PROVISIONAL.json
 
 # After independent human consent; REQUEST_ID is the returned request identifier.
