@@ -159,3 +159,30 @@ test('credential redaction applies to capture metadata and proposed profile, not
     assert.throws(()=>t.audits.proposeRulebook(bot,s),{code:'UNREDACTED_EVIDENCE'});
   }finally{t.db.close();}
 });
+
+test('owner can revise payment policy without erasing history; new proposal must cite the latest answer',()=>{
+  const t=setup(); try {
+    const input=report(t);input.questions=[{id:'payment-policy',question:'Which payment provider is authorized?',critical:true,affected_parameters:['provider','network','asset'],citations:[]}];
+    const r=t.audits.createReport(bot,input);
+    const first=t.audits.answerQuestion(owner,{report_version:r.version,question_id:'payment-policy',answer:'Masumi on Preprod requires a separate live verification.',kind:'policy_decision',scope:'Fictional workshop checkout'});
+    const oldBytes=t.db.prepare('SELECT payload_json FROM audit_rulebook_versions WHERE version=?').get(first.version);
+    assert.throws(()=>t.audits.answerQuestion(bot,{report_version:r.version,question_id:'payment-policy',answer:'Skip owner policy',kind:'policy_decision',scope:'Checkout'}),{code:'FORBIDDEN'});
+    const updated=t.audits.answerQuestion(owner,{report_version:r.version,question_id:'payment-policy',answer:'For this hackathon use local_demo on local with synthetic lovelace; no blockchain transactions.',kind:'policy_decision',scope:'Fictional workshop checkout'});
+    const answers=t.audits.context(bot).answers;
+    assert.equal(answers.length,2);assert.equal(answers[0]!.version,updated.version);
+    assert.deepEqual(t.db.prepare('SELECT payload_json FROM audit_rulebook_versions WHERE version=?').get(first.version),oldBytes);
+    assert.equal(t.audits.getEvidence(bot,first.evidence.source_id).hash,first.evidence.hash);
+    const stale=submission(t,r.version);
+    for(const key of ['provider','network','asset'] as const)stale.proposal.evidence[key]=[cite(first.evidence)];
+    stale.source_authority[first.evidence.source_id]='policy_decision';
+    const stillBlocked=t.audits.proposeRulebook(bot,stale);
+    for(const key of ['provider','network','asset'] as const)assert.ok(stillBlocked.governance!.blocked_parameters.includes(key));
+    const current=submission(t,r.version);
+    for(const key of ['provider','network','asset'] as const)current.proposal.evidence[key]=[cite(updated.evidence)];
+    current.source_authority[updated.evidence.source_id]='policy_decision';
+    const next=t.audits.proposeRulebook(bot,current);
+    assert.deepEqual(next.governance!.blocked_parameters,[]);
+    assert.throws(()=>t.audits.activateRulebook(bot,{version:next.version,payload_hash:next.payload_hash}),{code:'FORBIDDEN'});
+    assert.equal(t.audits.rulebooks.list().some(v=>v.status==='active'),false,'Revising an answer or proposing rules never activates them');
+  }finally{t.db.close();}
+});

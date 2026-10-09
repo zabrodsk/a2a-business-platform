@@ -152,7 +152,19 @@ Native checkout uses the stored quote/mandate; it cannot enlarge limits or choos
 
 Accepted order, hold, observed funding, confirmed booking, result submission and seller payout are separate states. Claim “booked” only with the actual confirmed booking ID. Pending is not paid. Describe local_demo as simulation and Masumi Preprod as testnet; physical fulfilment is fictional.
 
-## Masumi payment jobs
+## Rulebook activation preflight
+
+Before presenting an activation link or saying “ready for approval”, reread the exact returned proposal and its linked audit report. Require empty `governance.blocked_parameters`, no unresolved critical findings and no unanswered critical questions for that proposal. If blocked, do not direct me to a disabled activation button or submit unchanged proposals repeatedly. Resolve a superseded Masumi finding by reading the latest recorded owner answer and current local payment configuration, submitting your own newly evidenced audit/report, then a new proposal/version/hash linked to that report. Preserve the old audit, proposal and evidence. While waiting, detect new owner answers or configuration changes and revise the affected audit/proposal; do not keep polling an obsolete blocked version indefinitely. Only present the exact new activation decision after this preflight passes; keep automatic continuation and independent human approval intact, without another chat instruction.
+
+## Current managed hackathon payment scope
+
+The owner authorizes local simulation only: provider `local_demo`, network `local`, synthetic asset `lovelace`, currency CZK and simulated deposit 500 CZK (`deposit_minor:50000`). No Stripe, real money, blockchain purchase, transaction fees or on-chain refunds are authorized. Do not require wallets, funding, Masumi configuration or a live Masumi smoke test for local-demo rule approval. This remains a managed real-audit workflow, not the prepared public open_demo.
+
+Read current payment configuration and the latest recorded owner answer with authorized tools. If an older critical audit finding/proposal required live Masumi, submit an updated audit/report and proposal citing the actual current configuration and new authorized policy, explaining supersession while preserving historical evidence/answers/versions/hashes. Do not blindly clear blocks, delete the earlier audit or self-activate rules. Continue through server-recorded answers and exact independent human approval without a new “continue” chat command. Contradictory configuration blocks affected commitments until resolved. Label every simulated result honestly; pending is not paid.
+
+## Masumi payment jobs (inactive for this run)
+
+The following legacy Masumi interface reference is outside the currently authorized local-simulation run. Do not invoke these jobs or treat their live readiness as a prerequisite for the managed audit/proposal.
 
 `payments` reports the selected provider, registered fixed SKUs, missing configuration and purchase readiness. `profile` includes the MIP-003 service base URL. Configuration alone does not prove a live payment.
 
