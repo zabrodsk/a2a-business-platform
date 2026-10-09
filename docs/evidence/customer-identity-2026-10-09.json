@@ -1,0 +1,174 @@
+{
+  "feature": "Handle shared customer identity across participating businesses",
+  "specification": "docs/scope-of-work.md §6.6, T43–T50",
+  "recorded_at": "2026-10-09T04:16:55.339940+00:00",
+  "scope": "Implemented and deployed; local/scripted HTTP, public HTTPS Chrome, and one actual Grok Bot customer runtime verified separately with synthetic test humans.",
+  "repository_checks": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "status": "PASS"
+    },
+    "build": {
+      "command": "npm run build (also run by npm test)",
+      "status": "PASS"
+    },
+    "tests": {
+      "command": "npm test",
+      "status": "PASS",
+      "total": 389,
+      "failed": 0
+    },
+    "lint": {
+      "status": "NOT_CONFIGURED",
+      "note": "No lint script or lint configuration in this repository; TypeScript, syntax, dependency audit and diff/HTML checks used."
+    }
+  },
+  "focused_security_checks": {
+    "command": "node --import tsx --test apps/legacy/test/customer-identity.test.ts apps/legacy/test/customer-business-access.test.ts apps/legacy/test/customer-identity-integration.test.ts",
+    "status": "PASS",
+    "tests": 24,
+    "independent_review": "Security and quality reviewers approved after scope-case, selected-permission and multi-tab CSRF fixes."
+  },
+  "acceptance": {
+    "T43": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    },
+    "T44": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    },
+    "T45": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    },
+    "T46": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    },
+    "T47": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    },
+    "T48": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    },
+    "T49": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    },
+    "T50": {
+      "automated": "PASS",
+      "test": "apps/legacy/test/customer-identity-integration.test.ts"
+    }
+  },
+  "browser": {
+    "status": "PASS",
+    "browser": "Google Chrome headless, actual local issuer + integration + native AgentPolicy",
+    "checked": [
+      "Signup and login with a separate Handle customer session",
+      "Human connection consent and communication-only scope selection",
+      "Approved fields only and safe rendering of untrusted names",
+      "Profile, logout and revocation with stable session CSRF across tabs",
+      "Exact mandate review and approval via issuer-only one-use ticket without new connection consent",
+      "Duplicate/invalid query identifiers rejected",
+      "Mobile layout at 390px without horizontal overflow"
+    ],
+    "visual_verdict": 96,
+    "harness_note": "Ephemeral local browser harnesses were executed; reproducible committed backend regressions are in the test files.",
+    "screenshot": "docs/evidence/customer-identity-portal-2026-10-09.png",
+    "deployed_https": {
+      "status": "PASS",
+      "evidence": "docs/evidence/customer-identity-browser-deployed-2026-10-09.json",
+      "screenshot": "docs/evidence/customer-identity-browser-deployed-2026-10-09.png"
+    }
+  },
+  "transaction": {
+    "status": "PASS",
+    "businesses": 2,
+    "separate_service_origins": true,
+    "human_logins": 1,
+    "personal_agent_connections": 1,
+    "business_customer_signup_or_login_steps": 0,
+    "a2a_offers": 2,
+    "booking_count": 1,
+    "payment_intent_count": 1,
+    "provider": "local_demo",
+    "network": "local",
+    "real_money": false,
+    "repeat_accept_checkout": "original order/booking/payment IDs preserved"
+  },
+  "deployment": {
+    "status": "PASS",
+    "customer_portal": "https://pneu007-production.up.railway.app/handle/customer",
+    "project_id": "64bc1351-eac4-4b62-872c-60cc3e42b7df",
+    "environment_id": "ff6f43ee-8c9c-4c09-831b-dae34d5d6dcf",
+    "deployment_method": "Railway CLI upload of tested workspace; no GitHub push",
+    "services": [
+      {
+        "name": "customer-identity-verify-a",
+        "id": "d77c81b5-078a-43cd-ba4c-9cb6796d07bf",
+        "url": "https://customer-identity-verify-a-production.up.railway.app",
+        "deployment_id": "8983d8b6-a630-40c2-906b-0c2e34c5d7bd",
+        "status": "SUCCESS",
+        "persistent_mounts": [
+          "/data"
+        ]
+      },
+      {
+        "name": "customer-identity-verify-b",
+        "id": "3a725f72-aaf6-4212-b6c2-5ada899df509",
+        "url": "https://customer-identity-verify-b-production.up.railway.app",
+        "deployment_id": "d547c657-978c-4966-8cc3-cc0726c716f5",
+        "status": "SUCCESS",
+        "persistent_mounts": [
+          "/data"
+        ]
+      },
+      {
+        "name": "pneu007",
+        "id": "21be6bf8-d223-487a-8613-6f8906f9cb30",
+        "url": "https://pneu007-production.up.railway.app",
+        "deployment_id": "e3526e09-114a-4dfe-a9be-fc7e700f8bbe",
+        "status": "SUCCESS",
+        "persistent_mounts": [
+          "/data"
+        ]
+      }
+    ],
+    "evidence": "docs/evidence/customer-identity-deployment-2026-10-09.json",
+    "hosting_restart_rounds": 2,
+    "production_database_backup": "PASS",
+    "original_production_record_counts_and_integrity_after_deploy": "PASS",
+    "two_business_http_checks": {
+      "two_origins_two_offers_without_site_signup": true,
+      "cross_audience_and_delegation_denied": true,
+      "scope_and_case_insensitive_a2a_denied": true,
+      "exact_central_human_mandate_and_local_demo_booking": true,
+      "unapproved_csrf_wrong_hash_and_foreign_mandate_denied": true,
+      "renewal_retains_customer_and_original_purchase_ids": true,
+      "per_business_revocation_with_other_business_preserved": true,
+      "global_revocation_and_existing_commitment_preserved": true,
+      "revocation_survives_second_hosting_restart": true,
+      "original_booking_and_intent_survive_both_restarts": true
+    }
+  },
+  "live_grokbot": {
+    "status": "PASS_CUSTOMER_SHARED_ACCESS_AND_REVOCATION",
+    "evidence": "docs/evidence/customer-identity-grok-customer-2026-10-09.json",
+    "human_consent": "SCRIPTED_TEST synthetic independent customer session",
+    "customer_connection_count": 1,
+    "business_case_count": 2,
+    "per_business_login_count": 0,
+    "revoked_resource_access_status": 401,
+    "revoked_delegation_status": 401,
+    "two_separate_grokbot_accounts": "NOT_RUN",
+    "live_grokbot_purchase": "NOT_RUN"
+  },
+  "oidc_conformance": {
+    "status": "NOT_CLAIMED",
+    "protocol": "handle-customer-v1 documented JSON flow"
+  },
+  "dependencies_added": []
+}

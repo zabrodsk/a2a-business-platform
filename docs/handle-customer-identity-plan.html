@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Handle — one customer account across businesses</title>
+  <style>
+    :root{color-scheme:light;font:16px/1.65 system-ui,sans-serif;color:#18382d;background:#f5f5ef}
+    body{max-width:1000px;margin:40px auto;padding:0 24px 60px}
+    h1,h2,h3{line-height:1.2}h1{font-size:clamp(2rem,5vw,3.3rem);max-width:780px}
+    h2{margin-top:2.5rem}a{color:#185d4a}code{overflow-wrap:anywhere}
+    .note{padding:16px 20px;background:white;border-left:4px solid #9b803f}
+    .flow{display:flex;flex-wrap:wrap;gap:12px;list-style:none;padding:0}
+    .flow li{flex:1 1 180px;padding:16px;background:#e4ece4;border-radius:8px}
+    table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #cbd5ca;padding:12px}
+    .table-wrap{overflow-x:auto}small{color:#53695e}
+  </style>
+</head>
+<body>
+  <p><small>Implemented and deployed 9 October 2026 · shared access verified with a real customer Grok Bot</small></p>
+  <h1>One customer account. Access to every participating business.</h1>
+  <p>The customer signs into Handle, authorizes their personal agent once, and asks it to find a service. Each participating business accepts that identity and creates its own customer record without another signup or password.</p>
+  <p class="note">This is an execution aid. <a href="scope-of-work.md">The canonical specification, version 2.3, §6.6 and T44–T51</a> owns the requirements. Shared customer access is implemented alongside the previous per-business claim. See <a href="auth.html">authentication and deployment configuration</a> and <a href="evidence/customer-identity-2026-10-09.json">verification evidence</a>. The <a href="https://pneu007-production.up.railway.app/handle/customer">customer portal is live</a>. Synthetic HTTP/browser checks and a real customer-runtime check have separate evidence; two separate Grok Bot accounts and live-runtime purchasing remain unproven.</p>
+
+  <h2>Customer experience</h2>
+  <ol class="flow">
+    <li><strong>Sign into Handle</strong><br>One human account and an explicit personal-agent connection.</li>
+    <li><strong>Ask for a service</strong><br>The agent discovers a participating business and requests limited access.</li>
+    <li><strong>Get an offer</strong><br>The business recognizes the customer without a local login.</li>
+    <li><strong>Approve the booking</strong><br>The existing human mandate and business rules control the commitment.</li>
+  </ol>
+  <p>Within the existing consent, visiting the second participating business introduces no new signup, password or mandatory repeat agent-linking ceremony. New permissions, additional profile sharing or an expired human session can still require a Handle decision. Booking approval remains separate from agent access.</p>
+
+  <h2>First-version scope</h2>
+  <ul>
+    <li>One persistent customer identity in the team-hosted Handle service, separate from owner membership and legacy accounts.</li>
+    <li>A human consent screen to link a personal agent, permit activities and choose which contact fields it may share.</li>
+    <li>A separate revocable grant for each participating business. The first version supports two isolated service origins trusting one configured Handle issuer.</li>
+    <li>Business-specific credentials lasting at most ten minutes, renewed within a valid delegation. Every protected operation checks current delegation and grant state.</li>
+    <li>Idempotent local customer creation, with a business-specific stable identifier and no new password. Existing account history requires a separate ownership proof.</li>
+    <li>Customer mandate approval through Handle, mapped to the correct local customer and case without a legacy login.</li>
+    <li>A minimal Handle access page listing the personal agent, business grants and shared fields, with per-business and whole-agent revocation.</li>
+  </ul>
+  <p>Excluded: unrelated websites, new CRM adapters, a second business vertical, a new payment provider, KYC, automatic email-based account merging, universal trust in agent providers, shared payment wallets and production identity-marketplace features. Reuse existing modules and dependencies; a new dependency requires an explicit user request.</p>
+
+  <h2>Baseline code and implementation boundaries</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Evidence</th><th>Current boundary</th><th>Planned change</th></tr></thead>
+    <tbody>
+      <tr><td><a href="../apps/legacy/src/agent-auth.ts">agent-auth.ts:67, 139, 226</a></td><td>Service-owned agent registration and a human claim requiring a local customer session.</td><td>Add a trusted Handle delegation path alongside the existing claim. Keep the customer subject separate from the acting agent.</td></tr>
+      <tr><td><a href="../apps/legacy/src/handoru/routes.ts">handoru/routes.ts:18, 39</a><br><a href="../apps/legacy/src/handoru/store.ts">handoru/store.ts</a></td><td>Handle human authentication is currently exposed as owner login and owner membership.</td><td>Add a customer role/session path and persistent customer delegations. Reuse session protection patterns, without granting owner membership or requiring the owner setup secret.</td></tr>
+      <tr><td><a href="../apps/legacy/src/auth.ts">auth.ts:49</a><br><a href="../apps/legacy/src/server.ts">server.ts:62, 436</a></td><td>Authenticated actors and existing human-only customer operations are tied to local customer IDs.</td><td>Resolve verified federated identities to local customers and provide a customer Handle approval path. Never convert a bot credential into a human session.</td></tr>
+      <tr><td><a href="../apps/legacy/src/system.ts">system.ts:100–109</a><br><a href="../apps/relay/src/auth.ts">relay/auth.ts:39</a></td><td>Unified token lookup feeds A2A; customer identity checks currently distinguish role from business-agent authorization.</td><td>Enforce the target business, resource audience, scopes and current revocation on customer requests at both the relay and tool boundary.</td></tr>
+      <tr><td><a href="../apps/legacy/src/agent-policy.ts">agent-policy.ts:5, 17, 65</a><br><a href="../packages/contracts/index.ts">contracts/index.ts</a></td><td>Cases, customer ownership and mandates already have domain checks.</td><td>Preserve those checks and bind every new customer grant and approval to its business/case. Access alone cannot authorize a booking.</td></tr>
+      <tr><td><a href="../apps/legacy/test/agent-auth.test.ts">agent-auth.test.ts:93–280</a><br><a href="../apps/legacy/test/system.test.ts">system.test.ts</a></td><td>Existing tests cover local claims, audience rejection, expiry, revocation and persistence.</td><td>Keep these regressions and add the two-business customer flow, cross-business denial and Handle approval tests.</td></tr>
+    </tbody>
+  </table></div>
+  <p><small>The table records the pre-implementation baseline; line references may shift. The new modules are <a href="../apps/legacy/src/customer-identity.ts">the customer issuer</a>, <a href="../apps/legacy/src/customer-business-access.ts">business access validation</a> and <a href="../apps/legacy/src/customer-identity-integration.ts">HTTP and mandate integration</a>. The customer portal is <code>/handle/customer</code> on a configured issuer.</small></p>
+
+  <h2>Trust and data contract</h2>
+  <p>Handle stores the persistent human customer subject, agent principal/connection, consent version and expiry, permitted activities and shared fields. Each business grant stores its target business and resource audience, scopes, consent reference and revocation state. Each business stores a unique mapping from trusted issuer plus business-specific subject to its local customer ID. Tokens identify the acting agent as well as the represented customer; a profile email is never the identity key.</p>
+  <p>A participating backend explicitly configures the trusted Handle issuer and its validation mechanism. Public registry entries and Agent Card metadata discover services; they cannot add trusted issuers. Validate issuer, audience, business, actor connection, expiry and granted scopes before creating a local record or reading data. Check live delegation/grant state on every protected operation and fail closed if that check is unavailable.</p>
+  <p>Human session cookies stay on Handle. Business APIs receive only their resource-specific agent credentials. The client must not send the Handle session or a business credential to another origin or follow a credential-bearing redirect. A central customer identity survives agent replacement; each replacement connection needs its own human consent.</p>
+  <p>Use established authentication and delegation contracts, with <a href="https://openid.net/specs/openid-connect-core-1_0.html">OpenID Connect</a> and <a href="https://www.rfc-editor.org/rfc/rfc8693.html">OAuth token exchange</a> as design references. Before implementation, verify current official documentation and choose the supported flow using the existing runtime and dependencies. Do not advertise OIDC conformance, token-exchange grants or metadata until implemented and tested.</p>
+
+  <h2>Implementation sequence</h2>
+  <ol>
+    <li><strong>Lock down the boundaries and regression baseline.</strong> Inspect current concurrent changes and existing authentication tests. Confirm the Handle issuer origin, two business resource origins and the exact human login/delegation protocol. Define validation schemas in <a href="../packages/contracts/index.ts">contracts</a>; add meaningful negative tests before changing authentication. Keep local per-business claim behavior covered.</li>
+    <li><strong>Add the shared customer account and agent consent.</strong> Extend the Handle persistence and HTTP boundary referenced above, or add narrowly scoped customer modules beside them. Separate customer account creation from the owner-only setup gate. Store a consent request bound to the human, connection, permitted actions and sharing; reject CSRF, replay and expired requests. Provide a small customer login/consent/access UI rather than a new chat interface.</li>
+    <li><strong>Issue and validate business access; create local records.</strong> Add a central business-grant/credential service and an integration beside <a href="../apps/legacy/src/agent-auth.ts">AgentAuth</a>. Register each trusted business resource explicitly. Create the local mapping transactionally under a unique constraint; retries and restarts return the same record. Do not match old accounts by email. Wire the same verified actor into <a href="../apps/legacy/src/system.ts">A2A</a> and <a href="../apps/legacy/src/server.ts">customer tools</a>.</li>
+    <li><strong>Carry human decisions and revocation through the business boundary.</strong> Let a customer Handle session approve the exact business/case mandate after verifying ownership and version; record the server-verified human decision for the existing policy checks. Add per-business and whole-connection revocation, persistent generation checks, and denied renewal after revocation. Keep accepted bookings and payment recovery under their original authorizations.</li>
+    <li><strong>Prove the two-business journey and update runtime instructions.</strong> Run two isolated instances of the existing business backend with separate origins and storage, one shared Handle identity service and synthetic records. The same agent obtains two offers without further signup/login; Pneu completes one authorized local-demo booking. Update <a href="../prompts/customer-runtime.md">the customer prompt</a>, <a href="../skills/handle-customer/SKILL.md">discovery skill</a> and <a href="auth.html">auth documentation</a> only when their advertised route actually works. Record automated and real GrokBot evidence separately.</li>
+  </ol>
+  <p>The existing Handle implementation shares a process with legacy and currently registers only its own installation. The central customer issuer must be shared by both demo instances rather than creating two unrelated “Handle accounts.” This is the main integration task; the second instance is an isolation fixture, not a new product.</p>
+
+  <h2>Acceptance and evidence</h2>
+  <p>The complete acceptance criteria remain in the canonical specification. The execution checklist maps to them:</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Criterion</th><th>Required evidence</th></tr></thead>
+    <tbody>
+      <tr><td>T44 · one login, two businesses</td><td>One Handle human login and agent consent; two distinct origins/grants and A2A cases; zero business signup/login steps; one authorized Pneu booking using local_demo.</td></tr>
+      <tr><td>T45 · trust and access boundary</td><td>Reject cross-business tokens, unknown issuer, wrong audience/connection, expired credentials, widened scopes, malicious discovery redirects and unavailable delegation checks on both API surfaces.</td></tr>
+      <tr><td>T46 · human consent</td><td>Reject agent-only approval, legacy admin cookies, another customer's session, CSRF, replay and expired requests; show that customer signup confers no owner authority.</td></tr>
+      <tr><td>T47 · customer mapping</td><td>Concurrent first access, retries and restart preserve one mapping per business. Changing email preserves identity. Matching another account's email reveals no history. Forged message identity cannot change the actor.</td></tr>
+      <tr><td>T48 · disclosure and isolation</td><td>Quote with minimal identity; booking with only approved contact fields. Deny cross-business history, cross-customer access and profile/scope expansion without consent.</td></tr>
+      <tr><td>T49 · revocation</td><td>Revoke A: next A operation and renewal fail, B works. Revoke the personal agent: both fail, including after restart. Existing booking/intent IDs survive without duplicated commitments.</td></tr>
+      <tr><td>T50 · booking authority</td><td>Identity-only access cannot book/pay. A's mandate fails at B. A revised limit needs a human Handle decision. Business rulebook and owner exception checks still apply.</td></tr>
+      <tr><td>T51 · renewal and compatibility</td><td>Access-token lifetime is at most ten minutes. Renewal needs a valid delegation but no local login. Persistence and existing local-claim/fresh-business-onboarding regression tests pass.</td></tr>
+    </tbody>
+  </table></div>
+  <p>T44–T51 pass the scripted two-business HTTP integration; issuer and adapter checks also pass. The full repository suite reports 389 passing tests, with typechecking and build passing. Chrome checks cover customer login, signup, consent, scope selection, profile/revocation and exact mandate approval through the real integration. The <a href="evidence/customer-identity-deployment-2026-10-09.json">deployed HTTP test</a> additionally preserves original booking/payment IDs and revoked access across two hosting restart rounds. The <a href="evidence/customer-identity-browser-deployed-2026-10-09.json">public HTTPS browser flow</a> and <a href="evidence/customer-identity-grok-customer-2026-10-09.json">real customer Grok Bot shared-access/revocation check</a> pass. Human approval was synthetic test authentication; two separate Grok Bot accounts and a live-runtime purchase remain <strong>NOT_RUN</strong>. Test service activation is never the main business's fresh audit and owner consent.</p>
+
+  <h2>Risks and mitigations</h2>
+  <ul>
+    <li><strong>Account takeover through email matching:</strong> use issuer/subject mappings and a separate ownership proof for existing records; never grant historical access by email.</li>
+    <li><strong>Cross-business token reuse:</strong> enforce business and audience in both relay and tools, use separate grants and credentials, and test distinct origins/storage.</li>
+    <li><strong>Owner/customer role confusion:</strong> separate customer signup/session permissions from owner setup and membership; deny agent tokens on human consent endpoints.</li>
+    <li><strong>Revocation lag or issuer outage:</strong> check active delegation on each protected operation and deny new work if unavailable. Recover already accepted operations under their stored authorization.</li>
+    <li><strong>Hidden repeated signup during mandate approval:</strong> include a real Handle human approval in the end-to-end flow; counting only token issuance is insufficient.</li>
+    <li><strong>Unbounded identity infrastructure work:</strong> one issuer, two instances of the existing backend, existing dependencies and local-demo payment only. Broader provider/CRM federation is excluded.</li>
+  </ul>
+
+  <h2>Verification before claiming implementation</h2>
+  <p>Run focused authentication, policy, persistence and two-business integration tests, followed by <code>npm run typecheck</code> and <code>npm test</code>. Run configured lint/static checks if present; the current root package has no lint script. Verify the live human consent and actual agent journey separately. Report PASS, FAIL, NOT_RUN or BLOCKED with evidence; do not infer deployment or live runtime support from the specification.</p>
+  <p>Completion means T44–T51 have evidence and the existing required onboarding, audit, publication, human approval and transaction checks still pass. This scoping change itself needs document/link/reference checks; it does not establish runtime acceptance.</p>
+</body>
+</html>
