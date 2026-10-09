@@ -1,7 +1,7 @@
 {
   "name": "Pneu 007 service agent",
   "organization": "Pneu 007 (fictional, hackathon demo)",
-  "description": "Agent of Pneu 007, a FICTIONAL tyre service in Holešovice, Prague 7, built for a hackathon. Sandbox only: no real services, no real payments. Send a request in plain text; the agent replies when it is your turn (task state INPUT_REQUIRED) and finishes with COMPLETED or REJECTED.",
+  "description": "Agent of Pneu 007, a FICTIONAL tyre service in Holešovice, Prague 7, built for a hackathon. The workshop and services are fictional. Masumi Preprod payments are test-network transactions; local_demo records are simulations. Payment confirmation requires provider evidence. Send a request in plain text; the agent replies when it is your turn (task state INPUT_REQUIRED) and finishes with COMPLETED or REJECTED.",
   "skill": {
     "id": "tyre-service-negotiation",
     "name": "Tyre service quote and booking",
@@ -25,7 +25,7 @@
     ],
     "phone": "+420 000 007 007",
     "phoneNote": "fiktivní nefunkční číslo",
-    "notice": "Pneu 007 is fictional. No services are provided at any address; payments are sandbox only."
+    "notice": "Pneu 007 is a fictional business. No services are provided at this address. Each payment identifies its own provider and network."
   },
   "location": {
     "latitude": 50.105,

@@ -1,6 +1,7 @@
 import { BOOKING_CONFIG } from '../../../packages/demo-garage/index.js';
 import { MAPPING_VERSION, PAYMENT_SKUS } from '../../../packages/payments/index.js';
 import { loadProfile } from '../../relay/src/card.js';
+import { renderCancellationPolicy } from './cancellation-policy.js';
 
 export interface PublicDemoContext {
   publicUrl: string;
@@ -70,12 +71,13 @@ export function renderPublicDemoContent(file: string, template: string, context:
     fill('[PLACEHOLDER: doplní provozovatel]', 'Doplatek evidujeme u objednávky. V této ukázce se samostatně neinkasuje; po záloze jej vidíte v souhrnu rezervace.');
     fill('[PLACEHOLDER: demo mapování]', `${BOOKING_CONFIG.deposit_minor / 100} Kč → ${ada(deposit.asset_quantity)} ${unit} (${MAPPING_VERSION}; syntetické mapování, nikoli směnný kurz)`);
     fill('[PLACEHOLDER]', context.networkFee ? `výchozí maximální rozpočet ${ada(context.networkFee)} ${unit}; konkrétní limit schválíte před platbou, skutečný poplatek určí síť` : 'maximální rozpočet zobrazíme před potvrzením platby');
-    fill('[PLACEHOLDER: podmínky storna]', 'Zrušení testovací rezervace řeší obsluha podle čísla objednávky. Nejistou platbu nejprve ověří; samotný timeout není potvrzené storno ani důvod platit znovu.');
-    fill('[PLACEHOLDER: podmínky refundu a lhůty]', 'Vrácení testovacích prostředků z Masumi vyžaduje ověření původní platby a potvrzený výsledek providera. Žádost neznamená dokončené vrácení; doba zpracování závisí na platebním poskytovateli. Případnou kompenzaci platby Link / kartou řeší majitel individuálně.');
     html = html.replace('Přepočet Kč → test-ADA:', 'Demo mapování pro Masumi:')
       .replace('· síťový poplatek:', '· rozpočet síťového poplatku:')
-      .replace('Platby probíhají přes Masumi na síti Cardano Preprod v test-ADA. Nejde o platbu v korunách.', 'Masumi používá Cardano Preprod a test-ADA; lokální režim je výslovná simulace. Volitelný Link / karta používá samostatnou testovací platbu v Kč. Dostupné metody uvidíte před autorizací.')
-      .replace('Obsah doplní provozovatel. Prototyp nevymýšlí právní pravidla. Stavy refundu (požadován, probíhá, ověřen) uvidíte na stránce objednávky.', 'Jde o pravidla testovacího provozu bez skutečné autoservisní služby. Stav Masumi refundu uvidíte u objednávky; automatický refund přes Link / kartu tato ukázka nenabízí.');
+      .replace('Platby probíhají přes Masumi na síti Cardano Preprod v test-ADA. Nejde o platbu v korunách.', `${context.simulation ? 'Toto prostředí používá lokální simulaci plateb.' : 'Masumi zpracovává blockchainové transakce na Cardano Preprod v test-ADA.'} Volitelný Link / karta používá samostatnou testovací platbu v Kč. Dostupné metody uvidíte před autorizací.`)
+      .replace('Shrnutí pravidel pro objednání u fiktivního pneuservisu Pneu 007. Právní znění storna a refundu doplní provozovatel.', 'Podmínky objednání, změny termínu a vrácení platby za služby Pneu 007.')
+      .replace('Storno a refund</a>', 'Storno a vrácení platby</a>')
+      .replace('<strong>Testnet platba, bez skutečné autoservisní služby.</strong>', `<strong>${context.simulation ? 'Lokální platební režim.' : 'Masumi · Cardano Preprod.'}</strong>`)
+      .replace(/<section id="storno"[^>]*>[\s\S]*?<\/section>/, renderCancellationPolicy());
   }
   return html;
 }

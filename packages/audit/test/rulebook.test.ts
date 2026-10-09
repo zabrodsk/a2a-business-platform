@@ -84,6 +84,23 @@ test('no supplier mutation, extras, asset or service invention; public source ac
     assert.throws(()=>t.manager.assertService('tyre_purchase'),{code:'SERVICE_FORBIDDEN'});
   }finally{t.cleanup();}
 });
+
+test('audit exports distinguish retained templates from the published cancellation policy without altering approved permissions',()=>{
+  const t=setup();try {
+    const approved=t.manager.propose(bot,proposal(t.registry));t.manager.activate(owner,approved.version);
+    const before=t.manager.getActive();
+    const content=readFileSync(resolve(import.meta.dirname,'../../../apps/legacy/public/cancellation-policy.json'),'utf8');
+    writeFileSync(resolve(t.dir,'apps/legacy/public/cancellation-policy.json'),content);
+    const template=t.registry.get('web-terms');
+    assert.equal(template.representation,'template_archive');assert.match(template.content_note!,/not the currently rendered/);
+    const policy=t.registry.get('web-cancellation-policy');
+    assert.equal(policy.representation,'published_document');assert.equal(policy.version,JSON.parse(content).version);
+    assert.equal(policy.url,'/cancellation-policy.json');assert.equal(policy.content,content);assert.equal(policy.current,true);
+    assert.doesNotMatch(policy.content,/auto_discount_bps|owner_approval_limit_bps|hard_discount_limit_bps/);
+    assert.deepEqual(t.manager.getActive().params,before.params);assert.deepEqual(t.manager.getActive().source_manifest,before.source_manifest);
+    assert.ok(t.registry.list({id:'customer',role:'customer_agent'}).every(source=>source.visibility==='public'));
+  }finally{t.cleanup();}
+});
 test('public page citations are valid profile evidence, manifest contains only actual cited sources',()=>{
   const t=setup();try {
     const p=proposal(t.registry);p.profile.citations.push(cite(t.registry,'web-home'));
