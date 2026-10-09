@@ -4,7 +4,7 @@ import { LegacyStore, validateServiceSpec, type Quote, type Order, type Slot } f
 import { RulebookManager, type RulebookVersion } from '../../../packages/audit/index.js';
 
 export interface AgentCase {
-  id: string; customer_id: string; customer_agent_id: string; business_actor_id: string;
+  id: string; customer_id: string; customer_agent_id: string; business_actor_id: string; business_id?: string;
   service_spec: ServiceSpec; relay_task_id: string | null;
   status: 'open' | 'quoted' | 'awaiting_owner' | 'recommended' | 'accepted';
   quote_id: string | null; quote_version: number | null; quote_hash: string | null;
@@ -67,7 +67,7 @@ const mandateFields = ['case_id','mode','service_spec','max_total_minor','max_de
 export class AgentPolicy {
   readonly now: () => Date;
   readonly businessActorId: string;
-  constructor(readonly store: LegacyStore, readonly rulebooks: RulebookManager, options: {now?:()=>Date;businessActorId?:string} = {}) {
+  constructor(readonly store: LegacyStore, readonly rulebooks: RulebookManager, readonly options: {now?:()=>Date;businessActorId?:string;businessId?:()=>string;authorizeBusiness?:(actor:Actor)=>void;onEvent?:(entity:string,id:string,kind:string,actor:Actor,data:unknown)=>void} = {}) {
     this.now = options.now ?? (()=>new Date()); this.businessActorId = options.businessActorId ?? 'garage-demo';
     store.db.exec(`CREATE TABLE IF NOT EXISTS agent_cases (
       id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES customers(id), customer_agent_id TEXT NOT NULL,
@@ -85,8 +85,9 @@ export class AgentPolicy {
   private time() { return this.now().toISOString(); }
   private event(entity: string, id: string, kind: string, actor: Actor, data: unknown) {
     this.store.db.prepare('INSERT INTO audit_events(entity_type,entity_id,event_type,actor_id,data_json,created_at) VALUES(?,?,?,?,?,?)').run(entity,id,kind,actor.id,JSON.stringify(data),this.time());
+    this.options.onEvent?.(entity,id,kind,actor,data);
   }
-  private business(actor: Actor) { role(actor,'business_agent'); if (actor.id !== this.businessActorId) fail('FORBIDDEN','Business agent is not assigned to this business',403); }
+  private business(actor: Actor) { role(actor,'business_agent'); if(this.options.authorizeBusiness&&actor.connection_id){this.options.authorizeBusiness(actor);return;} if (actor.id !== this.businessActorId) fail('FORBIDDEN','Business agent is not assigned to this business',403); }
   private customer(actor: Actor): string {
     if (!actor.customer_id || !this.store.db.prepare('SELECT id FROM customers WHERE id=?').get(actor.customer_id)) fail('FORBIDDEN','Actor has no recognized customer assignment',403);
     return actor.customer_id;
@@ -100,15 +101,15 @@ export class AgentPolicy {
   }
   private checkAccess(actor: Actor, c: AgentCase) {
     if (actor.role === 'owner') return;
-    if (actor.role === 'business_agent') { this.business(actor); if (c.business_actor_id === actor.id) return; }
-    if (['customer_agent','human_customer'].includes(actor.role) && this.customer(actor) === c.customer_id && (actor.role === 'human_customer' || actor.id === c.customer_agent_id)) return;
+    if (actor.role === 'business_agent') { this.business(actor); if(actor.business_id?(c.business_id??'pneu007')===actor.business_id:c.business_actor_id===actor.id)return; }
+    if (['customer_agent','human_customer'].includes(actor.role) && (c.business_id??'pneu007')===(this.options.businessId?.()??'pneu007') && this.customer(actor) === c.customer_id && (actor.role === 'human_customer' || actor.id === c.customer_agent_id)) return;
     fail('FORBIDDEN','Case belongs to another principal',403);
   }
   createCase(actor: Actor, input: {service_spec:ServiceSpec;relay_task_id?:string}): AgentCase {
     role(actor,'customer_agent');object(input,['service_spec','relay_task_id'],['service_spec']);
     const customer_id=this.customer(actor), service_spec=spec(input.service_spec);
     if (input.relay_task_id !== undefined) scalar(input.relay_task_id,'relay_task_id');
-    const now=this.time();const c:AgentCase={id:newId('case'),customer_id,customer_agent_id:actor.id,business_actor_id:this.businessActorId,service_spec,relay_task_id:input.relay_task_id??null,status:'open',quote_id:null,quote_version:null,quote_hash:null,rulebook_version:null,mandate_id:null,order_id:null,accepted_by:null,accepted_at:null,created_at:now,updated_at:now};
+    const now=this.time();const c:AgentCase={id:newId('case'),customer_id,customer_agent_id:actor.id,business_actor_id:this.businessActorId,business_id:this.options.businessId?.()??'pneu007',service_spec,relay_task_id:input.relay_task_id??null,status:'open',quote_id:null,quote_version:null,quote_hash:null,rulebook_version:null,mandate_id:null,order_id:null,accepted_by:null,accepted_at:null,created_at:now,updated_at:now};
     this.store.db.transaction(()=>{
       this.store.db.prepare('INSERT INTO agent_cases(id,customer_id,customer_agent_id,business_actor_id,status,payload_json,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)').run(c.id,customer_id,actor.id,this.businessActorId,c.status,JSON.stringify(c),now,now);
       this.event('agent_case',c.id,'created',actor,{service_spec,relay_task_id:c.relay_task_id});
@@ -119,7 +120,7 @@ export class AgentPolicy {
     if (actor.role === 'business_agent') this.business(actor);
     if (!['owner','business_agent','customer_agent','human_customer'].includes(actor.role)) fail('FORBIDDEN','Cases are restricted',403);
     const rows=this.store.db.prepare('SELECT payload_json FROM agent_cases ORDER BY created_at DESC').all() as {payload_json:string}[];
-    return rows.map(r=>JSON.parse(r.payload_json) as AgentCase).filter(c=>actor.role==='owner'||(actor.role==='business_agent'?c.business_actor_id===actor.id:c.customer_id===this.customer(actor)&&(actor.role==='human_customer'||c.customer_agent_id===actor.id)));
+    return rows.map(r=>JSON.parse(r.payload_json) as AgentCase).filter(c=>actor.role==='owner'||(actor.role==='business_agent'?(actor.business_id?(c.business_id??'pneu007')===actor.business_id:c.business_actor_id===actor.id):(c.business_id??'pneu007')===(this.options.businessId?.()??'pneu007')&&c.customer_id===this.customer(actor)&&(actor.role==='human_customer'||c.customer_agent_id===actor.id)));
   }
   private mandateById(id: string): AgentMandate {
     scalar(id,'mandate_id');const row=this.store.db.prepare('SELECT payload_json FROM agent_mandates WHERE id=?').get(id) as {payload_json:string}|undefined;
@@ -147,7 +148,7 @@ export class AgentPolicy {
   }
   listMandates(actor: Actor): AgentMandate[] {
     if (!['owner','customer_agent','human_customer'].includes(actor.role)) fail('FORBIDDEN','Mandates are customer-private',403);
-    return (this.store.db.prepare('SELECT payload_json FROM agent_mandates ORDER BY created_at DESC').all() as {payload_json:string}[]).map(r=>JSON.parse(r.payload_json) as AgentMandate).filter(m=>actor.role==='owner'||m.customer_id===this.customer(actor)&&(actor.role==='human_customer'||m.proposed_by===actor.id));
+    return (this.store.db.prepare('SELECT payload_json FROM agent_mandates ORDER BY created_at DESC').all() as {payload_json:string}[]).map(r=>JSON.parse(r.payload_json) as AgentMandate).filter(m=>actor.role==='owner'||(this.caseById(m.case_id).business_id??'pneu007')===(this.options.businessId?.()??'pneu007')&&m.customer_id===this.customer(actor)&&(actor.role==='human_customer'||m.proposed_by===actor.id));
   }
   approveMandate(actor: Actor, id: string): AgentMandate {
     role(actor,'human_customer');const m=this.getMandate(actor,id);if (m.expires_at<=this.time()) fail('MANDATE_EXPIRED','Cannot approve an expired mandate',409);
@@ -209,6 +210,7 @@ export class AgentPolicy {
     this.rulebooks.assertDiscount(q.price.discount_bps,{ownerApproved:q.requires_owner_approval&&!!q.approved_by});
   }
   private verifyMandate(c: AgentCase, q: Quote, m: AgentMandate, active: RulebookVersion) {
+    this.rulebooks.assertParameters(['allowed_services','allow_extras','currency','deposit_minor','network','asset']);
     if (m.status!=='approved'||!m.approved_by||!m.approved_at) fail('MANDATE_APPROVAL_REQUIRED','Customer must approve mandate in human UI',403);
     if (m.case_id!==c.id||m.customer_id!==c.customer_id||m.proposed_by!==c.customer_agent_id||!sameSpec(m.service_spec,c.service_spec)||m.allow_extras||m.currency!==q.price.currency) fail('MANDATE_BINDING_MISMATCH','Mandate differs from accepted case or service',403);
     if (m.expires_at<=this.time()) fail('MANDATE_EXPIRED','Customer mandate expired',409);
