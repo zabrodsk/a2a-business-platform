@@ -609,7 +609,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     res.status(syntax ? 400 : 500).json({ error: { code: syntax ? 'INVALID_JSON' : 'INTERNAL_ERROR', message: syntax ? 'Neplatný JSON požadavku.' : 'Operaci se nepodařilo dokončit.' } });
   });
   const pages: Record<string, string> = { '/': 'index.html', '/kalkulator': 'kalkulator.html', '/kontakt': 'kontakt.html', '/podminky': 'podminky.html',
-    '/index.html': 'index.html', '/kalkulator.html': 'kalkulator.html', '/kontakt.html': 'kontakt.html', '/podminky.html': 'podminky.html', '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'console.html', '/handle': 'handoru.html', '/handoru': 'handoru.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
+    '/index.html': 'index.html', '/kalkulator.html': 'kalkulator.html', '/kontakt.html': 'kontakt.html', '/podminky.html': 'podminky.html', '/pro-agenty': 'pro-agenty.html', '/objednavka': 'objednavka.html', '/admin': 'admin.html', '/admin.html': 'admin.html', '/console.html': 'admin.html', '/handle': 'handoru.html', '/handoru': 'handoru.html', '/agent/claim': 'console.html', '/agent/access': 'console.html', '/agent/mandates': 'console.html' };
   for (const extension of ['css','js']) app.get(`/handle.${extension}`,(_req,res)=>res.sendFile(join(publicDirectory,`handoru.${extension}`)));
   for (const [route, file] of Object.entries(pages)) app.get(route, (_req, res) => {
     if (route.startsWith('/agent/')) res.set('Cache-Control', 'no-store').set('Referrer-Policy', 'no-referrer');
