@@ -21,6 +21,7 @@ COPY packages/payments packages/payments
 COPY fixtures fixtures
 COPY prompts prompts
 COPY skills skills
+COPY docs/handoru-onboarding.html docs/handoru-onboarding.html
 RUN npm run typecheck && npm run build
 ENV NODE_ENV=production LEGACY_HOST=0.0.0.0 LEGACY_DB_PATH=/data/legacy.db LEGACY_RELAY_DB_PATH=/data/legacy-relay.db
 CMD ["node", "--import", "tsx", "apps/legacy/src/system.ts"]

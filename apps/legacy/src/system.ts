@@ -4,12 +4,15 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { AgentCard } from '@a2a-js/sdk';
+import type { Request, Response, NextFunction } from 'express';
 import { buildAgentCard } from '../../relay/src/card.js';
 import type { Config, Identity } from '../../relay/src/config.js';
 import { requireRole } from '../../relay/src/auth.js';
 import { createRelay } from '../../relay/src/server.js';
-import { BusinessError } from '../../../packages/contracts/index.js';
-import { loadLegacyConfig, type LegacyConfig } from './config.js';
+import { RulebookManager, SourceRegistry } from '../../../packages/audit/index.js';
+import { BusinessError, type Actor } from '../../../packages/contracts/index.js';
+import type { AcceptedReply, RelayOperation } from '../../relay/src/config.js';
+import { loadLegacyConfig, repoRoot, type LegacyConfig } from './config.js';
 import { createLegacy } from './server.js';
 
 const run = promisify(execFile);
@@ -24,7 +27,7 @@ export function unifiedRelayConfig(cfg: LegacyConfig): Config {
         ...(actor.customer_id ? { customer_id: actor.customer_id } : {}) });
     }
   }
-  if ([...tokens.values()].filter(actor => actor.role === 'business').length !== 1) {
+  if (cfg.env.HANDORU_FRESH !== 'true' && [...tokens.values()].filter(actor => actor.role === 'business').length !== 1) {
     throw new Error('Unified system requires exactly one business-agent identity');
   }
   const adminToken = cfg.env.LEGACY_RELAY_ADMIN_TOKEN;
@@ -49,6 +52,7 @@ export function unifiedRelayConfig(cfg: LegacyConfig): Config {
     authResourceMetadataUrl: `${cfg.publicUrl}/.well-known/oauth-protected-resource`,
     a2aEndpointUrl: `${cfg.publicUrl}/a2a/jsonrpc`, dbPath, tokens,
     businessProfile: 'pneu007',
+    ...(cfg.env.HANDORU_FRESH==='true'?{}:{businessId:'pneu007'}),
     businessWebhook: webhookUrl && webhookKey ? { url: webhookUrl, key: webhookKey } : undefined,
     pushHostAllowlist: (cfg.env.LEGACY_PUSH_HOST_ALLOWLIST ?? 'api2.cursor.sh')
       .split(',').map(host => host.trim().toLowerCase()).filter(Boolean),
@@ -80,6 +84,8 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
       agentCard: () => AgentCard.toJSON(buildAgentCard(relayConfig)),
       validateRelayTask: async (actor, taskId) => {
         if (actor.role !== 'customer_agent' || typeof taskId !== 'string') return false;
+        const managedRow=legacy?.store.db.prepare('SELECT id FROM handoru_relays WHERE business_id=?').get(legacy.handoru.installation()?.id??'') as {id:string}|undefined;
+        if(managedRow){const resource=await ensureManaged(managedRow.id);const found=resource.db.sqlite.prepare('SELECT owner FROM work_items WHERE task_id=? LIMIT 1').get(taskId) as {owner:string}|undefined;if(found)return found.owner===actor.id;}
         const row = relay.db.sqlite.prepare('SELECT owner FROM work_items WHERE task_id = ? LIMIT 1')
           .get(taskId) as { owner: string } | undefined;
         return row?.owner === actor.id;
@@ -89,12 +95,64 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     await relay.close();
     throw error;
   }
-  relayConfig.lookupAgentToken = token => {
-    const actor = legacy.agentAuth.identify(token);
-    if (!actor) return undefined;
-    return { id: actor.id, role: actor.role === 'customer_agent' ? 'customer' : 'unclaimed',
-      ...(actor.customer_id ? { customer_id: actor.customer_id } : {}) };
+  const resolveIdentity=(token:string,businessId?:string):Identity|undefined=>{
+    if(!businessId&&token===cfg.env.LEGACY_RELAY_ADMIN_TOKEN)return {id:'relay-admin',role:'admin'};
+    const dynamic=legacy.handoru.identify(token)??legacy.agentAuth.identify(token);
+    const actor=dynamic??cfg.auth.agentTokens.get(token);
+    if(!actor||actor.role==='business_agent'&&!dynamic)return;
+    if(actor.role==='business_agent'&&businessId&&actor.business_id!==businessId)return;
+    if(!['business_agent','customer_agent','unclaimed_agent'].includes(actor.role))return;
+    return {...actor,role:actor.role==='business_agent'?'business':actor.role==='customer_agent'?'customer':'unclaimed',...(businessId?{business_id:businessId}:{})};
   };
+  const checkIdentity=(identity:Identity,operation?:RelayOperation)=>{
+    if(identity.role==='admin')return operation===undefined;
+    if(identity.role==='customer')return operation==='a2a'||operation===undefined;
+    if(identity.role!=='business')return false;
+    const scope=operation==='inbox.reply'?'inbox.reply':'inbox.claim';
+    try{legacy.handoru.authorize({...identity,role:'business_agent'},identity.business_id!,scope,true);return true;}catch{return false;}
+  };
+  relayConfig.lookupToken=token=>resolveIdentity(token);
+  relayConfig.checkIdentity=checkIdentity;
+  const active=(businessId:string)=>{try{const b=legacy.handoru.business(businessId);if(!b.active_connection_id)return false;new RulebookManager(legacy.store.db,new SourceRegistry(legacy.registry.rootDir,legacy.registry.webSources,legacy.registry.includeFixtures),{businessId:b.id,genericEvidence:b.id!=='pneu007'}).getActive();return legacy.handoru.connection(b.active_connection_id).state==='active';}catch{return false;}};
+  relayConfig.isActive=()=>cfg.env.HANDORU_FRESH!=='true'&&active('pneu007');
+  if(cfg.env.HANDORU_FRESH==='true')legacy.app.use(['/a2a/jsonrpc','/bot'],(_req,res)=>res.status(404).json({error:'MANAGED_RELAY_REQUIRED',bootstrap:'/.well-known/handle.json'}));
+  const authorityHooks=(businessId:string):Pick<Config,'acceptReply'|'pendingReplies'|'markReplyDelivered'>=>({
+    acceptReply:(record,identity)=>{
+      if(!checkIdentity(identity,'inbox.reply')||record.business_id!==businessId)throw new BusinessError('STALE_EXECUTION','Reply authority revoked.',409);
+      return legacy.store.db.transaction(()=>{
+        const old=legacy.store.db.prepare('SELECT business_id,record_json FROM handoru_reply_outbox WHERE work_item_id=?').get(record.work_item_id) as {business_id:string;record_json:string}|undefined;
+        if(old){if(old.business_id!==businessId)throw new BusinessError('FORBIDDEN','Reply belongs to another business.',403);return JSON.parse(old.record_json) as AcceptedReply;}
+        legacy.store.db.prepare('INSERT INTO handoru_reply_outbox VALUES(?,?,?,0)').run(record.work_item_id,businessId,JSON.stringify(record));return record;
+      }).immediate();
+    },
+    pendingReplies:()=> (legacy.store.db.prepare('SELECT record_json FROM handoru_reply_outbox WHERE business_id=? AND delivered=0').all(businessId) as {record_json:string}[]).map(r=>JSON.parse(r.record_json) as AcceptedReply),
+    markReplyDelivered:workItemId=>{legacy.store.db.prepare('UPDATE handoru_reply_outbox SET delivered=1 WHERE work_item_id=? AND business_id=?').run(workItemId,businessId);},
+  });
+  if(relayConfig.businessId){
+    Object.assign(relayConfig,authorityHooks(relayConfig.businessId));
+    const compatibilityToken=cfg.env.LEGACY_BUSINESS_AGENT_TOKEN;
+    const compatibilityIdentity=compatibilityToken?resolveIdentity(compatibilityToken):undefined;
+    if(compatibilityIdentity?.connection_id==='compatibility-pneu007')relay.doorbell.migrateCompatibilityWebhook(compatibilityIdentity);
+  }
+  const managed=new Map<string,Promise<ReturnType<typeof createRelay>>>();
+  const ensureManaged=(relayId:string)=>{
+    let pending=managed.get(relayId);if(pending)return pending;
+    const resource=legacy.store.db.prepare('SELECT id,business_id,endpoint FROM handoru_relays WHERE id=?').get(relayId) as {id:string;business_id:string;endpoint:string}|undefined;
+    if(!resource)throw new BusinessError('RELAY_NOT_FOUND','Unknown relay.',404);
+    pending=(async()=>{
+      const dbPath=resolve(dirname(cfg.dbPath),`${resource.id}.db`);await migrateRelayDatabase(dbPath);
+      const resourceConfig:Config={...relayConfig,dbPath,publicUrl:resource.endpoint.replace(/\/a2a$/,''),a2aPath:'/a2a',a2aEndpointUrl:resource.endpoint,businessId:resource.business_id,tokens:new Map(),lookupToken:token=>resolveIdentity(token,resource.business_id),checkIdentity,isActive:()=>active(resource.business_id),
+        ...authorityHooks(resource.business_id),
+      };
+      return createRelay(resourceConfig);
+    })();managed.set(relayId,pending);pending.catch(()=>managed.delete(relayId));return pending;
+  };
+  legacy.app.use('/relay/:relayId',async(req,res,next)=>{
+    try{const instance=await ensureManaged(String(req.params.relayId));instance.app(req,res,next);}catch(error){next(error);}
+  });
+  // Cases remain in the native authority; transport ownership is verified per isolated resource.
+  // Initial compatibility relay retains its own stable task store.
+
 
   // Authenticate before the policy gate, so unpublished operation does not reveal private policy.
   legacy.app.use(relayConfig.a2aPath, requireRole(relayConfig, 'customer'), (_req, res, next) => {
@@ -112,6 +170,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     res.status(404).json({ error: 'ENROLLMENT_DISABLED', message: 'Use the shared legacy agent credentials for this unified demo.' });
   });
   legacy.app.use(relay.app);
+  legacy.app.use((error:unknown,_req:Request,res:Response,next:NextFunction)=>{if(res.headersSent)return next(error);if(error instanceof BusinessError)return void res.status(error.status).json({error:{code:error.code,message:error.message}});res.status(error instanceof SyntaxError?400:500).json({error:{code:error instanceof SyntaxError?'INVALID_JSON':'INTERNAL_ERROR'}});});
 
   let closed = false;
   return {
@@ -119,6 +178,7 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     close: async () => {
       if (closed) return;
       closed = true;
+      await Promise.allSettled([...managed.values()].map(async p=>(await p).close()));
       await relay.close();
       await legacy.close();
     },

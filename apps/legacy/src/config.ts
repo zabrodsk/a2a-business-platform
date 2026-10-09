@@ -17,17 +17,28 @@ export interface LegacyConfig {
 }
 export function loadLegacyConfig(env: NodeJS.ProcessEnv = process.env): LegacyConfig {
   const configured = { ...env };
+  // Keep existing deployments and stored credentials valid under the new product name.
+  for (const suffix of ['FRESH', 'OWNER_SETUP_SECRET', 'RELAY_PUBLIC_URL']) {
+    if (env[`HANDLE_${suffix}`] !== undefined) configured[`HANDORU_${suffix}`] = env[`HANDLE_${suffix}`];
+  }
   const accessPath = resolve(repoRoot, 'data/legacy-access.json');
   const development = configured.NODE_ENV !== 'production';
   let saved: Record<string, string> = {};
   if (development) {
     if (existsSync(accessPath)) saved = JSON.parse(readFileSync(accessPath, 'utf8')) as Record<string, string>;
-    const names = ['LEGACY_OWNER_PASSWORD', 'LEGACY_STAFF_PASSWORD', 'LEGACY_CUSTOMER_A_PASSWORD', 'LEGACY_CUSTOMER_B_PASSWORD', 'LEGACY_BUSINESS_AGENT_TOKEN', 'LEGACY_CUSTOMER_AGENT_A_TOKEN', 'LEGACY_CUSTOMER_AGENT_B_TOKEN', 'LEGACY_RELAY_ADMIN_TOKEN', 'LEGACY_OWNER_AGENT_TOKEN'];
+    const names = [ 'LEGACY_OWNER_PASSWORD', 'LEGACY_STAFF_PASSWORD', 'LEGACY_CUSTOMER_A_PASSWORD', 'LEGACY_CUSTOMER_B_PASSWORD', 'LEGACY_BUSINESS_AGENT_TOKEN', 'LEGACY_CUSTOMER_AGENT_A_TOKEN', 'LEGACY_CUSTOMER_AGENT_B_TOKEN', 'LEGACY_RELAY_ADMIN_TOKEN', 'LEGACY_OWNER_AGENT_TOKEN'];
     let changed = false;
     for (const name of names) if (!configured[name] && !saved[name]) { saved[name] = randomBytes(24).toString('base64url'); changed = true; }
     if (changed) { mkdirSync(dirname(accessPath), { recursive: true }); writeFileSync(accessPath, JSON.stringify(saved, null, 2) + '\n', { mode: 0o600 }); }
     chmodSync(accessPath, 0o600);
-    for (const [key, value] of Object.entries(saved)) configured[key] ??= value;
+    for (const [key, value] of Object.entries(saved)) if(key!=='HANDORU_OWNER_SETUP_SECRET')configured[key] ??= value;
+    const handoruAccessPath=resolve(repoRoot,'data/handoru-access.json');
+    if(!configured.HANDORU_OWNER_SETUP_SECRET){
+      let ownerAccess:Record<string,string>={};
+      if(existsSync(handoruAccessPath))ownerAccess=JSON.parse(readFileSync(handoruAccessPath,'utf8'));
+      if(!ownerAccess.HANDORU_OWNER_SETUP_SECRET){ownerAccess.HANDORU_OWNER_SETUP_SECRET=randomBytes(32).toString('base64url');mkdirSync(dirname(handoruAccessPath),{recursive:true});writeFileSync(handoruAccessPath,JSON.stringify(ownerAccess,null,2)+'\n',{mode:0o600});}
+      chmodSync(handoruAccessPath,0o600);configured.HANDORU_OWNER_SETUP_SECRET=ownerAccess.HANDORU_OWNER_SETUP_SECRET;
+    }
   }
   const required = (key: string) => {
     const value = configured[key];
@@ -39,11 +50,11 @@ export function loadLegacyConfig(env: NodeJS.ProcessEnv = process.env): LegacyCo
   const publicUrl = (configured.LEGACY_PUBLIC_URL ?? `http://127.0.0.1:${port}`).replace(/\/$/, '');
   const publicOrigin = new URL(publicUrl).origin;
   const tokens = new Map<string, Actor>([
-    [required('LEGACY_BUSINESS_AGENT_TOKEN'), { id: 'garage-demo', role: 'business_agent' }],
+    ...(configured.HANDORU_FRESH === 'true' ? [] : [[required('LEGACY_BUSINESS_AGENT_TOKEN'), { id: 'garage-demo', role: 'business_agent' }] as [string, Actor]]),
     [required('LEGACY_CUSTOMER_AGENT_A_TOKEN'), { id: 'customer-agent-a', role: 'customer_agent', customer_id: 'customer-001' }],
     [required('LEGACY_CUSTOMER_AGENT_B_TOKEN'), { id: 'customer-agent-b', role: 'customer_agent', customer_id: 'customer-002' }],
   ]);
-  if (tokens.size !== 3) throw new Error('Agent credentials must be distinct');
+  if (tokens.size !== (configured.HANDORU_FRESH === 'true' ? 2 : 3)) throw new Error('Agent credentials must be distinct');
   if (configured.LEGACY_OWNER_AGENT_TOKEN) {
     if (tokens.has(configured.LEGACY_OWNER_AGENT_TOKEN)) throw new Error('Internal owner token must be distinct');
     tokens.set(configured.LEGACY_OWNER_AGENT_TOKEN, { id: 'owner-internal-agent', role: 'owner_agent' });

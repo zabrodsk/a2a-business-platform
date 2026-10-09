@@ -1,11 +1,11 @@
 import { api, list, escapeHTML as esc, date } from './api.js';
 const main = document.querySelector('main');
-const handoru = location.pathname.startsWith('/handoru');
+const handoru = location.pathname.startsWith('/handle') || location.pathname.startsWith('/handoru');
 const agentClaim = location.pathname === '/agent/claim';
 const agentAccess = location.pathname === '/agent/access';
 const agentMandates = location.pathname === '/agent/mandates';
 const customerPage = agentClaim || agentAccess || agentMandates;
-if (customerPage) document.querySelectorAll('footer a[href="/admin"], footer a[href="/handoru"]').forEach(link => link.remove());
+if (customerPage) document.querySelectorAll('footer a[href="/admin"], footer a[href="/handle"], footer a[href="/handoru"]').forEach(link => link.remove());
 const mandateId = new URLSearchParams(location.search).get('mandate_id');
 const claimAttempt = new URLSearchParams(location.search).get('claim_attempt_token');
 let actor, selected = handoru ? 'sources' : 'overview';
@@ -131,7 +131,7 @@ async function render() {
   if (agentMandates) return renderCustomerMandate();
   if (agentClaim || agentAccess) return renderAgentAccess();
   const tabs = handoru ? handoruTabs : adminTabs;
-  main.innerHTML = `<p class="eyebrow">${handoru ? 'Handoru' : 'Pneu 007 · provoz'}</p><h1>${handoru ? 'Audit a provoz agenta' : 'Administrace'}</h1><nav class="tabs" aria-label="Pracovní pohledy">${Object.entries(tabs).map(([key,label]) => `<button data-tab="${key}" aria-current="${selected === key}">${label}</button>`).join('')}</nav><section id="content" aria-live="polite"><p role="status">Načítání…</p></section>`;
+  main.innerHTML = `<p class="eyebrow">${handoru ? 'Handle' : 'Pneu 007 · provoz'}</p><h1>${handoru ? 'Audit a provoz agenta' : 'Administrace'}</h1><nav class="tabs" aria-label="Pracovní pohledy">${Object.entries(tabs).map(([key,label]) => `<button data-tab="${key}" aria-current="${selected === key}">${label}</button>`).join('')}</nav><section id="content" aria-live="polite"><p role="status">Načítání…</p></section>`;
   const content = document.getElementById('content');
   try {
     if (selected === 'profile') { const profile = await api('/api/agent/profile'); content.innerHTML = `<article class="card"><h2>Veřejné rozhraní</h2><p>Publikovaný profil a schopnosti firmy. Kompatibilitu doloží až ověřená komunikace skutečných botů.</p>${json(profile)}</article>`; return; }

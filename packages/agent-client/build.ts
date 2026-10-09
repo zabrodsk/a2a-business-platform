@@ -5,6 +5,8 @@ for (const [entry, out] of [
   ['src/a2a-cli.ts', 'dist/a2a.mjs'],
   ['src/customer-cli.ts', 'dist/customer.mjs'],
   ['src/inbox-cli.ts', 'dist/inbox.mjs'],
+  ['src/handoru-cli.ts', 'dist/handoru.mjs'],
+  ['src/handoru-cli.ts', 'dist/handle.mjs'],
   ['src/garage-cli.ts', 'dist/garage.mjs'],
   ['src/registry-cli.ts', 'dist/registry.mjs'],
   ['src/discover-sites-cli.ts', 'dist/discover-sites.mjs'],
