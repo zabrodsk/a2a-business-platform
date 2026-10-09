@@ -740,7 +740,8 @@ test('Stripe Link checkout is human-approved, owner-bound and fulfilled only by 
   let creates = 0;
   const stripeFetch: typeof fetch = async (url, options) => {
     assert.equal(new URL(String(url)).origin, 'https://api.stripe.com');
-    if (String(url).endsWith('/account')) return Response.json({ object: 'account', id: stripeEnv.STRIPE_ACCOUNT_ID });
+    assert.equal(new Headers(options?.headers).get('Stripe-Account'), stripeEnv.STRIPE_ACCOUNT_ID);
+    if (String(url).endsWith('/checkout/sessions?limit=1')) return Response.json({ object: 'list', url: '/v1/checkout/sessions', data: [], has_more: false });
     if (options?.method === 'POST') {
       creates++;
       const body = new URLSearchParams(String(options.body));

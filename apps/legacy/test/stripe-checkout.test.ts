@@ -25,6 +25,7 @@ class MockStripe {
   readonly requests: string[] = [];
   account = env.STRIPE_ACCOUNT_ID;
   accountStatus = 200;
+  preflightResponse: unknown = { object: 'list', url: '/v1/checkout/sessions', data: [] };
   loseResponse = false;
   failIntentRead = false;
   onCreate?: (session: NativeSession) => void;
@@ -35,8 +36,11 @@ class MockStripe {
     this.requests.push(`${options?.method ?? 'GET'} ${url}`);
     assert.equal(new URL(url).origin, 'https://api.stripe.com');
     assert.equal(new Headers(options?.headers).get('Stripe-Version'), '2026-09-30.endive');
+    const merchant = new Headers(options?.headers).get('Stripe-Account');
+    assert.ok(merchant, 'Every Stripe operation must name its authenticated merchant');
     assert.equal(options?.redirect, 'error');
-    if (url.endsWith('/account')) return Response.json({ object: 'account', id: this.account }, { status: this.accountStatus });
+    if (merchant !== this.account) return Response.json({ error: { code: 'account_invalid' } }, { status: 403 });
+    if (url.endsWith('/checkout/sessions?limit=1')) return Response.json(this.preflightResponse, { status: this.accountStatus });
     if (url.includes('/payment_intents/')) {
       const id = decodeURIComponent(url.split('/payment_intents/')[1]!.split('/')[0]!);
       assert.notEqual(options?.method, 'POST', 'Checkout-owned PaymentIntents must never be directly canceled');
@@ -160,11 +164,12 @@ test('official unclaimed sandbox restricted keys work without the unavailable ac
   assert.equal(f.workflow.status().ready, true);
   assert.equal((await start(f)).state, 'open');
   assert.equal(f.remote.requests.some(request => request.endsWith('/account')), false);
+  assert.equal(f.remote.requests.some(request => request.endsWith('/checkout/sessions?limit=1')), false);
 });
 
 test('ordinary test keys must belong to the configured account before a session can be created', async t => {
   const f = fixture(t); f.remote.account = 'acct_wrongAccount';
-  await assert.rejects(start(f), { code: 'STRIPE_ACCOUNT_MISMATCH' });
+  await assert.rejects(start(f), { code: 'STRIPE_API_REJECTED' });
   assert.equal(f.remote.creates.length, 0); assert.equal(records(f, 'payments'), 0);
   assert.equal(f.store.getStripeCheckoutForOrder(f.order.id), undefined);
   assert.equal(records(f, 'booking_holds'), 0);
@@ -178,6 +183,26 @@ test('account verification failure leaves no prepared checkout or slot hold and 
   f.remote.accountStatus = 200;
   assert.equal((await start(f)).state, 'open');
   assert.equal(records(f, 'booking_holds'), 1); assert.equal(f.remote.creates.length, 1);
+});
+
+test('merchant-scoped checkout read authorization needs no Account permission and malformed evidence reserves nothing', async t => {
+  const f = fixture(t);
+  const checkout = await start(f);
+  assert.equal(checkout.stripe_account_id, env.STRIPE_ACCOUNT_ID);
+  assert.equal(f.remote.requests[0], 'GET https://api.stripe.com/v1/checkout/sessions?limit=1');
+  assert.equal(f.remote.requests.some(request => request.endsWith('/account')), false);
+  const malformed = [
+    { object: 'account', id: env.STRIPE_ACCOUNT_ID },
+    { object: 'list', data: [], url: '/v1/customers' },
+    { object: 'list', data: {}, url: '/v1/checkout/sessions' },
+  ];
+  for (const [index, response] of malformed.entries()) await t.test(`malformed list ${index}`, async nested => {
+    const invalid = fixture(nested);
+    invalid.remote.preflightResponse = response;
+    await assert.rejects(start(invalid), { code: 'STRIPE_ACCOUNT_MISMATCH' });
+    assert.equal(invalid.store.getStripeCheckoutForOrder(invalid.order.id), undefined);
+    assert.equal(records(invalid, 'booking_holds'), 0); assert.equal(invalid.remote.creates.length, 0);
+  });
 });
 
 test('lost create responses recover across restart with the original parameters and idempotency key', async t => {
