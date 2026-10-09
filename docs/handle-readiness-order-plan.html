@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Handle readiness order fix</title>
+<main><h1>Prevent the operation grant / webhook readiness wait</h1>
+<p>The agent must use its existing audit credential to complete the private rulebook probe after independent rule activation. Human operation permissions follow that probe; webhook registration follows the permissions.</p>
+<ol><li>Exercise the actual HTTP approval, probe and webhook gates in a regression test.</li>
+<li>Publish the required order and probe prerequisites in the managed manifest and capabilities response.</li>
+<li>Align served skills, copyable prompts and canonical acceptance criteria. Request one human decision at a time and continue automatically between decisions.</li>
+<li>Run the regression, type checking, build and relevant service tests; review the isolated diff.</li></ol>
+<p>Preserve existing credentials, records, both probe phases and independent human approval. No new dependencies or automatic approvals.</p></main></html>

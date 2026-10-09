@@ -7,7 +7,7 @@ import { RulebookManager, SourceRegistry } from '../../../../packages/audit/inde
 import { HandoruAudits } from './audits.js';
 import { HandoruStore, AUDIT_SCOPES, ALL_SCOPES, hash, secret, id, fail, text, type Owner, type HumanSession, type Onboarding } from './store.js';
 import { provisionRelay, authorizeOperation } from './onboarding.js';
-import { assertCapabilities } from './capabilities.js';
+import { assertCapabilities, OPERATION_SETUP } from './capabilities.js';
 import { prepareHandover, commitHandover } from './handover.js';
 import { agentEntryPoints } from '../../../relay/src/agent-guide.js';
 
@@ -130,7 +130,7 @@ export function handoruRoutes(h:HandoruStore,rulebooks:RulebookManager,policy:Ag
   });
   r.get(`${b}/capabilities`,(req,res)=>{
     const a=connection(req,'audit.read'),onboarding=h.db.prepare('SELECT value FROM handoru_meta WHERE key=?').get(`onboarding_probe:${a.connection_id}`) as {value:string}|undefined;
-    res.json({business_id:a.business_id,http:{supported:true,enforcement:'native_backend',capability_ids:['pneu.http','relay.polling','website.agent_card']},mcp:{endpoint:`${h.publicUrl}/mcp`,protocol_version:'2025-06-18',transport:'streamable_http_stateless',server_implemented:true,runtime_verified:false},onboarding_readiness:onboarding?JSON.parse(onboarding.value):null,readiness:h.connection(a.connection_id!).ready_json?JSON.parse(h.connection(a.connection_id!).ready_json!):null,external_admin_enforcement:false});
+    res.json({business_id:a.business_id,http:{supported:true,enforcement:'native_backend',capability_ids:['pneu.http','relay.polling','website.agent_card']},mcp:{endpoint:`${h.publicUrl}/mcp`,protocol_version:'2025-06-18',transport:'streamable_http_stateless',server_implemented:true,runtime_verified:false},operation_setup:OPERATION_SETUP,onboarding_readiness:onboarding?JSON.parse(onboarding.value):null,readiness:h.connection(a.connection_id!).ready_json?JSON.parse(h.connection(a.connection_id!).ready_json!):null,external_admin_enforcement:false});
   });
   r.post(`${b}/audit-evidence`,(req,res)=>{const a=connection(req,'audit.propose');res.status(201).json({evidence:audits(a.business_id!).archiveEvidence(a,req.body)});});
   r.get(`${b}/audit-evidence/:sourceId`,(req,res)=>{const a=connection(req,'audit.read');res.json({evidence:audits(a.business_id!).getEvidence(a,param(req,'sourceId'))});});
