@@ -635,6 +635,12 @@ Kritická fakta bez nativního version/ETag se před operací znovu přečtou/p�
 
 Lidská Handle session, aktivace, consent a zákaznický mandát jsou nezávislé autentizované záznamy; legacy admin účet předaný botovi je nevytváří. Credentials a payment master keys nepatří do reportu, karty, promptu, repozitáře ani logů. Owner recovery/refund práva nepřejdou na bota výměnou runtime. Owner-only reset nesmí zničit nejistou platbu/zápis ani obnovit revoked credentials; po externím finančním kroku se neobnovuje slepě starý DB snapshot.
 
+### 10.3 Volitelná lidská platba přes Link by Stripe v testovacím režimu
+
+Na výslovný požadavek uživatele z 9. října 2026 přidáváme tlačítko Link by Stripe do výběru platební metody checkoutu pro člověka, s existujícím testovacím účtem Stripe produktu Handle. Člověk před přesměrováním vidí konkrétní objednávku, částku zálohy, měnu CZK a označení testu a sám platbu potvrdí ve Stripe Checkout; agent za něj nepoužívá platební údaje ani nepotvrzuje souhlas. Tato cesta používá nativní testovací CZK evidenci, ne mapping na ADA, a nenahrazuje agentí Masumi Preprod workflow, mandáty ani jeho důkazy. Produkční klíče, live platby a skutečné peníze jsou mimo tento rozsah. Objednávka má jediného trvale přiřazeného platebního providera; retry, restart, timeout ani souběh Stripe/Masumi nesmějí vytvořit druhé inkaso. Nejasný výsledek se nejprve dohledá u původního providera.
+
+Stripe je autoritou platebního stavu. Backend ověří podpis webhooku nebo načte stav serverovým autentizovaným Stripe API a před označením zálohy za zaplacenou zkontroluje testovací režim, správný merchant účet, vazbu Checkout Session/platby na objednávku, částku, měnu a skutečný platební stav. Návratová URL, klientské tvrzení ani vytvořená session nejsou důkazem úhrady. Opakované události nesmějí zapsat zálohu podruhé. Zaplacení ve Stripe testu není bankovní payout ani skutečný příjem Kč; zapnutí tlačítka nedokládá dokončený Link test. Důkaz konkrétní metody Link, session/platby, času a pozorovaného výsledku se vykazuje samostatně bez tajemství.
+
 ## 11. Rozdělení práce mezi tři lidi
 
 ### Člověk A: business, audit a chování agentů
@@ -812,10 +818,13 @@ Nejdříve ověřit aktuální stav a migraci, oddělit business/agent identity 
 | T40 | Důkaz, autorita a aktuálnost | U závěru lze otevřít neměnný redigovaný výňatek/capture s URL/system/screen/locator/časem/metodou. Hash kontroluje uložené bytes, ne externí pravdu. Majitel posoudí autoritu; chybějící policy neodvodí historie; kritický fakt bez nativní verze se znovu přečte. |
 | T41 | Admin vs lidská role a řízený Pneu runtime | Legacy admin cookies neschválí Handle owner vazbu/rulebook; audit je pozorovací a readOnlyHint nepovolí riziko. Owner-created/approved per-agent servisní účet přes Pneu MCP i stejné HTTP používá shodné backend pravidla/mandát/idempotenci, bez approval nástrojů a broad admin. Skutečný MCP/GrokBot test je oddělen od HTTP fallbacku a asistovaných externích zápisů. |
 | T42 | Externí revokace a nejistý browser zápis při předání | Handle revoke nechá externí session testovatelně živou, dokud se skutečně nezruší/rotuje nebo neodřízne kontrolovanou cestou. Při neověřené revokaci či timeoutu po kliknutí zůstává handover/retry pending; B nejprve dohledá výsledek a nevytvoří druhý zápis/charge. |
+| T43 | Volitelný lidský Link by Stripe test checkout | Člověk potvrdí zobrazenou objednávku/zálohu v CZK přes Link v testovacím Stripe Checkout. Podpisem ověřený webhook nebo autentizované serverové načtení doloží správný testovací účet, session/payment ID, objednávku, částku, měnu, paid stav a skutečně použitý Link. Zrušení, pouhý návrat na success URL, neplatný podpis, cizí účet nebo nesouhlas částky/měny úhradu nepotvrdí. Replay/restart/souběh zachová jednu zálohu a původního providera; druhý Stripe/Masumi charge téže objednávky se odmítne. Testovací ledger je oddělený od ADA mapy i bankovního payoutu a Masumi/agentí mandáty zůstávají zachované. Bez dokončeného externího testu uvést NOT_RUN/BLOCKED. |
 
 Základní demo musí projít T01 a T03–T16, T19–T25 a cílový onboarding/předání T26–T42. T02 dokládá, že audit není předem napsaný, a má být součástí důkazů. T17 a T18 ověřují rozšířený scénář souběhu a interní agendy. Případné odložení živého předvedení tohoto scénáře uvést výslovně. Backendové kontroly izolace a kolizí nejsou volitelné. Testy označovat PASS, FAIL, NOT_RUN nebo BLOCKED s odkazem na důkaz, ne pouze zaškrtnutím v dokumentaci.
 
 Je-li některý test neprovedený nebo neprojde, uvést to v `limitations.md`. Nepoužívat nahrané video jako náhradu pravdivého popisu stavu aktuálního buildu.
+
+T43 ověřuje samostatnou volitelnou lidskou platební cestu podle §10.3; její výsledek nenahrazuje T14 ani důkaz agentí Masumi Preprod transakce.
 
 U každého externího výsledku zaznamenat skutečný runtime/účet bez tajemství, metodu přístupu/verzi API či MCP a protokolu, report/evidence/rulebook hash, čas a návazná ID. Skriptovaní klienti a lokální providery jsou důkaz backendu; nejsou důkazem živého GrokBota, jiného konkrétního produktu ani on-chain transakce. Bez přístupu k účtům, prostředí nebo funds uvést NOT_RUN/BLOCKED a konkrétní závislost.
 
