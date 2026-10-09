@@ -70,29 +70,59 @@ export function handoruRoutes(h:HandoruStore,rulebooks:RulebookManager,policy:Ag
   r.post(`${b}/connections/:connectionId/credentials/rotate`,(req,res)=>res.json(h.rotate(bearer(req),param(req,'businessId'),param(req,'connectionId'))));
   r.post(`${b}/relay`,(req,res)=>{const a=connection(req,'relay.provision');res.status(201).json(provisionRelay(h,a,a.business_id!,text(req.header('idempotency-key'),'Idempotency-Key'),env.HANDORU_RELAY_PUBLIC_URL??h.publicUrl));});
   r.get(`${b}/relay`,(req,res)=>{connection(req,'relay.provision');res.json(h.db.prepare('SELECT id,business_id,endpoint,inbox,probe_passed FROM handoru_relays WHERE business_id=?').get(param(req,'businessId'))??null);});
+  type Probe = {nonce:string;created_at:number;phase?:'onboarding'|'rulebook'};
+  const pendingProbe=(connectionId:string):Probe|null=>{
+    const row=h.db.prepare('SELECT value FROM handoru_meta WHERE key=?').get(`probe:${connectionId}`) as {value:string}|undefined;
+    return row?JSON.parse(row.value):null;
+  };
+  const probePhase=(probe:Probe)=>probe.phase??'rulebook';
   r.post(`${b}/relay/probe`,(req,res)=>{
-    const a=connection(req,'relay.provision'),nonce=secret();
-    const result=h.db.prepare('UPDATE handoru_relays SET probe_nonce=?,probe_connection=?,probe_at=?,probe_passed=0 WHERE business_id=?').run(hash(nonce),a.connection_id!,h.time(),a.business_id!);
-    if(!result.changes)fail('RELAY_REQUIRED','Provision relay first.',409);
-    h.db.prepare('INSERT INTO handoru_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(`probe:${a.connection_id}`,JSON.stringify({nonce,created_at:h.time()}));
-    res.status(201).json({state:'pending',probe_task_id:id('probe'),inbox_url:`${h.publicUrl}/api/handoru/v1${b.replace(':businessId',a.business_id!)}/relay/probe/inbox`,expires_in:300});
+    const a=connection(req,'relay.provision'),nonce=secret(),phase=req.body?.phase??'rulebook';
+    if(!['onboarding','rulebook'].includes(phase))fail('INVALID_PROBE_PHASE','Use onboarding or rulebook.');
+    h.db.transaction(()=>{
+      if(!h.db.prepare('SELECT 1 FROM handoru_relays WHERE business_id=?').get(a.business_id!))fail('RELAY_REQUIRED','Provision relay first.',409);
+      // The private G0 challenge must not change an active runtime's policy readiness.
+      if(phase==='rulebook')h.db.prepare('UPDATE handoru_relays SET probe_nonce=?,probe_connection=?,probe_at=?,probe_passed=0 WHERE business_id=?').run(hash(nonce),a.connection_id!,h.time(),a.business_id!);
+      h.db.prepare('INSERT INTO handoru_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(`probe:${a.connection_id}`,JSON.stringify({nonce,created_at:h.time(),phase}));
+    }).immediate();
+    res.status(201).json({state:'pending',phase,probe_task_id:id('probe'),inbox_url:`${h.publicUrl}/api/handle/v1${b.replace(':businessId',a.business_id!)}/relay/probe/inbox`,expires_in:300});
   });
   r.get(`${b}/relay/probe/inbox`,(req,res)=>{
-    const a=connection(req,'relay.provision'),row=h.db.prepare('SELECT value FROM handoru_meta WHERE key=?').get(`probe:${a.connection_id}`) as {value:string}|undefined;
-    const probe=row?JSON.parse(row.value):null;if(!probe||probe.created_at+300_000<h.time())fail('PROBE_EXPIRED','Start a new probe.',409);
-    res.json({items:[{kind:'isolated_non_business_probe',nonce:probe.nonce,instructions:'Return nonce, exact active rulebook hash, and your actual polling/routine method. Scripted capability is not proof of a specific runtime.'}]});
+    const a=connection(req,'relay.provision'),probe=pendingProbe(a.connection_id!);
+    if(!probe||probe.created_at+300_000<=h.time())fail('PROBE_EXPIRED','Start a new probe.',409);
+    const phase=probePhase(probe);
+    if(req.query.phase!==undefined&&req.query.phase!==phase)fail('PROBE_INVALID','Probe phase does not match the pending challenge.',409);
+    res.json({phase,items:[{kind:'isolated_non_business_probe',phase,nonce:probe.nonce,instructions:phase==='onboarding'?'Return nonce and your actual polling/routine method. This pre-audit check grants no business operation authority. Scripted capability is not proof of a specific runtime.':'Return nonce, exact active rulebook hash, and your actual polling/routine method. Scripted capability is not proof of a specific runtime.'}]});
   });
   r.post(`${b}/relay/probe/answer`,(req,res)=>{
-    const a=connection(req,'relay.provision'),relay=h.db.prepare('SELECT * FROM handoru_relays WHERE business_id=?').get(a.business_id!) as {probe_nonce:string;probe_connection:string;probe_at:number}|undefined;
-    if(!relay||relay.probe_connection!==a.connection_id||relay.probe_at+300_000<h.time()||hash(text(req.body?.nonce,'nonce'))!==relay.probe_nonce)fail('PROBE_INVALID','Invalid or expired probe.',409);
-    if(req.body?.rulebook_hash!==activeHash(a.business_id!))fail('RULEBOOK_HASH_MISMATCH','Acknowledge the current active rulebook.',409);
-    if(!['polling','routine','wake_up'].includes(req.body?.method))fail('CAPABILITY_REQUIRED','Describe actual supported polling/routine/wake-up.');
-    const readiness={probe_passed:true,rulebook_hash:req.body.rulebook_hash,method:req.body.method,evidence:text(req.body?.evidence,'capability evidence',4000),verified_at:h.now().toISOString(),runtime_claim:'client_reported; verify actual product separately'};
-    h.db.prepare('UPDATE handoru_connections SET ready_json=? WHERE id=?').run(JSON.stringify(readiness),a.connection_id!);
-    h.db.prepare('UPDATE handoru_relays SET probe_passed=1,probe_nonce=NULL WHERE business_id=?').run(a.business_id!);
-    h.db.prepare('DELETE FROM handoru_meta WHERE key=?').run(`probe:${a.connection_id}`);res.json(readiness);
+    const a=connection(req,'relay.provision');
+    const readiness=h.db.transaction(()=>{
+      const probe=pendingProbe(a.connection_id!);
+      if(!probe||probe.created_at+300_000<=h.time()||hash(text(req.body?.nonce,'nonce'))!==hash(probe.nonce))fail('PROBE_INVALID','Invalid or expired probe.',409);
+      const phase=probePhase(probe);
+      if(req.body?.phase!==undefined&&req.body.phase!==phase)fail('PROBE_INVALID','Probe phase does not match the pending challenge.',409);
+      if(phase==='rulebook'){
+        const relay=h.db.prepare('SELECT * FROM handoru_relays WHERE business_id=?').get(a.business_id!) as {probe_nonce:string;probe_connection:string;probe_at:number}|undefined;
+        if(!relay||relay.probe_connection!==a.connection_id||relay.probe_at+300_000<=h.time()||hash(probe.nonce)!==relay.probe_nonce)fail('PROBE_INVALID','Invalid or expired probe.',409);
+        if(req.body?.rulebook_hash!==activeHash(a.business_id!))fail('RULEBOOK_HASH_MISMATCH','Acknowledge the current active rulebook.',409);
+      }
+      if(!['polling','routine','wake_up'].includes(req.body?.method))fail('CAPABILITY_REQUIRED','Describe actual supported polling/routine/wake-up.');
+      const readiness={probe_passed:true,phase,...(phase==='onboarding'?{operation_ready:false}:{rulebook_hash:req.body.rulebook_hash}),method:req.body.method,evidence:text(req.body?.evidence,'capability evidence',4000),verified_at:h.now().toISOString(),runtime_claim:'client_reported; verify actual product separately'};
+      if(phase==='onboarding'){
+        h.db.prepare('INSERT INTO handoru_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(`onboarding_probe:${a.connection_id}`,JSON.stringify(readiness));
+      }else{
+        h.db.prepare('UPDATE handoru_connections SET ready_json=? WHERE id=?').run(JSON.stringify(readiness),a.connection_id!);
+        h.db.prepare('UPDATE handoru_relays SET probe_passed=1,probe_nonce=NULL WHERE business_id=?').run(a.business_id!);
+      }
+      h.db.prepare('DELETE FROM handoru_meta WHERE key=?').run(`probe:${a.connection_id}`);
+      return readiness;
+    }).immediate();
+    res.json(readiness);
   });
-  r.get(`${b}/capabilities`,(req,res)=>{const a=connection(req,'audit.read');res.json({business_id:a.business_id,http:{supported:true,enforcement:'native_backend',capability_ids:['pneu.http','relay.polling','website.agent_card']},mcp:{endpoint:`${h.publicUrl}/mcp`,protocol_version:'2025-06-18',transport:'streamable_http_stateless',server_implemented:true,runtime_verified:false},readiness:h.connection(a.connection_id!).ready_json?JSON.parse(h.connection(a.connection_id!).ready_json!):null,external_admin_enforcement:false});});
+  r.get(`${b}/capabilities`,(req,res)=>{
+    const a=connection(req,'audit.read'),onboarding=h.db.prepare('SELECT value FROM handoru_meta WHERE key=?').get(`onboarding_probe:${a.connection_id}`) as {value:string}|undefined;
+    res.json({business_id:a.business_id,http:{supported:true,enforcement:'native_backend',capability_ids:['pneu.http','relay.polling','website.agent_card']},mcp:{endpoint:`${h.publicUrl}/mcp`,protocol_version:'2025-06-18',transport:'streamable_http_stateless',server_implemented:true,runtime_verified:false},onboarding_readiness:onboarding?JSON.parse(onboarding.value):null,readiness:h.connection(a.connection_id!).ready_json?JSON.parse(h.connection(a.connection_id!).ready_json!):null,external_admin_enforcement:false});
+  });
   r.post(`${b}/audit-evidence`,(req,res)=>{const a=connection(req,'audit.propose');res.status(201).json({evidence:audits(a.business_id!).archiveEvidence(a,req.body)});});
   r.get(`${b}/audit-evidence/:sourceId`,(req,res)=>{const a=connection(req,'audit.read');res.json({evidence:audits(a.business_id!).getEvidence(a,param(req,'sourceId'))});});
   r.post(`${b}/audit-reports`,(req,res)=>{const a=connection(req,'audit.propose');res.status(201).json({report:audits(a.business_id!).createReport(a,req.body)});});

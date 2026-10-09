@@ -38,8 +38,19 @@ test('website card requires separate owner publication scope, bounded native wri
   assert.ok(!(await(await f.publicCall('/')).text()).includes('class="handoru-agent-card-link"'));
 });
 
-test('published managed endpoint accepts customer-bound auth.md credentials and discovers endpoint changes',async t=>{
-  const f=await freshFixture(t,{unified:true}),c=await ready(f);await publish(c);
+test('fresh G0 continues through audit, publication and customer-bound discovered SDK conversation',async t=>{
+  const f=await freshFixture(t,{unified:true}),owner=await f.signup();
+  const enrollment=await onboard(f,{owner}),relay=await provision(enrollment);
+  await json(await enrollment.agent(`${enrollment.path}/relay/probe`,{phase:'onboarding'}),201);
+  const g0=(await json(await enrollment.agent(`${enrollment.path}/relay/probe/inbox`))).items[0];
+  const received=await json(await enrollment.agent(`${enrollment.path}/relay/probe/answer`,{
+    nonce:g0.nonce,method:'polling',evidence:'Synthetic end-to-end client received pre-audit G0; not an actual GrokBot runtime.',
+  }));
+  assert.equal(received.operation_ready,false);
+  assert.deepEqual(f.rulebooks.list(),[]);
+  const audit=await audited(f,enrollment);
+  await activate(enrollment,audit);await operational(enrollment,audit.proposal.payload_hash);
+  const c={...enrollment,relay,audit};await publish(c);
   const firstResponse=await f.publicCall('/.well-known/agent-card.json'),wire=await json(firstResponse),firstTag=firstResponse.headers.get('etag')!;
   const guide=await fetch(wire.documentationUrl);assert.equal(guide.status,200);
   const registration=await json(await f.publicCall('/agent/identity',{type:'service_auth',login_hint:'jana.vesela@example.com'}),201);
