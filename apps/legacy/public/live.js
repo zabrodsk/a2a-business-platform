@@ -129,11 +129,7 @@ document.addEventListener('click',async event=>{
 async function initialize() {
   const nav=document.querySelector('header[data-dc-tpl]');if(!nav)return false;
   await refreshSession().catch(()=>{});
-  const profile=['/','/kontakt','/pro-agenty'].includes(location.pathname)?await api('/api/agent/profile').catch(()=>null):null;
-  if(profile?.location?.address){
-    const eyebrow=document.querySelector('#hero-h')?.previousElementSibling;
-    if(eyebrow)eyebrow.textContent=`${eyebrow.textContent} · ${profile.location.address}`;
-  }
+  const profile=location.pathname==='/pro-agenty'?await api('/api/agent/profile').catch(()=>null):null;
   if(location.pathname.startsWith('/objednavka'))await checkout();
   if(location.pathname==='/pro-agenty'){
     const detail=document.querySelector('.tech .tb');
