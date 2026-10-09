@@ -36,7 +36,7 @@ What A2A does **not** give us:
 
 - A way for a GrokBot to *be* an A2A server. Neither bot hosts HTTP. So the Business
   bot sits *behind* our relay: the relay is the A2A server, and its executor hands work to
-  the real Business GrokBot through a private inbox. This is the SOW §7.1 "Handoru" design.
+  the real Business GrokBot through a private inbox. This is the SOW §7.1 "Handle" design.
 - Wake-up of a chat agent. That is a Grok Bot runtime question (§7).
 - Turn limits, owner approval, mandates — those stay in our backend.
 
