@@ -145,7 +145,7 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
     if (!instructions) fail('PROMPT_UNAVAILABLE', 'Zákaznické instrukce nejsou dostupné.', 503);
     res.set('Cache-Control', 'no-store').type('text/plain').send(instructions);
   });
-  app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>openBusinessDemo()&&!handoru.isManagedContext()?res.set('Cache-Control','no-store').type('text/markdown').send('---\nname: handle-onboarding\ndescription: Use the open demo webhook handoff and keep setup replies short.\n---\n\n'+renderOpenDemoGuide(cfg.publicUrl)):res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
+  app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(req,res)=>req.query.setup_mode!=='managed'&&openBusinessDemo()&&!handoru.isManagedContext()?res.set('Cache-Control','no-store').type('text/markdown').send('---\nname: handle-onboarding\ndescription: Use the open demo webhook handoff and keep setup replies short.\n---\n\n'+renderOpenDemoGuide(cfg.publicUrl)):res.set('Cache-Control','no-store').type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});
   app.post(['/api/admin/handle-ownership-proof','/api/admin/handoru-ownership-proof'],auth.require('owner'),(req,res)=>{const challenge=req.body?.challenge;if(typeof challenge!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(challenge))fail('INVALID_CHALLENGE','Use the challenge from your registration.');store.db.prepare("INSERT INTO handoru_meta VALUES('ownership_proof',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify({challenge}));res.json({ok:true,path:'/.well-known/handle-ownership.json'});});
   app.use(['/api/audit','/api/suppliers'],(req,_res,next)=>{try{if(req.legacyActor?.role==='business_agent')handoru.authorize(req.legacyActor,handoru.installation()?.id??'pneu007','audit.read');next();}catch(error){next(error);}});
@@ -607,9 +607,9 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get('/skills/a2a-website-discovery/SKILL.md', (_req, res) => {
     res.type('text/markdown').sendFile(join(repoRoot, 'skills/a2a-website-discovery/SKILL.md'));
   });
-  app.get('/skills/pneu007-business/SKILL.md', (_req, res) => {
-    if(openBusinessDemo()&&!handoru.isManagedContext())return void res.set('Cache-Control','no-store').type('text/markdown').send('---\nname: pneu007-business\ndescription: Connect the open demo and render its exact webhook handoff.\n---\n\n'+renderOpenDemoGuide(cfg.publicUrl));
-    res.type('text/markdown').sendFile(join(repoRoot, 'skills/pneu007-business/SKILL.md'));
+  app.get('/skills/pneu007-business/SKILL.md', (req, res) => {
+    if(req.query.setup_mode!=='managed'&&openBusinessDemo()&&!handoru.isManagedContext())return void res.set('Cache-Control','no-store').type('text/markdown').send('---\nname: pneu007-business\ndescription: Connect the open demo and render its exact webhook handoff.\n---\n\n'+renderOpenDemoGuide(cfg.publicUrl));
+    res.set('Cache-Control','no-store').type('text/markdown').sendFile(join(repoRoot, 'skills/pneu007-business/SKILL.md'));
   });
   app.get('/skills/business-registry/SKILL.md', (_req, res) => res.type('text/markdown').sendFile(join(repoRoot, 'skills/business-registry/SKILL.md')));
   app.use('/api', (_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Neznámá operace API.' } }));

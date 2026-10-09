@@ -3,7 +3,7 @@ import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createLegacy } from '../src/server.js';
@@ -55,11 +55,13 @@ test('explicit managed bootstrap coexists with the unchanged open demo contract'
   assert.equal(managed.agent_entry_points.instructions_url,managed.instructions_url);
   assert.equal(managed.skill_url,`${f.base}/skills/handle-onboarding/SKILL.md?setup_mode=managed`);
   assert.equal(managed.agent_entry_points.business.onboarding_skill_url,managed.skill_url);
+  assert.equal(managed.agent_entry_points.business.skill_url,`${f.base}/skills/pneu007-business/SKILL.md?setup_mode=managed`);
   for(const url of [managed.instructions_url,managed.skill_url])assert.equal((await fetch(url)).status,200,url);
   const defaultGuide=await(await f.call('/agents.md')).text();
   assert.match(defaultGuide,/Open demo fast path: skip owner onboarding/);
   const managedGuide=await(await f.call('/handle/agents.md')).text();
   assert.match(managedGuide,/handle-managed\.json/);
+  assert.ok(managedGuide.includes(`${f.base}/skills/pneu007-business/SKILL.md?setup_mode=managed`));
   assert.doesNotMatch(managedGuide,/## Open demo fast path: skip owner onboarding/);
 });
 
@@ -67,7 +69,7 @@ test('managed discovery reads grant no authority or state changes even when open
   const f=await openFixture(t);
   const snapshot=()=>Object.fromEntries(['handoru_onboarding','handoru_businesses','handoru_memberships','handoru_principals','handoru_connections','handoru_credentials','handoru_relays','handoru_events','handoru_meta','audit_rulebook_versions'].map(table=>[table,f.system.handoru.db.prepare(`SELECT * FROM ${table}`).all()]));
   const before=snapshot();
-  for(const path of ['/.well-known/handle.json','/.well-known/handle-managed.json','/handle/agents.md','/skills/handle-onboarding/SKILL.md?setup_mode=managed'])assert.equal((await f.call(path)).status,200,path);
+  for(const path of ['/.well-known/handle.json','/.well-known/handle-managed.json','/handle/agents.md','/skills/handle-onboarding/SKILL.md?setup_mode=managed','/skills/handoru-onboarding/SKILL.md?setup_mode=managed','/skills/pneu007-business/SKILL.md?setup_mode=managed'])assert.equal((await f.call(path)).status,200,path);
   assert.equal((await f.call('/api/handle/v1/me')).status,401);
   assert.equal((await f.call('/api/handle/v1/owner/dashboard')).status,401);
   assert.equal((await f.call('/api/handle/v1/businesses/pneu007/relay',{})).status,401);
@@ -75,4 +77,28 @@ test('managed discovery reads grant no authority or state changes even when open
   assert.equal((await f.call('/api/admin/handle-ownership-proof',{challenge:'A'.repeat(43)})).status,401);
   assert.deepEqual(snapshot(),before,'Discovery cannot convert the prepared demo or create managed authority');
   assert.equal((await json(await f.call('/.well-known/handle.json'))).setup_mode,'open_demo');
+});
+
+
+test('explicit managed skills serve the full source before public-demo shortcuts on both onboarding aliases and business skill',async t=>{
+  const f=await openFixture(t);
+  for(const [path,source] of [
+    ['/skills/handle-onboarding/SKILL.md','handoru-onboarding'],
+    ['/skills/handoru-onboarding/SKILL.md','handoru-onboarding'],
+    ['/skills/pneu007-business/SKILL.md','pneu007-business'],
+  ]) {
+    const response=await f.call(`${path}?setup_mode=managed`);
+    assert.equal(response.status,200,path);
+    assert.equal(response.headers.get('cache-control'),'no-store',path);
+    const body=await response.text();
+    assert.equal(body,readFileSync(new URL(`../../../skills/${source}/SKILL.md`,import.meta.url),'utf8'),path);
+    assert.match(body,/local_demo/,`${path} must include the local simulation policy`);
+    assert.match(body,/governance\.blocked_parameters/,`${path} must include the approval preflight`);
+    const publicResponse=await f.call(path);
+    const publicBody=await publicResponse.text();
+    assert.equal(publicResponse.status,200,path);
+    assert.equal(publicResponse.headers.get('cache-control'),'no-store',path);
+    assert.match(publicBody,/demo-business\/connect/);
+    assert.notEqual(publicBody,body,`${path} keeps its unqueried prepared-demo guide`);
+  }
 });
