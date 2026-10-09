@@ -31,7 +31,8 @@ async function browser(t: TestContext) {
     rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
   let port = '';
-  const deadline = Date.now() + 10000;
+  // Shared CI runners may cold-start Chrome while other test files compile.
+  const deadline = Date.now() + 30000;
   while (!port && Date.now() < deadline) {
     try { port = readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]!; } catch { await delay(50); }
     if (child.exitCode !== null) throw new Error('Headless Chrome exited before opening DevTools');
@@ -122,7 +123,7 @@ async function login(page: Awaited<ReturnType<typeof browser>>, f: FreshFixture,
 }
 const approve = 'form[data-form="consent"] button[value="approved"]';
 
-test('synthetic Chrome owner completes website verification before separately approving the connection (not actual GrokBot)', { skip: chromePath ? false : missingChrome, timeout: 40000 }, async t => {
+test('synthetic Chrome owner completes website verification before separately approving the connection (not actual GrokBot)', { skip: chromePath ? false : missingChrome, timeout: 60000 }, async t => {
   const { fixture: f, registration } = await registered(t);
   const page = await browser(t);
   await login(page, f, registration.request_id);
@@ -153,7 +154,7 @@ test('synthetic Chrome owner completes website verification before separately ap
   assert.ok(credential.access_token, 'The bot can continue credential exchange without another instruction');
 });
 
-test('synthetic Chrome wrong legacy login clears the password and keeps website proof and connection approval blocked', { skip: chromePath ? false : missingChrome, timeout: 40000 }, async t => {
+test('synthetic Chrome wrong legacy login clears the password and keeps website proof and connection approval blocked', { skip: chromePath ? false : missingChrome, timeout: 60000 }, async t => {
   const { fixture: f, registration } = await registered(t);
   const page = await browser(t);
   await login(page, f, registration.request_id);
