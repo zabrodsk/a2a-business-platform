@@ -28,6 +28,7 @@ Each work item is one customer message waiting for your answer. Answer every ite
 --state input-required (default) hands the turn back to the customer; completed/rejected ends the task.
 Config: RELAY_URL + RELAY_TOKEN, or INBOX_CONFIG (default ~/.a2a/inbox.json).
 use-garage reads GARAGE_CONFIG (default ~/.a2a/garage.json). Use a separate INBOX_CONFIG for each business.
+For managed relays, RELAY_URL is the provisioned https://host/relay/ID base (without /bot).
 The token is never printed.`;
 
 class CliError extends Error {}
@@ -42,9 +43,10 @@ function validatedConfig(value: unknown, httpsOnly = false): InboxConfig {
     if (typeof url !== 'string' || typeof token !== 'string' || token.length < 24 || token.length > 4096 || !/^[A-Za-z0-9._~+/-]+=*$/.test(token)) throw new Error();
     const parsed = new URL(url);
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
-    if (!/^https?:\/\/[^/?#]+\/?$/.test(url) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== '/'
+    const validBasePath = parsed.pathname === '/' || /^\/relay\/[A-Za-z0-9_-]{1,200}\/?$/.test(parsed.pathname);
+    if (!/^https?:\/\/[^/?#]+(?:\/relay\/[A-Za-z0-9_-]{1,200})?\/?$/.test(url) || parsed.username || parsed.password || parsed.search || parsed.hash || !validBasePath
       || (parsed.protocol !== 'https:' && (httpsOnly || parsed.protocol !== 'http:' || !local))) throw new Error();
-    return { url: parsed.origin, token };
+    return { url: `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}`, token };
   } catch { throw new CliError('Invalid private inbox configuration; use a valid business HTTPS origin and credential.'); }
 }
 function readPrivateConfig(file: string): unknown {

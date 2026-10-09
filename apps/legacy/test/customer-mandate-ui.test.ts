@@ -16,14 +16,22 @@ async function page(options: {actor?: {id:string;role:string}|null;pathname?:str
     return elements.get(id)!;
   };
   const removedFooterLinks: string[] = [];
+  const footerLinks = ['/', '/kontakt', '/.well-known/agent-card.json', '/agent/access', '/agent/mandates?mandate_id=mandate-test', '/admin', '/handle', '/handoru'].map(href => ({
+    href, removed: false,
+    remove() { this.removed = true; removedFooterLinks.push(href); },
+  }));
   const listeners = new Map<string,(event:unknown)=>Promise<void>>();
   const requests: {path:string;options?:{method?:string;body?:unknown}}[] = [];
   const mandates = options.mandates ?? [structuredClone(mandate)];
   const context = {
     location:{pathname:options.pathname ?? '/agent/mandates',search:options.search ?? '?mandate_id=mandate-test'},URLSearchParams,Intl,Date,BigInt,
     document:{querySelector:()=>element('main'),querySelectorAll:(selector:string)=> {
-      assert.equal(selector, 'footer a[href="/admin"], footer a[href="/handle"], footer a[href="/handoru"]');
-      return ['/admin','/handle','/handoru'].map(href=>({remove:()=>removedFooterLinks.push(href)}));
+      const hrefs = selector.split(',').map(part => {
+        const match = /^footer a\[href="([^"]+)"\]$/.exec(part.trim());
+        assert.ok(match, `Unsupported footer selector: ${part}`);
+        return match[1]!;
+      });
+      return footerLinks.filter(link => hrefs.includes(link.href));
     },getElementById:element,addEventListener:(name:string,listener:(event:unknown)=>Promise<void>)=>listeners.set(name,listener)},
     api: async (path:string, input?:{method?:string;body?:unknown}) => {
       requests.push({path,options:input});
@@ -43,7 +51,7 @@ async function page(options: {actor?: {id:string;role:string}|null;pathname?:str
   };
   await runInNewContext(`(async()=>{${source}})()`,context);
   return {
-    html:()=>element('content').innerHTML,sessionHtml:()=>element('session').innerHTML,removedFooterLinks,main:()=>element('main').innerHTML,requests,
+    html:()=>element('content').innerHTML,sessionHtml:()=>element('session').innerHTML,removedFooterLinks,remainingFooterLinks:()=>footerLinks.filter(link=>!link.removed).map(link=>link.href),main:()=>element('main').innerHTML,requests,
     inlineError:()=>element('mandate-error').textContent,
     approve:async(id='mandate-test')=> {
       const button={dataset:{action:'customer-mandate',id},disabled:false};
@@ -95,8 +103,10 @@ test('customer pages use friendly account labels and remove only operator footer
     assert.match(p.sessionHtml(),/Zákaznický účet/);
     assert.doesNotMatch(p.sessionHtml(),/customer-a|human_customer/);
     assert.deepEqual(p.removedFooterLinks,['/admin','/handle','/handoru']);
+    assert.deepEqual(p.remainingFooterLinks(),['/', '/kontakt', '/.well-known/agent-card.json', '/agent/access', '/agent/mandates?mandate_id=mandate-test']);
   }
   const owner=await page({pathname:'/admin',actor:{id:'owner-account',role:'owner'}});
   assert.match(owner.sessionHtml(),/owner-account · owner/);
   assert.deepEqual(owner.removedFooterLinks,[]);
+  assert.deepEqual(owner.remainingFooterLinks(),['/', '/kontakt', '/.well-known/agent-card.json', '/agent/access', '/agent/mandates?mandate_id=mandate-test', '/admin', '/handle', '/handoru']);
 });

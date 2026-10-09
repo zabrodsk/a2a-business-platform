@@ -1,15 +1,22 @@
 # Handle
 
-**Shared project specification:** [Handle Final Draft v2.2](docs/scope-of-work.md)
-is the approved product and technical target. Its [HTML reading copy](docs/handoru-final-draft.html)
-is available offline. The console is `/handle`; `/handoru` remains a compatible alias over the same stored state.
-Fresh business onboarding starts at `/.well-known/handle.json`; the independent owner console is `/handle`.
-The [technical onboarding guide](docs/handoru-onboarding.html), [owner and GrokBot draft](docs/company-grokbot-onboarding.html),
-and [implementation evidence](docs/handoru-implementation-proof.html) distinguish local regression results from live integration gates.
-Live fresh-GrokBot onboarding, Preprod handover and full official A2A conformance remain unverified.
-See [AGENTS.md](AGENTS.md) for repository guidance.
-
 Infrastructure for personal agents to discover business agents, negotiate service offers, and complete authorized transactions.
+
+**Shared project specification:** [Handle Final Draft v2.2](docs/scope-of-work.md)
+is the canonical product and technical reference for implementation agents. It
+defines fresh onboarding, managed relay provisioning, the source-backed audit,
+owner approval, website Agent Card publication, and safe runtime handover.
+Audit uses the owner's existing admin UIs, documented APIs and MCP tools; a
+custom audit connector is not required. The implemented native Pneu transaction path uses a
+separate agent service account and a thin MCP over the existing policy-checked
+backend APIs.
+Fresh onboarding starts at `/.well-known/handle.json`; the independent owner console is `/handle`. See the [onboarding guide](docs/handoru-onboarding.html) and [implementation evidence](docs/handoru-implementation-proof.html) for tested boundaries and external runtime gates.
+Existing `handoru` API/routes and `HANDORU_*` environment variables remain compatible aliases over the same records. Existing private data filenames remain unchanged.
+Requirements in the draft are distinct from the verified build status below.
+See [AGENTS.md](AGENTS.md) for the repository entry instructions.
+An offline [HTML reading copy](docs/handoru-final-draft.html) is generated from
+the canonical specification; make requirement changes in the Markdown source.
+The [owner and GrokBot draft](docs/company-grokbot-onboarding.html) complements the technical onboarding guide. Live fresh-GrokBot onboarding through the new Handle process, Preprod handover and full official A2A conformance remain unverified; earlier customer-booking and payment reports below cover their recorded workflows, not these new gates.
 
 A customer should be able to tell their agent, **“I need my tires swapped,”** and have it find businesses that accept agent requests, obtain current offers, and book within the customer's approved limits. This hackathon project brings the discovery, communication, business tools, rules, and payment adapters into one repository.
 
@@ -103,6 +110,7 @@ It listens on port 8792 by default. On Railway, leave `REGISTRY_HOST` and `REGIS
 
 `npm run build` creates dependency-free Node.js clients in `packages/agent-client/dist`:
 
+- `handle.mjs`: bootstrap and use the Handle onboarding and business APIs.
 - `a2a.mjs`: discover a business's live Agent Card and exchange A2A messages.
 - `inbox.mjs`: receive customer work and return the business bot's replies.
 - `garage.mjs`: operate the demo business through its authenticated API.
@@ -115,6 +123,8 @@ It listens on port 8792 by default. On Railway, leave `REGISTRY_HOST` and `REGIS
 The [customer booking skill](skills/a2a-customer-booking/SKILL.md) uses the business's `/auth.md` instructions and existing customer login. The human confirms the agent at `/agent/claim`, separately reviews purchase limits at `/agent/mandates?mandate_id=…`, and can revoke agent access at `/agent/access`. No external identity-service subscription is required. Credentials remain in private, origin-bound files; linking does not grant booking or payment approval. See [authentication and customer linking](docs/auth.html).
 
 The autoshop business bot imports its existing garage enrollment with `inbox.mjs use-garage`, using a separate `INBOX_CONFIG` for Pneu 007. The [Pneu wake-up instructions](prompts/grokbot-pneu-business-doorbell.md) use an actual native webhook routine and live business tools; runtime availability must be verified separately from a successful webhook registration.
+
+The business also serves `/auth.md` registration instructions and OAuth discovery metadata. Anonymous agents can only inspect their own identity until the matching human customer confirms the link; this grants no mandate or spending authority. Fresh business connections use the Handle onboarding guide and provisioned managed relay URLs rather than assuming the root inbox from an earlier runtime demonstration.
 
 ## What is verified
 

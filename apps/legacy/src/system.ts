@@ -128,7 +128,12 @@ export async function createUnifiedSystem(cfg: LegacyConfig, options: Omit<Legac
     pendingReplies:()=> (legacy.store.db.prepare('SELECT record_json FROM handoru_reply_outbox WHERE business_id=? AND delivered=0').all(businessId) as {record_json:string}[]).map(r=>JSON.parse(r.record_json) as AcceptedReply),
     markReplyDelivered:workItemId=>{legacy.store.db.prepare('UPDATE handoru_reply_outbox SET delivered=1 WHERE work_item_id=? AND business_id=?').run(workItemId,businessId);},
   });
-  if(relayConfig.businessId)Object.assign(relayConfig,authorityHooks(relayConfig.businessId));
+  if(relayConfig.businessId){
+    Object.assign(relayConfig,authorityHooks(relayConfig.businessId));
+    const compatibilityToken=cfg.env.LEGACY_BUSINESS_AGENT_TOKEN;
+    const compatibilityIdentity=compatibilityToken?resolveIdentity(compatibilityToken):undefined;
+    if(compatibilityIdentity?.connection_id==='compatibility-pneu007')relay.doorbell.migrateCompatibilityWebhook(compatibilityIdentity);
+  }
   const managed=new Map<string,Promise<ReturnType<typeof createRelay>>>();
   const ensureManaged=(relayId:string)=>{
     let pending=managed.get(relayId);if(pending)return pending;

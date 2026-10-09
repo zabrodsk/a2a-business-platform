@@ -336,3 +336,94 @@ test('one-time native compatibility migration preserves work/task/reply IDs and 
   assert.throws(() => new RelayDb(file, 'other-business'), /another business/);
   assert.throws(() => new RelayDb(file), /another business/);
 });
+
+test('compatibility webhook migration preserves a trusted hook once and cannot resurrect it after cutover/restart', async () => {
+  const { RelayDb } = await import('../src/db.js');
+  const { Doorbell } = await import('../src/doorbell.js');
+  const file = join(mkdtempSync(join(tmpdir(), 'relay-webhook-migration-')), 'relay.db');
+  let epoch = 1, active = true;
+  const identity: Identity = { id: 'legacy-business-principal', role: 'business', business_id: 'pneu007',
+    connection_id: 'compatibility-pneu007', execution_epoch: 1, scopes: ['doorbell.write'] };
+  const cfg: Config = { ...loadConfig({ BUSINESS_TOKEN: businessToken }), businessId: 'pneu007',
+    businessWebhook: { url: 'https://hooks.example/env-fallback', key: 'env-hook-private-key' }, pushHostAllowlist: ['hooks.example'],
+    checkIdentity: (actor, operation) => active && actor.id === identity.id && actor.business_id === 'pneu007'
+      && actor.connection_id === 'compatibility-pneu007' && actor.execution_epoch === epoch && operation === 'doorbell.write',
+  };
+  let db = new RelayDb(file, 'pneu007');
+  let doorbell = new Doorbell(cfg, db);
+  db.setSetting('business_webhook', JSON.stringify({ url: 'https://hooks.example/stored-hook', key: 'stored-hook-private-key' }));
+  assert.equal(doorbell.webhook(), undefined, 'Unbound managed hooks remain disabled before explicit migration');
+  assert.equal(doorbell.migrateCompatibilityWebhook(identity), true);
+  assert.equal(doorbell.webhook()?.url, 'https://hooks.example/stored-hook', 'Stored trusted hook wins over env');
+  assert.equal(JSON.parse(db.getSetting('business_webhook')!).identity.connection_id, 'compatibility-pneu007');
+  assert.equal(doorbell.migrateCompatibilityWebhook(identity), false);
+  epoch = 2;
+  assert.equal(doorbell.webhook(), undefined, 'Old epoch no longer authorizes wakeups');
+  assert.equal(doorbell.migrateCompatibilityWebhook({ ...identity, execution_epoch: 2 }), false, 'Marker forbids rebinding to a later epoch');
+  active = false;
+  await db.kysely.destroy();
+  db = new RelayDb(file, 'pneu007');doorbell = new Doorbell(cfg, db);
+  try {
+    assert.equal(doorbell.webhook(), undefined);
+    assert.equal(doorbell.migrateCompatibilityWebhook(identity), false);
+    db.setSetting('business_webhook', undefined);
+    active = true;
+    assert.equal(doorbell.migrateCompatibilityWebhook({ ...identity, execution_epoch: 2 }), false);
+    assert.equal(doorbell.webhook(), undefined, 'Env fallback must not resurrect a cleared/revoked hook');
+    assert.ok(!JSON.stringify(db.listEvents({})).includes('private-key'));
+  } finally { await db.kysely.destroy(); }
+});
+
+test('compatibility webhook binding requires live native compatibility identity and never replaces an already-bound hook', async () => {
+  const { RelayDb } = await import('../src/db.js');
+  const { Doorbell } = await import('../src/doorbell.js');
+  const db = new RelayDb(':memory:', 'pneu007');
+  const identity: Identity = { id: 'legacy-business-principal', role: 'business', business_id: 'pneu007',
+    connection_id: 'compatibility-pneu007', execution_epoch: 1, scopes: ['doorbell.write'] };
+  const cfg: Config = { ...loadConfig({ BUSINESS_TOKEN: businessToken }), businessId: 'pneu007',
+    businessWebhook: { url: 'https://hooks.example/approved', key: 'approved-hook-private-key' }, pushHostAllowlist: ['hooks.example'],
+    checkIdentity: actor => actor.id === identity.id && actor.connection_id === identity.connection_id && actor.execution_epoch === 1,
+  };
+  const doorbell = new Doorbell(cfg, db);
+  try {
+    for (const actor of [{ ...identity, role: 'customer' as const }, { ...identity, business_id: 'other-firm' },
+      { ...identity, connection_id: 'arbitrary-connection' }, { ...identity, execution_epoch: undefined },
+      { ...identity, id: 'forged-principal' }]) assert.equal(doorbell.migrateCompatibilityWebhook(actor), false);
+    assert.equal(db.getSetting('compatibility_webhook_migrated:pneu007:v1'), undefined);
+    const previouslyBound = JSON.stringify({ url: 'https://hooks.example/current', key: 'current-hook-private-key', identity: { ...identity, connection_id: 'new-runtime' } });
+    db.setSetting('business_webhook', previouslyBound);
+    assert.equal(doorbell.migrateCompatibilityWebhook(identity), false);
+    assert.equal(db.getSetting('business_webhook'), previouslyBound, 'Existing bound hook must remain untouched');
+  } finally { await db.kysely.destroy(); }
+  const envDb = new RelayDb(':memory:', 'pneu007');
+  try {
+    const envDoorbell = new Doorbell(cfg, envDb);
+    assert.equal(envDoorbell.migrateCompatibilityWebhook(identity), true, 'Trusted env hook can be imported once when no stored setting exists');
+    assert.equal(envDoorbell.webhook()?.key, 'approved-hook-private-key');
+  } finally { await envDb.kysely.destroy(); }
+});
+
+test('compatibility webhook migration validates allowed HTTPS/local hosts and fails closed without an authority resolver', async () => {
+  const { RelayDb } = await import('../src/db.js');
+  const { Doorbell } = await import('../src/doorbell.js');
+  const identity: Identity = { id: 'legacy-business-principal', role: 'business', business_id: 'pneu007', connection_id: 'compatibility-pneu007', execution_epoch: 1 };
+  for (const url of ['https://untrusted.example/hook','http://hooks.example/insecure','https://name:password@hooks.example/hook','file:///hook']) {
+    const db = new RelayDb(':memory:', 'pneu007');
+    try {
+      const cfg: Config = { ...loadConfig({ BUSINESS_TOKEN: businessToken }), businessId: 'pneu007', pushHostAllowlist: ['hooks.example'],
+        businessWebhook: { url, key: 'private-hook-test-key' }, checkIdentity: () => true };
+      assert.equal(new Doorbell(cfg,db).migrateCompatibilityWebhook(identity), false);
+      assert.equal(db.getSetting('business_webhook'), undefined);
+      cfg.businessWebhook = { url: 'https://hooks.example/now-valid', key: 'private-hook-test-key' };
+      assert.equal(new Doorbell(cfg,db).migrateCompatibilityWebhook(identity), false, 'A later env change must not retry a rejected migration');
+    } finally { await db.kysely.destroy(); }
+  }
+  const db = new RelayDb(':memory:', 'pneu007');
+  try {
+    const cfg: Config = { ...loadConfig({ BUSINESS_TOKEN: businessToken }), businessId: 'pneu007',
+      pushHostAllowlist: ['127.0.0.1'], businessWebhook: { url: 'http://127.0.0.1/hook', key: 'local-hook-test-key' } };
+    assert.equal(new Doorbell(cfg,db).migrateCompatibilityWebhook(identity), false, 'Missing live authority resolver is not approval');
+    cfg.checkIdentity = () => true;
+    assert.equal(new Doorbell(cfg,db).migrateCompatibilityWebhook(identity), true);
+  } finally { await db.kysely.destroy(); }
+});
