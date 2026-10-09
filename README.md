@@ -32,6 +32,12 @@ Its demo location is **Holešovice, Praha 7**. For “find me an autorepair shop
 
 [Registry API](https://business-registry-production.up.railway.app) · [Demo business website](https://pneu007-production.up.railway.app) · [Registry API and setup](docs/business-registry.html) · [Agent tools](docs/grokbot-tools.html) · [Registry GrokBot proof](docs/registry-runtime-proof.html) · [Earlier A2A evidence](docs/runtime-proof.md)
 
+## Agent Card setup and customer skill
+
+Business owners open `/handle#website` for Agent Card setup and a copyable prompt. The prompt uses the selected website and configured Handle origin, obtains a private agent credential through owner-approved onboarding, and separates webhook and registry publisher access. It never puts tokens in the public card. The [source prompt](prompts/business-agent-card.md) is served at `/handle/agent-card-prompt`.
+
+Customers load [the Handle customer skill](skills/handle-customer/SKILL.md) once, then ask for a service and area. The registry serves it at `/skills/handle-customer/SKILL.md` and advertises it as `customer_skill` in root metadata. It supplies the registry URL and searches active listings before reading the returned website's current Agent Card. Persistent skill installation depends on the actual runtime. See the [customer setup prompt](prompts/grokbot-customer-registry.md).
+
 ## The agent-to-agent flow
 
 1. **Onboard a business.** Its agent reads the public website and authorized internal sources, proposes a cited operating rulebook, and obtains owner activation.

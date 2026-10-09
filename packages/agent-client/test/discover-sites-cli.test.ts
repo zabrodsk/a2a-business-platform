@@ -1,10 +1,28 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
 import { discoverSitesMain } from '../src/discover-sites-cli.js';
 import { discoverWebsites } from '../src/website-discovery.js';
+
+test('downloaded CLI invoked through a symlink executes and writes its report', async t => {
+  const dir = mkdtempSync(join(tmpdir(), 'discover-symlink-')); t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const cli = join(dir, 'discover-sites.mjs'), alias = join(dir, 'scan.mjs');
+  const file = join(dir, 'sites.json'), output = join(dir, 'report.json');
+  await build({ entryPoints: [fileURLToPath(new URL('../src/discover-sites-cli.ts', import.meta.url))], outfile: cli,
+    bundle: true, platform: 'node', format: 'esm', target: 'node18', logLevel: 'silent' });
+  symlinkSync(cli, alias);
+  writeFileSync(file, '[]');
+  const stdout = execFileSync(process.execPath, [alias, '--sites-file', file, '--output', output], { encoding: 'utf8' });
+  const report = JSON.parse(stdout);
+  assert.equal(report.coverage.scanned, 0);
+  assert.equal(report.coverage.incomplete, false);
+  assert.equal(readFileSync(output, 'utf8'), stdout);
+});
 
 test('CLI reads browser candidates and writes structured report with annotated filters', async t => {
   const dir = mkdtempSync(join(tmpdir(), 'discover-sites-')); t.after(() => rmSync(dir, { recursive: true, force: true }));

@@ -133,6 +133,12 @@ export function createLegacy(cfg: LegacyConfig, options: LegacyOptions = {}) {
   app.get(['/.well-known/handle.json','/.well-known/handoru.json'],(_req,res)=>res.set('Cache-Control','no-store').json(handoru.isManagedContext()?managedHandoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true'):handoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true',openBusinessDemo())));
   app.get('/.well-known/handle-managed.json',(_req,res)=>res.set('Cache-Control','no-store').json(managedHandoruManifest(cfg.publicUrl,cfg.env.DEMO_PUBLIC_A2A==='true',cfg.env.DEMO_CHAT_APPROVAL==='true')));
   app.get(['/handle/onboarding','/handoru/onboarding'],(_req,res)=>res.sendFile(join(repoRoot,'docs/handoru-onboarding.html')));
+  app.get('/handle/agent-card-prompt', (_req, res) => {
+    const source = readFileSync(join(repoRoot, 'prompts/business-agent-card.md'), 'utf8');
+    const prompt = source.match(/```text\r?\n([\s\S]*?)\r?\n```/)?.[1];
+    if (!prompt) fail('PROMPT_UNAVAILABLE', 'Zadání pro agenta není dostupné.', 503);
+    res.set('Cache-Control', 'no-store').type('text/plain').send(prompt.replaceAll('[HANDLE_URL]', cfg.publicUrl));
+  });
   app.get(['/skills/handle-onboarding/SKILL.md','/skills/handoru-onboarding/SKILL.md'],(_req,res)=>openBusinessDemo()&&!handoru.isManagedContext()?res.set('Cache-Control','no-store').type('text/markdown').send('---\nname: handle-onboarding\ndescription: Use the open demo webhook handoff and keep setup replies short.\n---\n\n'+renderOpenDemoGuide(cfg.publicUrl)):res.type('text/markdown').sendFile(join(repoRoot,'skills/handoru-onboarding/SKILL.md')));
   app.get(['/.well-known/handle-ownership.json','/.well-known/handoru-ownership.json'],(_req,res)=>{const p=store.db.prepare("SELECT value FROM handoru_meta WHERE key='ownership_proof'").get() as {value:string}|undefined;res.set('Cache-Control','no-store');if(!p)return void res.status(404).json({error:'NO_OWNERSHIP_PROOF'});res.json(JSON.parse(p.value));});
   app.post(['/api/admin/handle-ownership-proof','/api/admin/handoru-ownership-proof'],auth.require('owner'),(req,res)=>{const challenge=req.body?.challenge;if(typeof challenge!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(challenge))fail('INVALID_CHALLENGE','Use the challenge from your registration.');store.db.prepare("INSERT INTO handoru_meta VALUES('ownership_proof',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify({challenge}));res.json({ok:true,path:'/.well-known/handle-ownership.json'});});

@@ -1,4 +1,4 @@
-import { closeSync, fstatSync, openSync, readSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, fstatSync, openSync, readSync, realpathSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { discoverWebsites, validateCandidates, type DocumentFetcher } from './website-discovery.js';
@@ -71,7 +71,7 @@ export async function discoverSitesMain(args: string[], dependencies: { fetchDoc
   stdout(text);
   return report;
 }
-if (process.argv[1] === fileURLToPath(import.meta.url)) discoverSitesMain(process.argv.slice(2)).catch(() => {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) discoverSitesMain(process.argv.slice(2)).catch(() => {
   process.stderr.write('Website discovery failed. Check the candidate JSON, options and output path; no remote response bodies are logged.\n');
   process.exitCode = 1;
 });

@@ -25,7 +25,7 @@ Připravené jsou legacy web, backend, dummy provozní data a vstupní dokumenty
 - Člověk ověří vlastnictví, poskytne přístupová oprávnění a schválí pravidla, mandáty a případné výjimky. Agent si tato oprávnění neuděluje.
 - Pro provoz Pneu 007 doporučujeme vlastní servisní účet každého agenta, vytvořený majitelem nebo automaticky po jeho souhlasu, a tenký Pneu MCP nad stávajícími policy-checkovanými API/doménovými funkcemi. Audit zvláštní konektor nepotřebuje.
 - Firemní profil, audit, verzovaný rulebook, lidské souhlasy, napojení a rozpracované případy patří firmě v Handle. Legacy a platební provider zůstávají autoritami pro své skutečné záznamy.
-- Zákaznický bot dostane známý kontakt s URL webu; endpoint zjistí z aktuální veřejné Agent Card. Registry je volitelný další kanál discovery.
+- Výchozí zákaznické discovery používá veřejný registry dodaný skillem `handle-customer`: služba/lokalita → aktivní listing → web a aktuální Agent Card → A2A endpoint. Zákazník nemusí znát URL firmy; přímý známý kontakt zůstává podporovanou alternativou.
 - Výměna firemního runtime zachová kontext a platné obchodní vazby. Handle odvolá původní připojení; externí účty a sessions se samostatně odvolají/rotují nebo mají skutečně kontrolovaný přístup. Do vyřešení zůstává předání pending; přijaté serverové platby pokračují pod původní autorizací.
 
 Obchodní částky, termíny a kontakty níže jsou testovací data. Dostupnost vlastností konkrétních runtime, účtů, adaptérů a platebního prostředí se ověřuje samostatně; požadavek není důkazem implementované funkce.
@@ -36,7 +36,7 @@ Obchodní částky, termíny a kontakty níže jsou testovací data. Dostupnost 
 
 Majitel fiktivního Pneu 007 má fresh GrokBota, existující web a jeden či více nezávislých provozních systémů. Zadá URL Handle, známé adresy systémů a bezpečně poskytne admin účty. GrokBot sám zahájí registraci, požádá o spravovaný relay a provede pozorovací audit veřejného webu a přístupných administrací, existujících zdokumentovaných API/OpenAPI nebo MCP. Uloží obecný report s minimálními důkazními přílohami a navrhne podporovaný rulebook. Majitel se nezávisle přihlásí do Handle, posoudí fakta i autoritu zdrojů a schválí přesnou verzi pravidel a provozní scope. Bot potom dostupným CMS/file managerem/hostingovým UI či existujícím API/MCP publikuje kartu a odkaz v odsouhlaseném rozsahu.
 
-Zákazník zadá svému skutečnému GrokBotovi úkol pro známý fiktivní autoservis. Z kontaktu získá pouze website URL. Agent za běhu načte web a aktuální kartu, bezpečně získá vlastní přístup k deklarované službě a kontaktuje skutečného firemního GrokBota. Vyjedná nabídku a buď ji předloží zákazníkovi, nebo ji přijme v mezích lidsky schváleného mandátu. Firemní agent používá legacy nástroje a aktivní pravidla; výjimku předkládá oprávněnému majiteli. Výsledkem je uložená rezervace a doložený sandboxový platební stav.
+Zákazník zadá svému skutečnému GrokBotovi službu a lokalitu. Skill `handle-customer` dodá registry URL; agent z aktivního listingu získá website/card URL. Agent za běhu načte web a aktuální kartu, bezpečně získá vlastní přístup k deklarované službě a kontaktuje skutečného firemního GrokBota. Vyjedná nabídku a buď ji předloží zákazníkovi, nebo ji přijme v mezích lidsky schváleného mandátu. Firemní agent používá legacy nástroje a aktivní pravidla; výjimku předkládá oprávněnému majiteli. Výsledkem je uložená rezervace a doložený sandboxový platební stav.
 
 ### 1.1 První den a role účastníků
 
@@ -60,7 +60,7 @@ Pokud stejná instalace přejde na managed kontext aktivací auditovaných pravi
 
 `Fresh GrokBot + legacy + instrukce → registrace → lidské ověření → automatický relay → skutečný audit → návrh pravidel → lidské schválení → agentem publikovaná karta a odkaz.`
 
-`Kontakt s URL webu → aktuální Agent Card → objevený povolený endpoint a autentizace → skutečné A2A zprávy → vyjednání a případná výjimka → autorizovaná rezervace a sandboxová platba.`
+`Služba/lokalita + zákaznický skill → registry → web a aktuální Agent Card → objevený povolený endpoint a autentizace → skutečné A2A zprávy → vyjednání a případná výjimka → autorizovaná rezervace a sandboxová platba.`
 
 `Agent A a rozpracovaný případ → schválené předání → agent B → tentýž případ, pravidla a platné souhlasy → pokračování bez druhé rezervace nebo inkasa.`
 
@@ -80,7 +80,7 @@ Základní průchod je hotový, když skuteční GrokBoti komunikují bez ručn�
 | Audit | Pozorování více nezávislých admin UI, veřejného webu a existujících API/MCP. Obecný report se systémovým inventářem a neměnnými přílohami; bez custom audit konektorů a předem hotových závěrů. |
 | Rulebook | Kanonická verzovaná pravidla s důkazy a lidskou aktivací. Runtime skill/prompt je odvozený výstup; legacy ceník a provider stav zůstávají vlastními autoritami. |
 | Publikace webu | Handle generuje kartu a ověřuje její URL; bot ji po schválení publikuje existující správou webu. Zaznamenaný publication scope je samostatný účel souhlasu, může být schválen při onboardingu. Statický export potřebuje skutečnou aktualizaci/stažení. |
-| Discovery | Zákaznický kontakt obsahuje pouze firmu, adresu a URL. Karta se načte za běhu; registry ani organické vyhledávání nejsou podmínkou hlavního dema. |
+| Discovery | Výchozí zákaznický skill dodá registry URL; služba/lokalita → aktivní listing → web a aktuální karta. Endpoint a auth se čtou z karty za běhu. Organická indexace není podmínkou. |
 | Komunikace | Veřejné A2A 1.0 JSON-RPC rozhraní, za ním soukromé nástroje, trvalé případy a scoped leases. Streaming a pushNotifications jsou zpočátku false. |
 | Dostupnost | Ověřený polling/routine nebo wake-up konkrétního runtime. Aktivní časově omezená relace se označí jako taková; jednorázový prompt nedokládá trvalý provoz. |
 | Transakce | Pro aktuální hackathonové demo serverem autorizovaná objednávka/hold a výslovná lokální simulace platby (`local_demo`); žádné blockchainové transakce. Masumi Cardano Preprod zůstává odděleným volitelným ověřením se skutečnými důkazy. |
@@ -316,28 +316,21 @@ Firma vlastní report, systémový inventář, verzované přílohy a citace, ot
 
 SKILL.md a prompty jsou odvozené pohledy. Hesla, tokeny, privátní klíče, lidské sessions ani skryté uvažování se nepřenášejí v kontextu; nový agent dostane vlastní externí přístupy bezpečným kanálem. Legacy zůstává autoritou pro své záznamy a provider pro platbu. Při výměně B převezme stejné IDs a stále platné souhlasy, ověří aktuálnost kritických faktů a své schopnosti; opakuje pouze potřebný rozsah auditu. Externí revokace a nejisté zápisy jsou podmínkou dokončení předání dle §7.8.
 
-## 6. Discovery ze známého kontaktu
+## 6. Discovery přes registry a aktuální Agent Card
 
 ### 6.1 Co ví zákaznický agent před demonstrací
 
-Zákaznický GrokBot dostane kontakt vložený přímo do výchozí relace. Není závislý na dlouhodobé paměti starého chatu.
+Novější rozhodnutí uživatele z 9. října 2026 stanoví registry jako výchozí discovery. Zákaznický GrokBot dostane skill `handle-customer`, který obsahuje `https://business-registry-production.up.railway.app` a podporovaný postup. Search je veřejná, bez zákaznického/publisher tokenu. Příklad úkolu: „Najdi pneuservis v Holešovicích a požádej o nabídku. Zatím nerezervuj ani neplať.“
 
-```text
-Testovací kontakt
-Firma: Pneu 007
-Adresa provozovny: [testovací adresa zvolená týmem]
-Web: [skutečně nasazená URL demo webu]
+Agent vyhledá `/api/search?service=tyre_change&action=quote&q=Holesovice`. Hodnota `q` je lokalita/jméno, nikoli celá věta. Diakritika se normalizuje. Přečte skutečný aktivní listing a jeho website/card URL. Nepředává se předem firemní endpoint, interní rulebook, cenové pravomoci ani připravená nabídka/odpověď. Známý website kontakt zůstává alternativním vstupem.
 
-Fiktivní firma pro hackathon. Na této adrese služby reálně neposkytuje.
-Při zadání pro tento servis použij jeho web. Aktuální schopnosti, podmínky
-ani endpoint si nevymýšlej, zjisti je za běhu.
-```
+Registry ověřuje kontrolu webu a metadata, nikoli živou odpověď, fyzickou firmu nebo dokončení obchodu. Pneu 007 i lokalita jsou výslovně fiktivní. Prázdný výsledek znamená žádný odpovídající aktivní listing v tomto registry a nesmí být nahrazen hardcoded firmou. Chyba sítě/API není prázdný výsledek.
 
-Kontakt nesmí obsahovat endpoint firemního agenta, interní rulebook, cenové pravomoci, připravenou nabídku nebo odpovědi protistrany. Agent může mít obecný ověřený klient A2A; ten nesmí obsahovat adresu konkrétní firmy.
+Skill se ukládá trvale pouze podporovaným mechanismem runtime. Načtení URL v chatu samo neprokazuje instalaci pro budoucí relace. Registry discovery, živá A2A odpověď a webhook wake-up mají samostatné důkazy.
 
 ### 6.2 Skutečný průchod
 
-1. Agent získá URL ze známého kontaktu a otevře živý web.
+1. Agent vyhledá službu/lokalitu ve veřejném registry a otevře skutečně vrácený web a `agent_card_url`. Endpoint z registry URL nekonstruuje.
 2. Na firemní doméně načte `/.well-known/agent-card.json`. Na webu je zároveň viditelný přímý odkaz „Pro agenty“ na tuto kartu, například v patičce nebo kontaktech.
 3. Ověří kompatibilitu deklarované služby, verzi A2A, binding, dostupnost a požadovanou autentizaci.
 4. Použije pouze skutečný endpoint z aktuálně načtené karty. Endpoint může být na jiné doméně, kde běží Handle. Žádný hardcoded fallback.
@@ -617,7 +610,7 @@ Kontakt na fiktivní firmu a její web je předem vložený do relace podle odd�
 | Krok | Co se opravdu stane |
 | - | - |
 | 1 | Customer vytvoří návrh mandátu podle zadání. Dokud neobsahuje ověřenou cílovou firmu a platební podmínky, neuděluje oprávnění nákupu. |
-| 2 | Customer z kontaktu otevře web, načte aktuální Agent Card, použije zjištěný endpoint a odešle poptávku. |
+| 2 | Customer vyhledá službu/lokalitu v registry, otevře vrácený web, načte aktuální Agent Card, použije zjištěný endpoint a odešle poptávku. |
 | 3 | Business načte aktivní rulebook a ověří službu, cenu 2 472 Kč a dostupnost. |
 | 4 | Proběhne výměna nabídky a protinabídky. Agentem povolená 5% sleva dává 2 348,40 Kč, tedy nad zákazníkův limit. |
 | 5 | Business uloží konkrétní návrh nabídky s 10% slevou, cenou 2 224,80 Kč, zálohou 500 Kč a přesným quote ID/verzí. Vyžádá owner schválení této nabídky; bez něj ji nevydá jako závazně schválenou. |
@@ -799,7 +792,7 @@ Nejdříve ověřit aktuální stav a migraci, oddělit business/agent identity 
 | T01 | Audit vytvoří pravidlo slevy | Ukáže konkrétní citaci/přílohu, systém/čas/metodu, limit a lidské posouzení autority/schválení; nevyžaduje fixture source ID. |
 | T02 | Změna zdroje 5 % → 3 % | Agent zdroj znovu přečte a uloží důkaz; po lidském schválení 4% sleva vyžaduje majitele bez ruční backend úpravy. Chybějící politika není odvozena z historie. |
 | T03 | Firma dosud nemá schválený rulebook | Není dostupná jako aktivní transakční agent; nevydává aktivní kartu ani aktivní odkaz. Privátní relay probe neotevírá zákaznický provoz. |
-| T04 | Klient má pouze známý kontakt s URL | Načte živý web/kartu a skutečně použije zjištěný endpoint. Žádný registr ani endpoint v kontextu. |
+| T04 | Klient má službu/lokalitu a zákaznický skill s registry URL | Vyhledá skutečný aktivní listing, načte vrácený web/aktuální kartu a použije její endpoint. Prázdný výsledek/chyba se nenahrazuje hardcoded firmou. Přímý website kontakt se ověřuje jako alternativa. |
 | T05 | Hlavní zadání do 2 300 Kč | Vyjednání, schválení 10% slevy, cena 2 224,80 Kč, jedna rezervace. |
 | T06 | Režim recommend | Vrátí nabídku, žádný booking a žádný převod zálohy. |
 | T07 | Sleva nad autonomní limit bez majitele | Stejné backend kontroly zablokují přímé HTTP i Pneu MCP volání servisního účtu; přímé externí admin UI nemá tuto garanci a není schválenou cestou k obcházení. |
@@ -849,6 +842,8 @@ T43 ověřuje samostatnou volitelnou lidskou platební cestu podle §10.3; její
 U každého externího výsledku zaznamenat skutečný runtime/účet bez tajemství, metodu přístupu/verzi API či MCP a protokolu, report/evidence/rulebook hash, čas a návazná ID. Skriptovaní klienti a lokální providery jsou důkaz backendu; nejsou důkazem živého GrokBota, jiného konkrétního produktu ani on-chain transakce. Bez přístupu k účtům, prostředí nebo funds uvést NOT_RUN/BLOCKED a konkrétní závislost.
 
 ## 15. Konzole a dvouminutové demo
+
+Záložka Agent Card obsahuje jednoduchý popis a tlačítko pro zkopírování kanonického zadání. Prompt doplní aktuální website/Handle URL a zachová soukromý token mimo veřejnou kartu. Stav a historie publikace jsou ve sbalitelném detailu.
 
 Konzole ukazuje onboarding a ověřeného vlastníka, přidělený relay/příjem práce, zdroje a audit, rulebook/schválení, website publication, připojené agenty/předání a uložené objednávky/platby. Každý pohled má konkrétní stav a další potřebný krok. Nevyvíjet vlastní náhradu plného chatového UI GrokBota.
 
@@ -905,7 +900,7 @@ Revokace Handle připojení nezruší externí sessions/keys. Předání zůstan
 
 Publikace používá dostupnou správu webu; chybějící write možnost není skryta za tvrzením hotového konektoru. Dynamická route/proxy na managed kartu usnadní gating. Statický JSON/CDN může po revoke přetrvat; do ověřeného odstranění je withdrawal_pending. Relay i tehdy blokuje neautorizované transakce.
 
-Zákaznický bot zná firmu z kontaktu, endpoint ale objeví živě. Neprokazujeme automatické organické vyhledání nebo univerzální kompatibilitu libovolného klienta. Runtime-neutral přenos není důkaz podpory Muse/Dots; konkrétní produkt má vlastní průchod. Serverová izolace nezaručuje izolaci dlouhodobé paměti modelu; používat syntetická data.
+Zákaznický bot standardně získá firmu z registry search, endpoint ale objeví živě z aktuální karty. Neprokazujeme automatické organické vyhledání nebo univerzální kompatibilitu libovolného klienta. Runtime-neutral přenos není důkaz podpory Muse/Dots; konkrétní produkt má vlastní průchod. Serverová izolace nezaručuje izolaci dlouhodobé paměti modelu; používat syntetická data.
 
 Masumi Preprod důkaz je oddělený od local_demo; nejasný finanční stav se neodvozuje z chatu ani neřeší obnovením starého DB snapshotu. Testnet částky a fees se nepředstavují jako bankovní Kč. Skutečná infrastruktura Handle musí existovat před fresh onboardingem; provision firemního relay není nasazení celé platformy.
 
@@ -935,7 +930,7 @@ Instrukce používají skutečný Handle bootstrap a již dostupné UI/API/MCP. 
 
 ### Zákaznický GrokBot
 
-> Jednáš za zákazníka pouze v lidsky schváleném mandátu. Z kontaktu znáš website URL, nikoli endpoint. Otevři web, znovu ověř Agent Card a použij kompatibilní objevený endpoint a skutečný auth flow. Token v kartě není; credential posílej jen ověřené službě se správnou audience, nikoli na cizí origin/redirect. Endpoint ani fallback nevymýšlej. Před přijetím porovnej cenu, zálohu, službu, termín a doplňky s mandátem. Recommend je pouze nabídka; book může přijmout platnou vyhovující nabídku. Vyjednání nezvyšuje rozpočet. Při překročení požádej člověka. Dokončení shrň až po booking ID a ověřeném platebním stavu, rozliš Kč/testnet asset.
+> Jednáš za zákazníka pouze v lidsky schváleném mandátu. Skill handle-customer dodá registry URL; vyhledej službu/lokalitu a otevři vrácený web. Znovu ověř Agent Card a použij kompatibilní objevený endpoint a skutečný auth flow. Token v kartě není; credential posílej jen ověřené službě se správnou audience, nikoli na cizí origin/redirect. Endpoint ani fallback nevymýšlej. Před přijetím porovnej cenu, zálohu, službu, termín a doplňky s mandátem. Recommend je pouze nabídka; book může přijmout platnou vyhovující nabídku. Vyjednání nezvyšuje rozpočet. Při překročení požádej člověka. Dokončení shrň až po booking ID a ověřeném platebním stavu, rozliš Kč/testnet asset.
 
 ### Interní GrokBot majitele
 

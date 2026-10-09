@@ -9,7 +9,7 @@ const I18N = {
   cs: {
     skip: 'Přejít k obsahu', console: 'Konzole majitele', manage: 'Správa firmy', footer: 'Majitel rozhoduje. Agent pracuje v mezích pravidel.',
     openWeb: 'Otevřít web firmy', guide: 'Návod k prvnímu dni', sandbox: 'Sandbox', refresh: 'Obnovit', logout: 'Odhlásit', language: 'Jazyk', business: 'Firma',
-    tabs: { overview: 'Přehled', audit: 'Audit a otázky', rules: 'Pravidla', agents: 'Agenti a přístupy', website: 'Publikace webu', handover: 'Předání firmy' },
+    tabs: { overview: 'Přehled', audit: 'Audit a otázky', rules: 'Pravidla', agents: 'Agenti a přístupy', website: 'Agent Card', handover: 'Předání firmy' },
     leads: { overview: 'Co se ve firmě děje a co čeká na vaše rozhodnutí.', audit: 'Co agent zjistil o vaší firmě a na co se vás ptá.', rules: 'Co agent smí udělat sám, co jen s vaším souhlasem a co nikdy.', agents: 'Kdo pro vás pracuje a co smí dělat.', website: 'Jak zákaznické agenty najdou vašeho agenta na webu.', handover: 'Výměna agenta bez ztráty zákazníků a rozpracované práce.' },
     footNote: 'Sandbox · skutečné provozní a platební stavy se ověřují v jejich zdrojových systémech.',
     // login
@@ -78,7 +78,8 @@ const I18N = {
     readyOk: 'Agent potvrdil, že zná platná pravidla.', readyMissing: 'Agent ještě nepotvrdil, že zná platná pravidla. Do té doby mu nejde povolit práci se zákazníky.', needsRules: 'Nejdřív schvalte pravidla.',
     revokeTitle: 'Odpojit agenta', revokeText: 'Agent okamžitě ztratí přístup do Handle. Účty, které jste mu dali jinde (např. admin webu), zrušte i tam.', confirmRevoke: 'Chci tohoto agenta odpojit.', revoke: 'Odpojit agenta', revokedNote: 'Agent je odpojen. Nový agent se musí připojit znovu.',
     // website
-    webTitle: 'Kontakt pro agenty na webu', webText: 'Na vašem webu je karta agenta. Podle ní zákaznické agenty najdou toho vašeho.',
+    webTitle: 'Propojte svůj web s agenty', webText: 'Agent Card říká ostatním agentům, co vaše firma nabízí a jak kontaktovat vašeho agenta. Zkopírujte prompt a předejte ho svému agentovi. Provede vás nastavením a po vašem schválení kartu zveřejní na webu.',
+    copyPrompt: 'Zkopírovat prompt', promptCopied: 'Prompt zkopírován. Předejte ho svému agentovi.', promptLoadError: 'Prompt se nepodařilo načíst. Zkuste to znovu.', promptManualTitle: 'Zkopírujte prompt ručně', promptManualText: 'Prohlížeč nepovolil kopírování do schránky. Označte text a zkopírujte ho pomocí Ctrl+C nebo ⌘C.', selectPrompt: 'Označit celý prompt', publicationDetails: 'Stav a historie zveřejnění',
     cRules: 'Pravidla schválena', cGrant: 'Agent smí zveřejnit kontakt', cCheck: 'Kontakt ověřen pro platná pravidla', cCard: 'Karta agenta',
     okActive: 'Ano', missing: 'Chybí', waiting: 'Čeká', published: 'Zveřejněno', viewCard: 'Zobrazit kartu', grantPublish: 'Povolit zveřejnění',
     revisions: 'Historie zveřejnění', colRevision: 'Zveřejnění', colChecked: 'Ověřeno', noRevisions: 'Agent zatím nic nezveřejnil.',
@@ -105,7 +106,7 @@ const I18N = {
   en: {
     skip: 'Skip to content', console: 'Owner console', manage: 'Run the business', footer: 'You decide. Your agent works within your rules.',
     openWeb: 'Open the business website', guide: 'First-day guide', sandbox: 'Sandbox', refresh: 'Refresh', logout: 'Sign out', language: 'Language', business: 'Business',
-    tabs: { overview: 'Overview', audit: 'Audit & questions', rules: 'Rules', agents: 'Agents & access', website: 'Website', handover: 'Handover' },
+    tabs: { overview: 'Overview', audit: 'Audit & questions', rules: 'Rules', agents: 'Agents & access', website: 'Agent Card', handover: 'Handover' },
     leads: { overview: 'What is happening in your business and what needs your decision.', audit: 'What your agent learned about your business, and its questions for you.', rules: 'What the agent may do on its own, only with your approval, or never.', agents: 'Who works for you and what they may do.', website: 'How customer agents find your agent on your website.', handover: 'Swap agents without losing customers or work in progress.' },
     footNote: 'Sandbox · real operational and payment states are confirmed in their source systems.',
     loginTitle1: 'Your business.', loginTitle2: 'Your', loginTitle3: 'rules.', loginLead: 'Your agent studies the business and proposes rules. You decide what it may do.',
@@ -165,7 +166,8 @@ const I18N = {
     permsTitle: (r) => `${r} · what it may do`, setupPerms: 'Setup and audit', workPerms: 'Working with customers', confirmPerms: 'I allow the selected work within the rules in force.', savePerms: 'Save permissions',
     readyOk: 'The agent confirmed it knows the rules in force.', readyMissing: 'The agent has not yet confirmed it knows the rules in force. Until then you cannot let it work with customers.', needsRules: 'Approve the rules first.',
     revokeTitle: 'Disconnect the agent', revokeText: 'The agent loses Handle access at once. Accounts you gave it elsewhere (e.g. website admin) must be removed there too.', confirmRevoke: 'I want to disconnect this agent.', revoke: 'Disconnect agent', revokedNote: 'This agent is disconnected. A new agent must connect again.',
-    webTitle: 'Agent contact on your website', webText: 'Your website carries an agent card. Customer agents use it to find yours.',
+    webTitle: 'Connect your website with agents', webText: 'An Agent Card tells other agents what your business offers and how to contact your agent. Copy the prompt and give it to your agent. It will guide you through setup and publish the card on your website after your approval.',
+    copyPrompt: 'Copy prompt', promptCopied: 'Prompt copied. Give it to your agent.', promptLoadError: 'The prompt could not be loaded. Please try again.', promptManualTitle: 'Copy the prompt manually', promptManualText: 'Your browser did not allow clipboard access. Select the text and copy it with Ctrl+C or ⌘C.', selectPrompt: 'Select the whole prompt', publicationDetails: 'Publication status and history',
     cRules: 'Rules approved', cGrant: 'Agent may publish the contact', cCheck: 'Contact verified for the rules in force', cCard: 'Agent card',
     okActive: 'Yes', missing: 'Missing', waiting: 'Waiting', published: 'Published', viewCard: 'View card', grantPublish: 'Allow publishing',
     revisions: 'Publishing history', colRevision: 'Publication', colChecked: 'Verified', noRevisions: 'Nothing published yet.',
@@ -347,8 +349,9 @@ function render() {
 function renderTab(b) {
   if (state.tab === 'overview') return renderOverview(b);
   if (state.tab === 'agents') return renderAgents(b);
+  if (state.tab === 'website') return renderWebsite(b);
   if (!b) return emptyBusiness();
-  return { audit: renderAudit, rules: renderRules, website: renderWebsite, handover: renderHandover }[state.tab](b);
+  return { audit: renderAudit, rules: renderRules, handover: renderHandover }[state.tab](b);
 }
 const emptyBusiness = () => panel(esc(t('noBusiness')), `<p>${esc(t('noBusinessText'))}</p>`);
 
@@ -607,12 +610,37 @@ function renderAgents(b) {
 
 // ---------- website ----------
 function renderWebsite(b) {
+  const introduction = panel(esc(t('webTitle')), `<p>${esc(t('webText'))}</p><div class="hd-actions">${button(t('copyPrompt'), { attrs: 'data-action="copy-agent-card-prompt"' })}</div>`);
+  if (!b) return introduction;
   const active = activeRules(b), grant = publishGrant(b), current = currentPublication(b), publications = list(b.publications);
   const cardUrl = `${String(b.legacy_url || location.origin).replace(/\/$/, '')}/.well-known/agent-card.json`;
   const banner = !current && active ? (() => { const [title, text] = grant ? t('webNextAgent') : t('webNext'); return `<section class="hc-next"><div class="hc-next-t"><span class="hc-next-k">${esc(grant ? t('agentWorking') : t('nextStep'))}</span><strong>${esc(title)}</strong><span class="d">${esc(text)}</span></div>${grant ? '' : `<button type="button" class="hd-btn hd-btn-primary" data-tab="agents">${esc(t('grantPublish'))}${ARROW}</button>`}</section>`; })() : '';
   const checks = [[t('cRules'), active ? chip('active', 'ok', `v${active.version}`) : chip('', 'bad', t('missing'))], [t('cGrant'), grant ? chip('', 'ok', t('okActive')) : chip('', 'bad', t('missing'))], [t('cCheck'), current ? chip('verified', 'ok', t('published')) : chip('', 'warn', t('waiting'))], [t('cCard'), link(cardUrl, t('viewCard'))]];
   const rows = publications.map(item => `<tr><td class="is-mono">${esc(item.id)}</td><td>${chip(item.state)}</td><td class="is-mono">${esc(String(item.rulebook_hash || '—').slice(0, 12))}${item.rulebook_hash ? '…' : ''}</td><td>${esc(date(item.verified_at))}</td></tr>`);
-  return `${banner}${panel(esc(t('webTitle')), `<p>${esc(t('webText'))}</p><ul class="hc-list">${checks.map(([label, value]) => `<li><div class="grow"><strong>${esc(label)}</strong></div>${value}</li>`).join('')}</ul>`)}<section class="hc-panel" style="padding:0;background:none"><div class="hc-panel-h" style="padding:0 4px"><h2>${esc(t('revisions'))}</h2></div>${table([[t('colRevision')], [t('colState')], ['Rulebook'], [t('colChecked')]], rows, t('noRevisions'))}</section>`;
+  return `${introduction}<details class="hc-tech"><summary>${esc(t('publicationDetails'))}</summary><div>${banner}<ul class="hc-list">${checks.map(([label, value]) => `<li><div class="grow"><strong>${esc(label)}</strong></div>${value}</li>`).join('')}</ul><h2>${esc(t('revisions'))}</h2>${table([[t('colRevision')], [t('colState')], ['Rulebook'], [t('colChecked')]], rows, t('noRevisions'))}</div></details>`;
+}
+
+async function copyAgentCardPrompt(target) {
+  state.busy = true; target.disabled = true;
+  try {
+    const response = await fetch('/handle/agent-card-prompt', { credentials: 'same-origin', redirect: 'error', headers: { Accept: 'text/plain' } });
+    if (!response.ok || !response.headers.get('content-type')?.startsWith('text/plain')) throw new Error(t('promptLoadError'));
+    const template = await response.text();
+    if (!template.trim()) throw new Error(t('promptLoadError'));
+    const prompt = template.replaceAll('[WEBSITE_URL]', business()?.legacy_url || '[WEBSITE_URL]');
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(prompt);
+      state.feedback = { tone: 'ok', text: t('promptCopied') }; render();
+    } catch {
+      state.feedback = null; render();
+      dialog.innerHTML = `<div class="hd-dlg"><div><h2 id="dialog-title">${esc(t('promptManualTitle'))}</h2></div><div class="hd-dlg-b"><p>${esc(t('promptManualText'))}</p>${field(t('copyPrompt'), '<textarea class="hd-input is-mono" rows="14" readonly data-agent-card-prompt style="width:100%;resize:vertical"></textarea>')}</div><div class="hd-dlg-f">${button(t('selectPrompt'), { variant: 'secondary', attrs: 'data-action="select-agent-card-prompt"' })}${button(t('cancel'), { attrs: 'data-action="close-dialog"' })}</div></div>`;
+      const input = dialog.querySelector('[data-agent-card-prompt]'); input.value = prompt;
+      dialog.showModal(); input.focus(); input.select();
+    }
+  } catch {
+    state.feedback = { tone: 'bad', text: t('promptLoadError') }; render();
+  } finally { state.busy = false; if (target.isConnected) target.disabled = false; }
 }
 
 // ---------- handover ----------
@@ -650,6 +678,8 @@ document.addEventListener('click', async event => {
   if (target.dataset.auditVersion) { state.auditVersion = Number(target.dataset.auditVersion); render(); return; }
   if (target.dataset.approval && !target.closest('form')) { openApproval(target.dataset.approval); return; }
   if (target.dataset.action === 'close-dialog') { event.preventDefault(); dialog.close(); return; }
+  if (target.dataset.action === 'copy-agent-card-prompt') { await copyAgentCardPrompt(target); return; }
+  if (target.dataset.action === 'select-agent-card-prompt') { const input = dialog.querySelector('[data-agent-card-prompt]'); input?.focus(); input?.select(); return; }
   if (target.dataset.action === 'refresh') { state.feedback = null; await load(); return; }
   if (target.dataset.action === 'verify-website') { state.busy = true; try { await verifyWebsite(target.dataset.request); } catch (error) { state.feedback = { tone: 'bad', text: error.message }; render(); } finally { state.busy = false; } return; }
   if (target.dataset.action === 'logout') {

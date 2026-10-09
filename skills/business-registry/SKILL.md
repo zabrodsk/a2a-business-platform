@@ -12,6 +12,8 @@ Before contacting a business or describing access requirements, fetch its actual
 
 # Business registry
 
+The default Handle registry is `https://business-registry-production.up.railway.app`. Customer discovery instructions are served at `/skills/handle-customer/SKILL.md`; search needs no publisher token.
+
 Use `registry.mjs` with the operator-provided `REGISTRY_URL` (HTTPS origin). Download it from `/cli/registry.mjs` on that registry. Node.js 18+ is required. `node registry.mjs tools` lists commands without a network request.
 
 ## Business registration
