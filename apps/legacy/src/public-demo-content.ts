@@ -7,9 +7,27 @@ export interface PublicDemoContext {
   networkFee?: string;
   simulation: boolean;
 }
-const publicPages = new Set(['index.html', 'kontakt.html', 'podminky.html']);
+const publicPages = new Set(['index.html', 'kalkulator.html', 'kontakt.html', 'podminky.html']);
 export const hasPublicDemoContent = (file: string) => publicPages.has(file);
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+function publicHeader(file: string): string {
+  const link = (page: string, href: string, label: string) => `<a class="site-header-link" href="${href}"${file === page ? ' aria-current="page"' : ''}>${label}</a>`;
+  return `<header class="site-header">
+    <nav class="site-header-primary" aria-label="Hlavní navigace">
+      ${link('index.html', '/#sluzby', 'Služby')}
+      ${link('kalkulator.html', '/kalkulator', 'Kalkulátor')}
+    </nav>
+    <a class="wm site-header-brand" href="/" aria-label="Pneu 007 — úvod"><span class="wm-a">Pneu</span><span class="wm-b">007</span></a>
+    <div class="site-header-secondary">
+      <nav aria-label="Další odkazy">
+        ${link('kontakt.html', '/kontakt', 'Kontakt')}
+        ${link('podminky.html', '/podminky', 'Podmínky')}
+        ${link('', '/kalkulator', 'Objednat')}
+      </nav>
+      <div class="live-session"><button class="btn-q" type="button" data-live-login>Přihlásit se</button></div>
+    </div>
+  </header>`;
+}
 function ada(quantity: string): string {
   const value = BigInt(quantity), whole = (value / 1_000_000n).toLocaleString('cs-CZ');
   const fraction = (value % 1_000_000n).toString().padStart(6, '0').replace(/0+$/, '');
@@ -27,7 +45,7 @@ const workshopPlan = `<svg viewBox="0 0 360 180" width="360" style="width:100%;m
 export function renderPublicDemoContent(file: string, template: string, context: PublicDemoContext): string {
   if (!hasPublicDemoContent(file)) return template;
   const profile = loadProfile('pneu007');
-  let html = template;
+  let html = template.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, publicHeader(file));
   const fill = (label: string, value: string) => { html = html.replace(`<span class="ph">${label}</span>`, escape(value)); };
   if (file === 'index.html') fill('[PLACEHOLDER]', `${profile.site.phone} · nefunkční demo číslo`);
   if (file === 'kontakt.html') {

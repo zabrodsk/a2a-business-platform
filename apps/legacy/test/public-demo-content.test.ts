@@ -14,7 +14,7 @@ const context = { publicUrl: 'https://pneu007.example', networkFee: '2500000', s
 
 test('public demo fields are complete and consistent with booking, contact and payment data', () => {
   const profile = loadProfile('pneu007');
-  for (const file of ['index.html', 'kontakt.html', 'podminky.html']) {
+  for (const file of ['index.html', 'kalkulator.html', 'kontakt.html', 'podminky.html']) {
     const html = renderPublicDemoContent(file, template(file), context);
     assert.doesNotMatch(html, /\[PLACEHOLDER[^\]]*\]/);
     assert.ok(!html.includes('<span class="ph">'));
@@ -52,9 +52,10 @@ test('canonical and html URLs render complete content while approved source inte
   const proposal: RulebookProposal = { params, evidence: Object.fromEntries(Object.keys(params).map(key => [key, [cite(key === 'supplier_allowed_actions' ? 'internal-partners' : operationKeys.includes(key) ? 'internal-operations' : 'internal-systems')]])) as RulebookProposal['evidence'], profile: { name: 'Pneu 007 TEST FIXTURE', summary: 'Explicit test-authored backwards compatibility fixture.', systems: ['native-legacy'], partners: ['fictional-supplier'], channels: ['web'], citations: [cite('web-home'), cite('web-contact'), cite('web-terms')] }, findings: [] };
   const proposed = system.rulebooks.propose({ id: 'garage-demo', role: 'business_agent' }, proposal);
   const approved = system.rulebooks.activate({ id: 'staff-owner', role: 'owner' }, proposed.version);
-  for (const path of ['/', '/index.html', '/kontakt', '/kontakt.html', '/podminky', '/podminky.html']) {
+  for (const path of ['/', '/index.html', '/kalkulator', '/kalkulator.html', '/kontakt', '/kontakt.html', '/podminky', '/podminky.html']) {
     const response = await fetch(base + path); assert.equal(response.status, 200); assert.match(response.headers.get('content-type')!, /text\/html/);
     const html = await response.text(); assert.doesNotMatch(html, /\[PLACEHOLDER[^\]]*\]/);
+    assert.match(html, /<header class="site-header">/);
   }
   assert.deepEqual(system.rulebooks.getActive().source_manifest, approved.source_manifest);
   assert.equal(system.rulebooks.getActive().version, approved.version);
