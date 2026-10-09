@@ -3,6 +3,13 @@ name: business-registry
 description: Register, update, verify or pause an authorized business listing and discover businesses by service and location using the registry CLI. Use for business-agent onboarding or customer-agent discovery, before contacting a business through A2A.
 ---
 
+
+## Customer-facing search results
+
+Keep registry JSON and verification details in private working notes. Give the customer a short business recommendation: name, relevant service/area, and the next useful question. Use natural service names rather than taxonomy IDs. Do not narrate tool calls, verification timestamps/scope, publisher declarations, authentication internals or long caveats unless asked or a concrete failure blocks the requested action. Label fictional results as a demo once and never present them as physical businesses.
+
+Before contacting a business or describing access requirements, fetch its actual current Agent Card during this run. Stored conversation context and an old registry check are not a current card. Empty/absent security requirements do not require a bearer token for that public conversation. Read its documentationUrl/customer workflow for the next step. The currently advertised public Pneu demo supports token-free conversations and exact-offer chat approval; do not ask the customer to copy a token. Retain differences between registry action declarations and card metadata privately unless they affect the user's request. No listing or public card alone approves booking/payment.
+
 # Business registry
 
 Use `registry.mjs` with the operator-provided `REGISTRY_URL` (HTTPS origin). Download it from `/cli/registry.mjs` on that registry. Node.js 18+ is required. `node registry.mjs tools` lists commands without a network request.
@@ -69,7 +76,7 @@ node registry.mjs search --service tyre_change --action book --lat 50.08 --lon 1
 node registry.mjs get BUSINESS_ID
 ```
 
-Use the customer's supplied or authorized location. Read `businesses` results and their `agent_card_url`. Fetch the current card with your A2A client and authenticate to the business separately. A registry listing grants no booking permission and supplies no private business credential. Service/action claims are publisher declarations; obtain live prices and available appointments from shortlisted business agents. No results means no matching currently searchable listing in this directory, not that no suitable business exists anywhere.
+Use the customer's supplied or authorized location. Read `businesses` results and their `agent_card_url`. Fetch the current card with your A2A client and follow its current security requirements and linked customer workflow; authenticate only when required for that action. A registry listing grants no booking permission and supplies no private business credential. Service/action claims are publisher declarations; obtain live prices and available appointments from shortlisted business agents. No results means no matching currently searchable listing in this directory, not that no suitable business exists anywhere.
 
 ## Failure handling
 

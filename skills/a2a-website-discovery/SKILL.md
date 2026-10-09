@@ -3,6 +3,15 @@ name: a2a-website-discovery
 description: Find businesses through ordinary web search, inspect their official websites for A2A Agent Cards, and produce a source-backed shortlist for a requested service and area. Use before contacting a business agent; registry access and Google Maps API credentials are optional.
 ---
 
+
+## Customer-facing replies
+
+Discovery reports are private working data. Default to two or three natural sentences: the business name, relevant area/service, and one useful next question. Do not narrate the registry search or dump service IDs, Agent Card fields, bearer-token terminology, verification timestamps/scope, publisher declarations, interface versions, scanner coverage or generic warnings into the chat. Retain evidence privately and provide technical detail only when asked, or explain a concrete blocker briefly when it affects the next action. Do not invent a distance from an assumed area centre or imply you know the customer's exact location.
+
+For this hackathon, say for example: "I found Pneu 007, our fictional demo shop in Holešovice. Its agent handles tyre changes and wheel swaps. Shall I get you a quote?" Use the actual current result. Identify it as a fictional demo once; do not repeat a long disclaimer. Never present it as a real physical workshop or suggest an actual visit.
+
+Before stating authentication requirements or contacting the selected agent, fetch its current Agent Card from the returned card URL in this run. Do not reuse remembered card contents from an earlier conversation or infer login requirements from old /auth.md instructions. Empty or absent card security requirements mean the public conversation does not require a bearer token; do not invent a token requirement. Read the current documentationUrl and customer workflow skill for the authorized next step. For the currently advertised public Pneu demo, follow the token-free conversation and exact-offer chat approval flow. If a fresh card cannot be obtained, say the connection requirements are unconfirmed; do not guess.
+
 # Discover business agents from websites
 
 Start with the customer's service and location. Use your existing web search/browser to find candidate businesses, then use the public discovery helper to check their websites. Website checks perform public HTTP GET requests only. Hosted mode sends the candidate list to the platform's metadata scanner. It does not search Google, enroll, message agents, book or pay.
@@ -75,15 +84,15 @@ The JSON report includes `coverage`, candidate `status`, discovery evidence, opt
 
 If a website explicitly points to a card on another public origin, inspect the returned warning. Hosting an Agent Card does not establish that the remote operator is authorized by the business. Never send an existing business credential to another origin.
 
-Separate the source-backed service/location match from the detected A2A support. Card skills, tags and descriptions are declarations. A `booking` tag is not evidence that a booking succeeded. If the card differs from a registry listing, show the discrepancy.
+Separate the source-backed service/location match from the detected A2A support. Card skills, tags and descriptions are declarations. A `booking` tag is not evidence that a booking succeeded. If the current card differs from a registry listing, keep the discrepancy in private working notes. Explain it to the customer only if it blocks their requested action; never infer a successful booking or broader authority from a card tag.
 
 ## Return a shortlist
 
-Provide the business name, official website, source-backed address/area and service relevance, card URL, advertised interfaces and actions, authentication requirements, and any missing or uncertain information. Link the evidence. Show how many sites were scanned and whether coverage was truncated or incomplete.
+Return a short recommendation, not the scanner report. For a single match, give its name, a website link when useful, the relevant area/service and one next question. For several matches, give a compact comparison of facts relevant to the customer's request. Mention an actual availability/access failure when it affects their choice. State when no usable match was found without claiming all businesses in the area were checked.
 
-If no matching sites expose a usable card, state that result plainly. Do not claim that all businesses in the area were checked. A registry can be offered as an additional search source, but keep its results labeled and do not use it to fabricate success for a website-search test.
+Keep the report's technical evidence, coverage, metadata and warnings internally; do not repeat them to the customer unless asked. Distinguish a fictional demo from a real workshop in a brief label. A public card and a directory listing do not authorize spending or prove a reservation.
 
-Discovery ends at the shortlist. For a later authorized quote request, fetch the selected business's current Agent Card with the A2A client and follow its actual customer-authentication flow. A public card is not permission to access private data or spend money.
+Discovery normally ends at the recommendation. When the customer requests a quote, fetch the selected business's current Agent Card again, read its linked customer workflow and proceed within their request. In the public Pneu demo, do not stop to request login or bearer tokens; use its advertised token-free flow. Ask for missing vehicle/service details and show the exact offer before asking for approval. Never claim the shop has replied until an actual reply is received.
 
 ## Demo control
 
