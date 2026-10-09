@@ -30,6 +30,8 @@ Připravené jsou legacy web, backend, dummy provozní data a vstupní dokumenty
 
 Obchodní částky, termíny a kontakty níže jsou testovací data. Dostupnost vlastností konkrétních runtime, účtů, adaptérů a platebního prostředí se ověřuje samostatně; požadavek není důkazem implementované funkce.
 
+**Aktuální rozhodnutí majitele pro hackathonové demo, 9. října 2026:** platby tohoto průchodu používají pouze `local_demo`, síť `local` a syntetický asset `lovelace`. Záloha je simulovaných 500 Kč, bez blockchainového nákupu, síťového poplatku, skutečného inkasa či on-chain refundu; Stripe se v tomto průchodu nepoužívá. Masumi Preprod není podmínkou onboardingu ani schválení lokálních demo pravidel. Skutečný audit, vlastní doložený návrh pravidel a nezávislé lidské schválení zůstávají povinné; nejde o přepnutí na připravené `open_demo`. Starší audit Masumi a jeho důkazy zůstávají v historii. Agent změnu znovu pozoruje a doloží v aktualizovaném reportu a návrhu s aktuální odpovědí majitele; historické blokace se nemažou ani nevydávají za vyřešené bez nových podkladů. Níže uvedené Masumi scénáře zůstávají samostatným volitelným technickým ověřením, nikoli podmínkou tohoto dema.
+
 ## 1. Cíl a definice hotového výsledku
 
 Majitel fiktivního Pneu 007 má fresh GrokBota, existující web a jeden či více nezávislých provozních systémů. Zadá URL Handle, známé adresy systémů a bezpečně poskytne admin účty. GrokBot sám zahájí registraci, požádá o spravovaný relay a provede pozorovací audit veřejného webu a přístupných administrací, existujících zdokumentovaných API/OpenAPI nebo MCP. Uloží obecný report s minimálními důkazními přílohami a navrhne podporovaný rulebook. Majitel se nezávisle přihlásí do Handle, posoudí fakta i autoritu zdrojů a schválí přesnou verzi pravidel a provozní scope. Bot potom dostupným CMS/file managerem/hostingovým UI či existujícím API/MCP publikuje kartu a odkaz v odsouhlaseném rozsahu.
@@ -81,7 +83,7 @@ Základní průchod je hotový, když skuteční GrokBoti komunikují bez ručn�
 | Discovery | Zákaznický kontakt obsahuje pouze firmu, adresu a URL. Karta se načte za běhu; registry ani organické vyhledávání nejsou podmínkou hlavního dema. |
 | Komunikace | Veřejné A2A 1.0 JSON-RPC rozhraní, za ním soukromé nástroje, trvalé případy a scoped leases. Streaming a pushNotifications jsou zpočátku false. |
 | Dostupnost | Ověřený polling/routine nebo wake-up konkrétního runtime. Aktivní časově omezená relace se označí jako taková; jednorázový prompt nedokládá trvalý provoz. |
-| Transakce | Serverem autorizovaná objednávka/hold a Masumi Cardano Preprod platba se samostatným pozorováním a reconciliation. Local_demo je oddělená simulace. |
+| Transakce | Pro aktuální hackathonové demo serverem autorizovaná objednávka/hold a výslovná lokální simulace platby (`local_demo`); žádné blockchainové transakce. Masumi Cardano Preprod zůstává odděleným volitelným ověřením se skutečnými důkazy. |
 | Výměna agenta | Owner-approved přepnutí connection/epoch, samostatně ověřené odvolání/rotace externích přístupů a vyřešení nejistých zápisů. Do vyřešení pending; stejné případy, zákaznické souhlasy a payment intent. |
 | Výstup | Opakovatelný fresh onboarding, skutečný audit/discovery/obchod, zastavené nepovolené jednání, předání a sanitizované protokoly. |
 
@@ -283,6 +285,8 @@ Příklad cílového požadavku na pravidlo, nikoli již nasazené obecné API s
 ```
 
 Majitel ve své nezávisle autentizované Handle konzoli přezkoumá obchodní fakta, autoritu a neznámé a aktivuje přesnou verzi/hash pravidel. Provozní scope a publication scope musí být zaznamenané; mohou být součástí stejného přezkoumaného souhlasu. Agentí token ani legacy admin session nemohou provést lidskou aktivaci. Neznámá kritická politika nebo nepodporovaná automatická akce zůstává blokovaná. Samotná registrace, upload nebo vytvoření relay neotevírá aktivní kartu.
+
+Konzole rozlišuje skutečně nezodpovězené kritické otázky od blokovaných parametrů návrhu a kritických zjištění příslušné verze auditu. Pokud jsou odpovědi uložené, nesmí platební nebo jinou auditní blokaci popsat jako chybějící odpověď. Zobrazí doložený důvod a doporučený další krok; změna vysvětlení sama blokaci neodstraňuje.
 
 Peníze se vyhodnocují v haléřích, procenta v basis points. Rulebook nekopíruje celý cenový algoritmus. SKILL.md se exportuje podle ověřeného formátu Agent Skills [5] a jeho načtení runtime má vlastní test.
 
@@ -797,7 +801,7 @@ Nejdříve ověřit aktuální stav a migraci, oddělit business/agent identity 
 | T11 | Nabídka expirovala nebo termín mezitím obsazen | Bez potvrzení, nový návrh nebo srozumitelný neúspěch. |
 | T12 | Čtení cizího inboxu, mandátu nebo soukromého rulebooku | Odepřený přístup. |
 | T13 | Zpožděné schválení majitele | Úkol zůstane uložený, pokračuje až po načtení platného rozhodnutí. |
-| T14 | Výsledek platby | Obchodní evidence: celkem 2 224,80 Kč, záloha 500 Kč, doplatek 1 724,80 Kč. Masumi Preprod: uložený syntetický mapping zálohy na 5 000 000 lovelace (5 test ADA), skutečný intent/provider/chain stav a příjemce. Zohlednit escrow a síťové poplatky; netvrdit CZK převod nebo fiktivní CZK zůstatek. Lokální simulace má oddělený výsledek a neplní důkaz Preprod. |
+| T14 | Výsledek platby | Pro aktuální demo obchodní evidence: celkem 2 224,80 Kč, simulovaná záloha 500 Kč, doplatek 1 724,80 Kč; jeden lokální intent a booking, provider `local_demo`, síť `local`, výslovné označení simulace a žádné volání blockchainového nákupu. Samostatný volitelný Masumi test vyžaduje skutečný provider/chain důkaz; lokální simulace jej nenahrazuje. |
 | T15 | Změněný endpoint v kartě | Změněná revision/ETag a revalidace při novém běhu vedou na nový povolený endpoint bez změny kontaktu/kódu; oddělené legacy/relay originy fungují, cizí origin nedostane původní token. |
 | T16 | Chybějící/nekompatibilní karta | Konkrétní chyba, žádné vymyšlené spojení nebo tichý hardcoded fallback. |
 | T17 | Zákazník A čeká na majitele | B mezitím pokračuje ve vlastním případu. Bez přimíchání informací A. |

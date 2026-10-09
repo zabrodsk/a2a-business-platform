@@ -49,7 +49,7 @@ const I18N = {
     sSystems: 'Systémy', sEvidence: 'Důkazy', sAnswered: 'Zodpovězené otázky', sFindings: 'K pozornosti', version: (v) => `Verze ${v}`,
     question: 'Otázka pro vás', critical: 'Blokuje pravidla', yourAnswer: 'Vaše odpověď', answerPh: 'Napište odpověď vlastními slovy.',
     kindPolicy: 'Moje rozhodnutí', kindPolicySub: 'Určuji, jak to má být', kindFact: 'Fakt ke kontrole', kindFactSub: 'Agent ověří ve zdroji', answerType: 'Co to je',
-    scope: 'Na co se to vztahuje', scopeDefault: 'Celá firma, běžný provoz', until: 'Platí do · volitelné', saveAnswer: 'Uložit odpověď',
+    scope: 'Na co se to vztahuje', scopeDefault: 'Celá firma, běžný provoz', until: 'Platí do · volitelné', saveAnswer: 'Uložit odpověď', updateAnswer: 'Upravit odpověď',
     systemsTitle: 'Systémy, které agent prošel', colSystem: 'Systém', colAuthority: 'Je zdrojem pravdy pro', colAccess: 'Jak agent přistupoval', colRoles: 'Účty',
     findingsTitle: 'Co agent zjistil', answeredTitle: 'Zodpovězeno', kindPolicyShort: 'Rozhodnutí', kindFactShort: 'Fakt', evidenceTitle: 'Důkazy', noFindings: 'Bez zvláštních zjištění.',
     sev: { info: 'Informace', warning: 'Pozor', critical: 'Kritické' },
@@ -57,7 +57,10 @@ const I18N = {
     rulesEmpty: 'Zatím žádný návrh pravidel', rulesEmptyText: 'Agent navrhne pravidla po auditu. Nic se nepředvyplňuje.',
     sActive: 'Platí', sProposal: 'Návrh čeká', sApprovals: 'Výjimky čekají', sDeposit: 'Záloha',
     proposalTitle: (v) => `Návrh pravidel · verze ${v}`, waitsForYou: 'Čeká na vás', whatChanges: 'Co se změní', firstRules: 'Takhle by agent pracoval',
-    allRules: 'Všechna pravidla návrhu', blocked: 'Návrh obsahuje nezodpovězenou kritickou otázku. Odpovězte v Auditu a agent pošle opravený návrh.',
+    allRules: 'Všechna pravidla návrhu', blockedQuestions: 'Návrh obsahuje nezodpovězené kritické otázky. Odpovězte v Auditu a agent pošle opravený návrh.',
+    blockedParameters: 'Návrh má blokované parametry. Agent musí vyřešit uvedené auditní blokace a poslat opravený návrh; váš souhlas je sám neodstraní.',
+    blockedFallback: 'Agent musí doplnit chybějící podklady nebo vyřešit auditní blokace a poslat opravený návrh.',
+    blockedFindings: 'Kritická zjištění', blockedParameterList: 'Blokované parametry', findingRule: 'Návrh pravidel', findingReport: (v) => `Audit · verze ${v}`,
     confirmRules: 'Přečetl/a jsem si pravidla a souhlasím s nimi.', activate: (v) => `Schválit pravidla (verze ${v})`,
     activeTitle: (v) => `Vaše platná pravidla · verze ${v}`, activeSince: (d) => `Platí od ${d}`, barAuto: 'agent sám', barOwner: 's vámi', barLimit: 'limit',
     exceptionsTitle: 'Cenové výjimky', colOffer: 'Nabídka', colDiscount: 'Sleva', colTotal: 'Cena', colState: 'Stav', noExceptions: 'Žádné výjimky.',
@@ -137,14 +140,17 @@ const I18N = {
     sSystems: 'Systems', sEvidence: 'Evidence', sAnswered: 'Questions answered', sFindings: 'Needs attention', version: (v) => `Version ${v}`,
     question: 'A question for you', critical: 'Blocks the rules', yourAnswer: 'Your answer', answerPh: 'Answer in your own words.',
     kindPolicy: 'My decision', kindPolicySub: 'I decide how it should be', kindFact: 'A fact to check', kindFactSub: 'The agent verifies it at the source', answerType: 'What is it',
-    scope: 'What it applies to', scopeDefault: 'Whole business, normal operation', until: 'Valid until · optional', saveAnswer: 'Save answer',
+    scope: 'What it applies to', scopeDefault: 'Whole business, normal operation', until: 'Valid until · optional', saveAnswer: 'Save answer', updateAnswer: 'Update answer',
     systemsTitle: 'Systems your agent went through', colSystem: 'System', colAuthority: 'Source of truth for', colAccess: 'How the agent accessed it', colRoles: 'Accounts',
     findingsTitle: 'What the agent found', answeredTitle: 'Answered', kindPolicyShort: 'Decision', kindFactShort: 'Fact', evidenceTitle: 'Evidence', noFindings: 'Nothing unusual.',
     sev: { info: 'Info', warning: 'Attention', critical: 'Critical' },
     rulesEmpty: 'No rules proposed yet', rulesEmptyText: 'Your agent proposes rules after the audit. Nothing is pre-filled.',
     sActive: 'In force', sProposal: 'Proposal waiting', sApprovals: 'Exceptions waiting', sDeposit: 'Deposit',
     proposalTitle: (v) => `Proposed rules · version ${v}`, waitsForYou: 'Waiting for you', whatChanges: 'What changes', firstRules: 'This is how your agent would work',
-    allRules: 'All proposed rules', blocked: 'The proposal has an unanswered critical question. Answer it under Audit and the agent will send a corrected proposal.',
+    allRules: 'All proposed rules', blockedQuestions: 'The proposal has unanswered critical questions. Answer under Audit and the agent will send a corrected proposal.',
+    blockedParameters: 'The proposal has blocked parameters. The agent must resolve the listed audit blockers and submit a corrected proposal; your approval alone cannot remove them.',
+    blockedFallback: 'The agent must supply missing evidence or resolve audit blockers and submit a corrected proposal.',
+    blockedFindings: 'Critical findings', blockedParameterList: 'Blocked parameters', findingRule: 'Rule proposal', findingReport: (v) => `Audit · version ${v}`,
     confirmRules: 'I read the rules and agree with them.', activate: (v) => `Approve the rules (version ${v})`,
     activeTitle: (v) => `Your rules in force · version ${v}`, activeSince: (d) => `In force since ${d}`, barAuto: 'agent alone', barOwner: 'with you', barLimit: 'limit',
     exceptionsTitle: 'Price exceptions', colOffer: 'Quote', colDiscount: 'Discount', colTotal: 'Price', colState: 'Status', noExceptions: 'No exceptions.',
@@ -249,7 +255,7 @@ function describeChanges(from, to = {}) {
   return describeRules(to).filter(line => JSON.stringify(from[line.key]) !== JSON.stringify(to[line.key])).map(line => ({ before: before.get(line.key), after: line.text }));
 }
 const reports = b => list(b?.reports).map(record).map(report => ({ ...report, answers: list(b?.answers).filter(answer => answer.report_version === report.version), evidence: list(b?.evidence).filter(source => list(report.systems).some(system => system.id === source.capture?.system_id)) })).sort((x, y) => y.version - x.version);
-const answerFor = (report, question) => list(report.answers).find(answer => answer.question_id === question.id);
+const answerFor = (report, question) => list(report.answers).filter(answer => answer.question_id === question.id).sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0];
 const openQuestions = b => { const latest = reports(b)[0]; return latest ? list(latest.questions).filter(question => !answerFor(latest, question)).map(question => ({ ...question, report: latest })) : []; };
 const pendingApprovals = b => list(b?.approvals).filter(approval => approval.status === 'pending');
 const pendingRequests = () => list(state.dashboard.requests).filter(request => request.state === 'pending');
@@ -485,6 +491,21 @@ function waitingPanel(b) {
 }
 
 // ---------- audit ----------
+// datetime-local uses the browser's timezone; keep the stored instant and precision on edit.
+function answerExpiryInput(value) {
+  if (!value) return '';
+  const instant = new Date(value);
+  if (Number.isNaN(instant.getTime())) return '';
+  return new Date(instant.getTime() - instant.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
+}
+function answerForm(report, question, answer) {
+  const expiry = answerExpiryInput(answer?.valid_until);
+  return `<form class="hc-form" data-form="answer" data-version="${esc(report.version)}" data-question="${esc(question.id)}" data-expiry-original="${esc(answer?.valid_until)}" data-expiry-local="${esc(expiry)}">
+      ${field(t('yourAnswer'), `<textarea class="hd-input" name="answer" required maxlength="8000" placeholder="${esc(t('answerPh'))}">${esc(answer?.answer)}</textarea>`)}
+      <fieldset class="hc-opts"><legend>${esc(t('answerType'))}</legend><label class="hc-opt"><input type="radio" name="kind" value="policy_decision" ${answer?.kind !== 'external_fact' ? 'checked' : ''}><span>${esc(t('kindPolicy'))}<small>${esc(t('kindPolicySub'))}</small></span></label><label class="hc-opt"><input type="radio" name="kind" value="external_fact" ${answer?.kind === 'external_fact' ? 'checked' : ''}><span>${esc(t('kindFact'))}<small>${esc(t('kindFactSub'))}</small></span></label></fieldset>
+      <div class="hc-fields">${field(t('scope'), `<input class="hd-input" name="scope" required maxlength="2000" value="${esc(answer?.scope ?? t('scopeDefault'))}">`)}${field(t('until'), `<input class="hd-input" name="valid_until" type="datetime-local" step="any" value="${esc(expiry)}">`)}</div>
+      <div class="hd-actions">${button(t('saveAnswer'), { type: 'submit' })}</div></form>`;
+}
 function renderAudit(b) {
   const all = reports(b);
   if (!all.length) return panel(esc(t('auditEmpty')), `<p>${esc(t('auditEmptyText'))}</p>`);
@@ -493,14 +514,10 @@ function renderAudit(b) {
   const attention = list(report.findings).filter(finding => finding.severity !== 'info');
   const versions = all.length > 1 ? `<div class="hd-segs" role="group" aria-label="${esc(t('version', ''))}">${all.map(item => `<button type="button" data-audit-version="${item.version}" aria-pressed="${item.version === report.version}">${esc(t('version', item.version))}</button>`).join('')}</div>` : '';
   const stats = `<div class="hc-stats">${stat(t('sSystems'), list(report.systems).length, '', 100)}${stat(t('sEvidence'), list(report.evidence).length, '', 100)}${stat(t('sAnswered'), `${answered.length}/${questions.length}`, '', questions.length ? answered.length / questions.length * 100 : 100)}${stat(t('sFindings'), attention.length, '', attention.length ? 100 : 0)}</div>`;
-  const open = questions.filter(question => !answerFor(report, question)).map(question => panel(esc(question.question), `<form class="hc-form" data-form="answer" data-version="${esc(report.version)}" data-question="${esc(question.id)}">
-      ${field(t('yourAnswer'), `<textarea class="hd-input" name="answer" required maxlength="8000" placeholder="${esc(t('answerPh'))}"></textarea>`)}
-      <fieldset class="hc-opts"><legend>${esc(t('answerType'))}</legend><label class="hc-opt"><input type="radio" name="kind" value="policy_decision" checked><span>${esc(t('kindPolicy'))}<small>${esc(t('kindPolicySub'))}</small></span></label><label class="hc-opt"><input type="radio" name="kind" value="external_fact"><span>${esc(t('kindFact'))}<small>${esc(t('kindFactSub'))}</small></span></label></fieldset>
-      <div class="hc-fields">${field(t('scope'), `<input class="hd-input" name="scope" required maxlength="2000" value="${esc(t('scopeDefault'))}">`)}${field(t('until'), '<input class="hd-input" name="valid_until" type="datetime-local">')}</div>
-      <div class="hd-actions">${button(t('saveAnswer'), { type: 'submit' })}</div></form>`, { cls: 'is-ask', sub: `<div class="hc-row">${question.critical ? chip('', 'warn', t('critical')) : ''}${chip('pending', 'escalation', t('question'))}</div>` })).join('');
+  const open = questions.filter(question => !answerFor(report, question)).map(question => panel(esc(question.question), answerForm(report, question), { cls: 'is-ask', sub: `<div class="hc-row">${question.critical ? chip('', 'warn', t('critical')) : ''}${chip('pending', 'escalation', t('question'))}</div>` })).join('');
   const systems = table([[t('colSystem')], [t('colAuthority')], [t('colAccess')], [t('colRoles')]], list(report.systems).map(system => `<tr><td><strong style="font-weight:500">${esc(system.name || system.id)}</strong><span class="hc-code">${esc(system.id)}</span></td><td>${esc(list(system.fact_authority).join(', ') || system.purpose || '—')}</td><td>${esc(list(system.access_methods).join(', ') || '—')}</td><td>${esc(list(system.observed_roles).join(', ') || '—')}</td></tr>`), t('none'));
   const findings = panel(esc(t('findingsTitle')), list(report.findings).length ? `<ul class="hc-list">${report.findings.map(finding => `<li style="align-items:flex-start">${chip('', finding.severity === 'critical' ? 'bad' : finding.severity === 'warning' ? 'warn' : 'info', t(`sev.${finding.severity}`))}<div class="grow"><span>${esc(finding.description)}</span>${finding.recommendation ? `<span class="hc-small hc-muted">${esc(finding.recommendation)}</span>` : ''}</div></li>`).join('')}</ul>` : `<p class="hc-empty">${esc(t('noFindings'))}</p>`);
-  const answeredPanel = answered.length ? panel(esc(t('answeredTitle')), `<ul class="hc-list">${answered.map(question => { const answer = answerFor(report, question); return `<li style="align-items:flex-start"><div class="grow"><strong>${esc(question.question)}</strong><span>${esc(answer.answer)}</span>${tech(meta([[t('scope'), esc(answer.scope)], [t('until'), esc(answer.valid_until ? date(answer.valid_until) : '—')], ['ID', esc(question.id), true]]))}</div>${chip('', answer.kind === 'policy_decision' ? 'owner' : 'info', answer.kind === 'policy_decision' ? t('kindPolicyShort') : t('kindFactShort'))}</li>`; }).join('')}</ul>`) : '';
+  const answeredPanel = answered.length ? panel(esc(t('answeredTitle')), `<ul class="hc-list">${answered.map(question => { const answer = answerFor(report, question); return `<li style="align-items:flex-start"><div class="grow"><strong>${esc(question.question)}</strong><span>${esc(answer.answer)}</span>${tech(meta([[t('scope'), esc(answer.scope)], [t('until'), esc(answer.valid_until ? date(answer.valid_until) : '—')], ['ID', esc(question.id), true]]))}<details class="hc-tech"><summary>${esc(t('updateAnswer'))}</summary><div>${answerForm(report, question, answer)}</div></details></div>${chip('', answer.kind === 'policy_decision' ? 'owner' : 'info', answer.kind === 'policy_decision' ? t('kindPolicyShort') : t('kindFactShort'))}</li>`; }).join('')}</ul>`) : '';
   const evidence = panel(esc(t('evidenceTitle')), tech(...list(report.evidence).map(item => `<div>${meta([[t('colSystem'), esc(item.capture?.system_id)], ['URL', link(item.url || item.capture?.url)], ['Locator', esc(item.capture?.locator)], [t('colChecked'), esc(date(item.capture?.captured_at))], ['SHA-256', esc(item.hash), true]])}${item.content ? `<blockquote class="hc-quote">${esc(String(item.content).slice(0, 600))}</blockquote>` : ''}</div>`), meta([['Report', esc(`v${report.version}`), true], ['Status', esc(report.status || '—')], ['Hash', esc(report.payload_hash || '—'), true]])), { sub: `<span class="hc-sub">${list(report.evidence).length}</span>` });
   return `${versions ? `<div class="hc-row">${versions}</div>` : ''}${report.summary ? `<p class="hc-muted">${esc(report.summary)}</p>` : ''}${stats}${open}<section class="hc-panel" style="padding:0;background:none"><div class="hc-panel-h" style="padding:0 4px"><h2>${esc(t('systemsTitle'))}</h2></div>${systems}</section><div class="hc-grid">${findings}${answeredPanel}</div>${evidence}`;
 }
@@ -511,6 +528,18 @@ function blockedProposal(b, rule) {
   const report = reports(b).find(item => item.version === rule.governance?.report_version);
   return list(rule.governance?.blocked_parameters).length > 0 || list(report?.questions).some(question => question.critical && !answerFor(report, question));
 }
+function proposalBlockReasons(b, rule) {
+  const report = reports(b).find(item => item.version === rule.governance?.report_version);
+  const questions = list(report?.questions).filter(question => question.critical && !answerFor(report, question));
+  const blocked = list(rule.governance?.blocked_parameters);
+  const findings = [
+    ...list(rule.findings).filter(finding => finding.severity === 'critical').map(finding => ({ ...finding, source: t('findingRule') })),
+    ...list(report?.findings).filter(finding => finding.severity === 'critical').map(finding => ({ ...finding, source: t('findingReport', report.version) })),
+  ];
+  const questionHtml = questions.length ? `<p>${esc(t('blockedQuestions'))}</p><ul>${questions.map(question => `<li>${esc(question.question)}</li>`).join('')}</ul>` : '';
+  const blockedHtml = blocked.length ? `<p>${esc(t('blockedParameters'))}</p>${findings.length ? `<p><strong>${esc(t('blockedFindings'))}</strong></p><ul>${findings.map(finding => `<li><span class="hc-small hc-muted">${esc(finding.source)}</span><div>${esc(finding.description)}</div>${finding.recommendation ? `<div>${esc(finding.recommendation)}</div>` : ''}</li>`).join('')}</ul>` : `<p>${esc(t('blockedFallback'))}</p>`}${tech(meta([[t('blockedParameterList'), blocked.map(esc).join(', ')]]))}` : '';
+  return note('warn', questionHtml + blockedHtml);
+}
 function renderRules(b) {
   const all = rulebooks(b), active = activeRules(b), waiting = proposals(b), approvals = list(b.approvals);
   const stats = `<div class="hc-stats">${stat(t('sActive'), active ? `v${active.version}` : '—', active?.activated_at ? t('activeSince', date(active.activated_at)) : '')}${stat(t('sProposal'), waiting.length)}${stat(t('sApprovals'), pendingApprovals(b).length)}${active ? stat(t('sDeposit'), money(active.params?.deposit_minor)) : ''}</div>`;
@@ -519,7 +548,7 @@ function renderRules(b) {
     const words = describeRules(rule.params), changes = describeChanges(active?.params, rule.params), blocked = blockedProposal(b, rule);
     const changeHtml = active && changes.length ? `<div><h3 class="hc-small hc-muted" style="margin-bottom:4px">${esc(t('whatChanges'))}</h3>${changes.map(change => `<div class="hc-change">${change.before ? `<span class="was">${esc(change.before)}</span>` : ''}<span class="now">${esc(change.after)}</span></div>`).join('')}</div>` : `<div><h3 class="hc-small hc-muted" style="margin-bottom:4px">${esc(t('firstRules'))}</h3>${rulesList(words)}</div>`;
     return panel(esc(t('proposalTitle', rule.version)), `${changeHtml}${active && changes.length ? `<details class="hc-tech"><summary>${esc(t('allRules'))}</summary><div>${rulesList(words)}</div></details>` : ''}
-      <form class="hc-form" data-form="activate" data-version="${esc(rule.version)}" data-hash="${esc(rule.payload_hash)}">${blocked ? note('warn', esc(t('blocked'))) : ''}${check('reviewed', t('confirmRules'))}<div class="hd-actions">${button(t('activate', rule.version), { type: 'submit', attrs: blocked || !rule.payload_hash ? 'disabled' : '' })}</div></form>
+      <form class="hc-form" data-form="activate" data-version="${esc(rule.version)}" data-hash="${esc(rule.payload_hash)}">${blocked ? proposalBlockReasons(b, rule) : ''}${check('reviewed', t('confirmRules'))}<div class="hd-actions">${button(t('activate', rule.version), { type: 'submit', attrs: blocked || !rule.payload_hash ? 'disabled' : '' })}</div></form>
       ${tech(meta([['Payload hash', esc(rule.payload_hash), true], ['Report', esc(rule.governance?.report_version ? `audit v${rule.governance.report_version}` : '—'), true]]), paramTable(active, rule), citationsHtml(rule))}`, { cls: 'is-ask', sub: chip('proposed', 'escalation', t('waitsForYou')) });
   }).join('');
   const activePanel = active ? panel(esc(t('activeTitle', active.version)), `${discountBar(active)}${rulesList(describeRules(active.params))}${tech(meta([['Payload hash', esc(active.payload_hash), true], [t('activeSince', ''), esc(date(active.activated_at))]]), paramTable(null, active), citationsHtml(active))}`, { sub: chip('active') }) : '';
@@ -649,7 +678,7 @@ document.addEventListener('submit', async event => {
     } else if (!current) throw new Error(t('msg.gone'));
     else {
       const path = value => `/businesses/${encodeURIComponent(current.id)}/owner/${value}`;
-      if (kind === 'answer') { await api(path(`questions/${encodeURIComponent(form.dataset.version)}/${encodeURIComponent(form.dataset.question)}/answer`), { answer: data.get('answer'), kind: data.get('kind'), scope: data.get('scope'), ...(data.get('valid_until') ? { valid_until: new Date(String(data.get('valid_until'))).toISOString() } : {}) }); message = t('msg.answer'); }
+      if (kind === 'answer') { await api(path(`questions/${encodeURIComponent(form.dataset.version)}/${encodeURIComponent(form.dataset.question)}/answer`), { answer: data.get('answer'), kind: data.get('kind'), scope: data.get('scope'), ...(data.get('valid_until') ? { valid_until: form.dataset.expiryOriginal && data.get('valid_until') === form.dataset.expiryLocal ? form.dataset.expiryOriginal : new Date(String(data.get('valid_until'))).toISOString() } : {}) }); message = t('msg.answer'); }
       else if (kind === 'activate') { await api(path(`rulebooks/${encodeURIComponent(form.dataset.version)}/activate`), { payload_hash: form.dataset.hash }); message = t('msg.activate', form.dataset.version); }
       else if (kind === 'approval') { await api(path(`approvals/${encodeURIComponent(form.dataset.approval)}/decide`), { decision: submitter?.value }); message = submitter?.value === 'approved' ? t('msg.approvalOk') : t('msg.approvalNo'); dialog.close(); }
       else if (kind === 'grant') { await api(path(`connections/${encodeURIComponent(form.dataset.connection)}/authorize-operation`), { scopes: data.getAll('scopes'), expected_epoch: current.execution_epoch }); message = t('msg.grant'); }
