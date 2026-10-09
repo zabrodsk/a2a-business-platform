@@ -72,27 +72,28 @@ test('updated answer uses the existing owner POST handler only on explicit submi
   assert.equal(requests[0]!.body.scope, values.scope);
   assert.equal(requests[0]!.body.valid_until, new Date(values.valid_until).toISOString());
 });
-test('unchanged expiry preserves its original instant during the Prague DST overlap', async () => {
+for (const milliseconds of ['789', '000']) test(`unchanged expiry preserves its original instant during the Prague DST overlap (${milliseconds} ms)`, async () => {
   const previousTZ = process.env.TZ;
   process.env.TZ = 'Europe/Prague';
   try {
     const b = fixture();
-    b.answers[1]!.valid_until = '2027-10-31T01:30:00.789Z';
+    b.answers[1]!.valid_until = `2027-10-31T01:30:00.${milliseconds}Z`;
     const { html, context, listeners } = setup(b);
     const formHtml = html.match(/<form\b[^>]*data-form="answer"[\s\S]*?<\/form>/)![0];
     const expiry = formHtml.match(/name="valid_until"[^>]*value="([^"]*)"/)![1]!;
     const original = formHtml.match(/data-expiry-original="([^"]*)"/)![1]!;
     const displayed = formHtml.match(/data-expiry-local="([^"]*)"/)![1]!;
-    assert.equal(expiry, '2027-10-31T02:30:00.789');
+    assert.equal(expiry, `2027-10-31T02:30:00.${milliseconds}`);
     assert.notEqual(new Date(expiry).toISOString(), original, 'fixture exercises the ambiguous fall-back hour');
     const requests: { path: string; body: Record<string, string> }[] = [];
     context.requests = requests;
-    let currentExpiry = expiry;
+    // Native datetime-local input omits zero seconds and milliseconds.
+    let currentExpiry = milliseconds === '000' ? '2027-10-31T02:30' : expiry;
     context.FormData = class { get(key: string) { return key === 'valid_until' ? currentExpiry : key === 'answer' ? 'Updated demo policy' : key === 'kind' ? 'policy_decision' : 'Demo'; } };
     vm.runInContext('api = async (path, body) => { requests.push({path,body}); return {}; }; load = async () => {};', context);
     const form = { dataset: { form: 'answer', version: '2', question: 'payment-policy', expiryOriginal: original, expiryLocal: displayed }, closest() { return this; }, querySelectorAll() { return []; } };
     await listeners.submit!({ target: form, preventDefault() {} });
-    assert.equal(requests[0]!.body.valid_until, '2027-10-31T01:30:00.789Z');
+    assert.equal(requests[0]!.body.valid_until, `2027-10-31T01:30:00.${milliseconds}Z`);
     currentExpiry = '2027-10-31T04:30:00.789';
     await listeners.submit!({ target: form, preventDefault() {} });
     assert.equal(requests[1]!.body.valid_until, '2027-10-31T03:30:00.789Z', 'explicitly edited expiry uses the chosen local time');
